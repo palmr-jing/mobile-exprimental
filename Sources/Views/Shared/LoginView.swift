@@ -14,14 +14,17 @@ struct LoginView: View {
                     Image(systemName: "terminal")
                         .font(.system(size: 60))
                         .foregroundStyle(DS.Colors.accent)
+                        .accessibilityIdentifier("commander-logo")
 
                     Text("Commander")
                         .font(DS.Typography.title)
                         .foregroundStyle(DS.Colors.text)
+                        .accessibilityIdentifier("commander-title")
 
                     Text("Mobile Task Control")
                         .font(DS.Typography.body)
                         .foregroundStyle(DS.Colors.secondary)
+                        .accessibilityIdentifier("commander-subtitle")
                 }
 
                 Spacer()
@@ -41,11 +44,13 @@ struct LoginView: View {
                         .background(DS.Colors.dark)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                     }
+                    .accessibilityIdentifier("sign-in-button")
 
                     if let error = authService.errorMessage {
                         Text(error)
                             .font(DS.Typography.caption)
                             .foregroundStyle(DS.Colors.red)
+                            .accessibilityIdentifier("error-message")
                     }
                 }
                 .padding(.horizontal, DS.Spacing.xxl)

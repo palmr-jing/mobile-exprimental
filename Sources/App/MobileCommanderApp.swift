@@ -7,7 +7,15 @@ struct MobileCommanderApp: App {
     @AppStorage("appMode") private var appMode: AppMode = .developer
 
     init() {
-        FirebaseApp.configure()
+        if AppConfiguration.isTesting {
+            if ProcessInfo.processInfo.arguments.contains("--developer-mode") {
+                UserDefaults.standard.set("developer", forKey: "appMode")
+            } else if ProcessInfo.processInfo.arguments.contains("--owner-mode") {
+                UserDefaults.standard.set("owner", forKey: "appMode")
+            }
+        } else {
+            FirebaseApp.configure()
+        }
     }
 
     var body: some Scene {

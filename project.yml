@@ -34,3 +34,27 @@ targets:
         product: FirebaseFirestore
       - package: Firebase
         product: FirebaseStorage
+
+  MobileCommanderTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests/MobileCommanderTests
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: "YES"
+    dependencies:
+      - target: MobileCommander
+
+  MobileCommanderUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Tests/MobileCommanderUITests
+    settings:
+      base:
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: "YES"
+    dependencies:
+      - target: MobileCommander

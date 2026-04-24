@@ -11,9 +11,17 @@ class AuthService: ObservableObject {
     @Published var errorMessage: String?
 
     private var authHandle: AuthStateDidChangeListenerHandle?
-    private let db = Firestore.firestore()
+    private var db: Firestore?
 
     init() {
+        if AppConfiguration.isTesting {
+            self.db = nil
+            self.isSignedIn = true
+            self.isAdmin = true
+            self.isLoading = false
+            return
+        }
+        self.db = Firestore.firestore()
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
                 self?.user = user
@@ -50,6 +58,7 @@ class AuthService: ObservableObject {
     }
 
     private func checkAllowlist(email: String) async {
+        guard let db = db else { return }
         do {
             let snapshot = try await db
                 .collection("commander_allowed_users")
@@ -59,7 +68,6 @@ class AuthService: ObservableObject {
                 self.isAdmin = doc.data()["isAdmin"] as? Bool ?? false
             }
         } catch {
-            // Allow access by default for anonymous auth during development
             self.isAdmin = true
         }
     }

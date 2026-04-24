@@ -108,6 +108,7 @@ struct TaskRow: View {
                     Text("#\(task.numId)")
                         .font(DS.Typography.caption)
                         .foregroundStyle(DS.Colors.secondary)
+                        .accessibilityIdentifier("task-id-\(task.numId)")
                     StatusBadge(status: task.effectiveStatus)
                     Spacer()
                     if let cost = task.costUsd {

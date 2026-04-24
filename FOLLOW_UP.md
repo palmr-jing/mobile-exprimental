@@ -1,42 +1,42 @@
 # Follow-Up
 
-**What was done**: Built the Mobile Commander iOS app — a SwiftUI frontend for the existing Commander task orchestration system. Two modes: Developer (full task/worker/output control) and Owner (simplified request templates for non-technical gym owners).
+**What was done**: Added full e2e test coverage to the Mobile Commander iOS app. Created 49 unit tests and 22 XCUITest UI tests covering models, enums, design system, and both Developer and Owner mode navigation flows. Made services testable by deferring Firebase initialization and providing mock data in test mode.
 
 **What needs review**:
-- Verify Firebase auth works on device (currently uses anonymous auth for development — Google Sign-In needs the GoogleSignIn SDK added and configured in the Firebase Console with the iOS bundle ID)
-- Confirm Firestore real-time listeners properly sync tasks and workers from the existing `commander_tasks` and `commander_workers` collections
-- Check that task creation from Owner mode generates tasks compatible with existing workers
-- Verify the GoogleService-Info.plist matches what Firebase Console generates for the iOS app (current one is placeholder-ish — needs a real iOS app registered in Firebase)
+- Verify `AppConfiguration.isTesting` detection works on CI runners (tested locally on macOS with Xcode simulator)
+- Check that mock data in `FirestoreService.mockTasks` and `FirestoreService.mockWorkers` stays representative as the data model evolves
+- Confirm the `--developer-mode` / `--owner-mode` launch argument approach for UI tests is acceptable vs. using `XCUIApplication.launchEnvironment`
+- The `AuthService.db` and `FirestoreService.db` were changed from non-optional to optional to support test mode — verify no production regressions
 
 **Action items**:
-- Register iOS app in Firebase Console (bundle ID: com.everbot.mobile-commander) and download the real GoogleService-Info.plist
-- Add Google Sign-In SDK if you want proper Google auth (currently falls back to anonymous)
-- Set DEVELOPMENT_TEAM in project.yml if you want to run on a physical device
-- Push to GitHub remote
-- Consider adding push notifications for task completion (Firebase Cloud Messaging)
+- Register iOS app in Firebase Console (bundle ID: com.everbot.mobile-commander) and download real GoogleService-Info.plist to unblock on-device testing
+- Add CI pipeline configuration to run `xcodebuild test` on pushes (GitHub Actions or similar)
+- Consider adding snapshot tests (e.g. with swift-snapshot-testing) for visual regression
+- Add integration tests once a test Firebase project is configured
 
 **Files changed**:
-- `project.yml` — XcodeGen project spec (iOS 17+, Firebase dependencies)
-- `Resources/Info.plist` — iOS app config
-- `Resources/GoogleService-Info.plist` — Firebase config (needs real values from Firebase Console)
-- `Sources/App/MobileCommanderApp.swift` — App entry point with mode switching
-- `Sources/App/AppMode.swift` — Developer/Owner mode enum
-- `Sources/Design/DesignSystem.swift` — Color palette, typography, card components (Palmr-inspired)
-- `Sources/Models/Task.swift` — Task model matching Firestore schema
-- `Sources/Models/Worker.swift` — Worker model
-- `Sources/Services/AuthService.swift` — Firebase Auth wrapper
-- `Sources/Services/FirestoreService.swift` — Real-time Firestore listener for tasks/workers/chat/output
-- `Sources/Views/Developer/DeveloperTabView.swift` — 5-tab developer interface
-- `Sources/Views/Developer/DashboardView.swift` — Stats grid, workers, recent tasks
-- `Sources/Views/Developer/TaskListView.swift` — Filterable task list with search
-- `Sources/Views/Developer/TaskDetailView.swift` — Full task view with output/chat/result tabs
-- `Sources/Views/Developer/CreateTaskView.swift` — Full task creation form
-- `Sources/Views/Developer/WorkersView.swift` — Worker fleet monitoring
-- `Sources/Views/Developer/SettingsView.swift` — Account, mode switch, app info
-- `Sources/Views/Owner/OwnerTabView.swift` — 3-tab simplified interface
-- `Sources/Views/Owner/OwnerHomeView.swift` — Status dashboard for owners
-- `Sources/Views/Owner/OwnerRequestView.swift` — Template-based task creation (Bug Fix, New Feature, UI Change, Content Update)
-- `Sources/Views/Owner/OwnerStatusView.swift` — Project progress overview
-- `Sources/Views/Shared/LoginView.swift` — Sign-in screen
-- `Sources/Views/Shared/ModeSwitcher.swift` — Mode selection sheet
-- `.gitignore` — Standard iOS gitignore
+- `Sources/App/AppConfiguration.swift` — New file: test mode detection via launch args and env vars
+- `Sources/App/MobileCommanderApp.swift` — Skip Firebase init in test mode; handle mode launch args
+- `Sources/Services/AuthService.swift` — Deferred Firebase init; optional db; test mode mock state
+- `Sources/Services/FirestoreService.swift` — Deferred Firebase init; optional db; mock data for tests
+- `Sources/Utilities/Formatters.swift` — New file: extracted duration formatter for testability
+- `Sources/Views/Developer/DeveloperTabView.swift` — Added accessibility identifiers to tabs
+- `Sources/Views/Developer/TaskDetailView.swift` — Uses extracted Formatters utility; optional listener types
+- `Sources/Views/Developer/CreateTaskView.swift` — Added accessibility identifiers to form fields
+- `Sources/Views/Developer/TaskListView.swift` — Added accessibility identifier to task row IDs
+- `Sources/Views/Owner/OwnerTabView.swift` — Added accessibility identifiers to tabs
+- `Sources/Views/Owner/OwnerRequestView.swift` — Added accessibility identifiers to templates and submit button
+- `Sources/Views/Shared/LoginView.swift` — Added accessibility identifiers to logo, title, sign-in button
+- `project.yml` — Added MobileCommanderTests and MobileCommanderUITests targets
+- `Tests/MobileCommanderTests/TaskStatusTests.swift` — Unit tests for TaskStatus enum
+- `Tests/MobileCommanderTests/AppModeTests.swift` — Unit tests for AppMode enum
+- `Tests/MobileCommanderTests/RequestTemplateTests.swift` — Unit tests for RequestTemplate enum
+- `Tests/MobileCommanderTests/CommanderTaskTests.swift` — Unit tests for task effectiveStatus logic
+- `Tests/MobileCommanderTests/CommanderWorkerTests.swift` — Unit tests for worker isOnline logic
+- `Tests/MobileCommanderTests/DesignSystemTests.swift` — Unit tests for Color hex init, spacing, radius
+- `Tests/MobileCommanderTests/FormattersTests.swift` — Unit tests for duration formatter
+- `Tests/MobileCommanderTests/AppConfigurationTests.swift` — Unit tests for test mode detection
+- `Tests/MobileCommanderUITests/AppLaunchTests.swift` — UI tests for app launch and tab visibility
+- `Tests/MobileCommanderUITests/DeveloperModeTests.swift` — UI tests for developer mode navigation and content
+- `Tests/MobileCommanderUITests/OwnerModeTests.swift` — UI tests for owner mode navigation and content
+- `TEST_REPORT.md` — Updated with test results (71 tests, all passing)

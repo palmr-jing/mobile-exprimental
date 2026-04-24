@@ -8,16 +8,25 @@ class FirestoreService: ObservableObject {
     @Published var workers: [CommanderWorker] = []
     @Published var isLoading = true
 
-    private let db = Firestore.firestore()
+    private var db: Firestore?
     private var taskListener: ListenerRegistration?
     private var workerListener: ListenerRegistration?
 
     init() {
+        if AppConfiguration.isTesting {
+            self.db = nil
+            self.isLoading = false
+            self.tasks = Self.mockTasks
+            self.workers = Self.mockWorkers
+            return
+        }
+        self.db = Firestore.firestore()
         listenToTasks()
         listenToWorkers()
     }
 
     func listenToTasks() {
+        guard let db = db else { return }
         taskListener = db.collection("commander_tasks")
             .order(by: "created_at", descending: true)
             .limit(to: 100)
@@ -31,6 +40,7 @@ class FirestoreService: ObservableObject {
     }
 
     func listenToWorkers() {
+        guard let db = db else { return }
         workerListener = db.collection("commander_workers")
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let docs = snapshot?.documents else { return }
@@ -41,6 +51,7 @@ class FirestoreService: ObservableObject {
     }
 
     func createTask(project: String, path: String, task: String, description: String, priority: Int) async throws {
+        guard let db = db else { return }
         let maxNumId = tasks.map(\.numId).max() ?? 0
         let data: [String: Any] = [
             "num_id": maxNumId + 1,
@@ -59,6 +70,7 @@ class FirestoreService: ObservableObject {
     }
 
     func updateTaskStatus(taskId: String, status: TaskStatus) async throws {
+        guard let db = db else { return }
         try await db.collection("commander_tasks").document(taskId).updateData([
             "status": status.rawValue,
             "updated_at": FieldValue.serverTimestamp()
@@ -66,6 +78,7 @@ class FirestoreService: ObservableObject {
     }
 
     func retryTask(taskId: String) async throws {
+        guard let db = db else { return }
         try await db.collection("commander_tasks").document(taskId).updateData([
             "status": "pending",
             "claimed_by": FieldValue.delete(),
@@ -80,6 +93,7 @@ class FirestoreService: ObservableObject {
     }
 
     func sendChatMessage(taskId: String, content: String) async throws {
+        guard let db = db else { return }
         let data: [String: Any] = [
             "role": "user",
             "content": content,
@@ -90,7 +104,8 @@ class FirestoreService: ObservableObject {
             .collection("chat").addDocument(data: data)
     }
 
-    func listenToOutput(taskId: String, handler: @escaping ([OutputChunk]) -> Void) -> ListenerRegistration {
+    func listenToOutput(taskId: String, handler: @escaping ([OutputChunk]) -> Void) -> ListenerRegistration? {
+        guard let db = db else { return nil }
         return db.collection("commander_tasks").document(taskId)
             .collection("output")
             .order(by: "seq")
@@ -109,7 +124,8 @@ class FirestoreService: ObservableObject {
             }
     }
 
-    func listenToChat(taskId: String, handler: @escaping ([ChatMessage]) -> Void) -> ListenerRegistration {
+    func listenToChat(taskId: String, handler: @escaping ([ChatMessage]) -> Void) -> ListenerRegistration? {
+        guard let db = db else { return nil }
         return db.collection("commander_tasks").document(taskId)
             .collection("chat")
             .order(by: "created_at")
@@ -182,6 +198,47 @@ class FirestoreService: ObservableObject {
             activeTaskCount: data["active_task_count"] as? Int ?? 0
         )
     }
+
+    static let mockTasks: [CommanderTask] = [
+        CommanderTask(
+            id: "mock-1", numId: 101, project: "palmr-ios", path: "~/repos/palmr-ios-2",
+            task: "Fix login button color", description: "The login button is hard to see on dark backgrounds",
+            status: .done, priority: 3, dependsOn: [], allowParallel: false,
+            costUsd: 0.042, durationMs: 45000, reviewStatus: "needs_review",
+            createdAt: Date().addingTimeInterval(-3600)
+        ),
+        CommanderTask(
+            id: "mock-2", numId: 102, project: "palmr-ios", path: "~/repos/palmr-ios-2",
+            task: "Add push notifications", description: "Implement push notification support for task completion",
+            status: .running, priority: 5, dependsOn: [], allowParallel: false,
+            claimedBy: "worker-1", createdAt: Date().addingTimeInterval(-1800)
+        ),
+        CommanderTask(
+            id: "mock-3", numId: 103, project: "commander", path: "~/repos/commander",
+            task: "Update dashboard layout", description: "Redesign the dashboard grid to show more stats",
+            status: .pending, priority: 5, dependsOn: [], allowParallel: false,
+            createdAt: Date().addingTimeInterval(-900)
+        ),
+        CommanderTask(
+            id: "mock-4", numId: 104, project: "palmr-ios", path: "~/repos/palmr-ios-2",
+            task: "Fix crash on profile screen", description: "App crashes when tapping profile with no photo",
+            status: .failed, priority: 2, dependsOn: [], allowParallel: false,
+            error: "Index out of range", createdAt: Date().addingTimeInterval(-7200)
+        ),
+    ]
+
+    static let mockWorkers: [CommanderWorker] = [
+        CommanderWorker(
+            id: "worker-1", hostname: "mac-studio-1", status: .online,
+            tasksCompleted: 47, totalCost: 12.34,
+            lastHeartbeat: Date(), activeTaskCount: 1
+        ),
+        CommanderWorker(
+            id: "worker-2", hostname: "mac-mini-2", status: .offline,
+            tasksCompleted: 23, totalCost: 5.67,
+            lastHeartbeat: Date().addingTimeInterval(-300), activeTaskCount: 0
+        ),
+    ]
 
     deinit {
         taskListener?.remove()

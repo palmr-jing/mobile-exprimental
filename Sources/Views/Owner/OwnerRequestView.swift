@@ -99,6 +99,7 @@ struct OwnerRequestView: View {
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
         }
         .disabled(customDescription.isEmpty || isSubmitting)
+        .accessibilityIdentifier("submit-request-button")
     }
 
     private func submitRequest() {
@@ -220,5 +221,6 @@ struct TemplateCard: View {
                     .stroke(isSelected ? template.color : DS.Colors.border, lineWidth: isSelected ? 2 : 0.5)
             )
         }
+        .accessibilityIdentifier("template-\(template.rawValue)")
     }
 }

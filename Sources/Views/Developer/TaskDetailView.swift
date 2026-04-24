@@ -8,8 +8,8 @@ struct TaskDetailView: View {
     @State private var chatMessages: [ChatMessage] = []
     @State private var chatInput = ""
     @State private var selectedTab = 0
-    @State private var outputListener: ListenerRegistration?
-    @State private var chatListener: ListenerRegistration?
+    @State private var outputListener: Any?
+    @State private var chatListener: Any?
 
     var body: some View {
         ScrollView {
@@ -210,16 +210,12 @@ struct TaskDetailView: View {
     }
 
     private func stopListeners() {
-        outputListener?.remove()
-        chatListener?.remove()
+        (outputListener as? ListenerRegistration)?.remove()
+        (chatListener as? ListenerRegistration)?.remove()
     }
 
     private func formatDuration(_ ms: Int) -> String {
-        let seconds = ms / 1000
-        if seconds < 60 { return "\(seconds)s" }
-        let minutes = seconds / 60
-        let remaining = seconds % 60
-        return "\(minutes)m \(remaining)s"
+        Formatters.duration(ms: ms)
     }
 }
 

@@ -18,6 +18,7 @@ struct CreateTaskView: View {
                         FormField(label: "Project") {
                             TextField("e.g. palmr-ios", text: $project)
                                 .textFieldStyle(.roundedBorder)
+                                .accessibilityIdentifier("project-field")
                         }
 
                         FormField(label: "Working Directory") {
@@ -25,11 +26,13 @@ struct CreateTaskView: View {
                                 .textFieldStyle(.roundedBorder)
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.never)
+                                .accessibilityIdentifier("path-field")
                         }
 
                         FormField(label: "Task Name") {
                             TextField("Short description of the task", text: $taskName)
                                 .textFieldStyle(.roundedBorder)
+                                .accessibilityIdentifier("task-name-field")
                         }
 
                         FormField(label: "Description") {
@@ -40,6 +43,7 @@ struct CreateTaskView: View {
                                     RoundedRectangle(cornerRadius: 6)
                                         .stroke(DS.Colors.border, lineWidth: 1)
                                 )
+                                .accessibilityIdentifier("description-field")
                         }
 
                         FormField(label: "Priority (\(priority))") {
@@ -69,6 +73,7 @@ struct CreateTaskView: View {
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                     }
                     .disabled(!canSubmit || isSubmitting)
+                    .accessibilityIdentifier("create-task-button")
                 }
                 .padding(DS.Spacing.lg)
             }

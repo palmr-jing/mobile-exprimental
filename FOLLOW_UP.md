@@ -1,42 +1,40 @@
 # Follow-Up
 
-**What was done**: Built the Mobile Commander iOS app — a SwiftUI frontend for the existing Commander task orchestration system. Two modes: Developer (full task/worker/output control) and Owner (simplified request templates for non-technical gym owners).
+**What was done**: Expanded the Mobile Commander iOS app from a basic scaffold into a full-featured dual-mode companion app. Developer mode now has notifications, task editing/delete, bulk operations, worker restart, activity history, and review approval. Owner mode has a palmr-inspired card layout with status hero cards, queue monitoring, and 6 request templates. Mode auto-locks to Owner for non-admin accounts.
 
 **What needs review**:
-- Verify Firebase auth works on device (currently uses anonymous auth for development — Google Sign-In needs the GoogleSignIn SDK added and configured in the Firebase Console with the iOS bundle ID)
-- Confirm Firestore real-time listeners properly sync tasks and workers from the existing `commander_tasks` and `commander_workers` collections
-- Check that task creation from Owner mode generates tasks compatible with existing workers
-- Verify the GoogleService-Info.plist matches what Firebase Console generates for the iOS app (current one is placeholder-ish — needs a real iOS app registered in Firebase)
+- Verify the Firebase project ID in GoogleService-Info.plist matches your active backend
+- Test the anonymous auth flow — currently uses `Auth.auth().signInAnonymously()` since Google Sign-In SDK was not added (requires GoogleSignIn pod + UIKit bridging)
+- Confirm the Owner mode template defaults (project: "palmr-ios", path: "~/repos/palmr-ios-2") match what you want for gym owner submissions
+- Check that the DeveloperTabView 5-tab layout feels right on smaller iPhones (activity tab could be moved to settings if crowded)
+- Verify bulk operations work correctly with Firestore batch writes
 
 **Action items**:
+- Add GoogleSignIn SDK and implement proper Google OAuth (replaces anonymous auth)
+- Set the DEVELOPMENT_TEAM in project.yml to sign for device builds
+- Add your email to `commander_allowed_users` collection with `isAdmin: true` to get Developer mode on login
+- Consider adding push notifications via Firebase Cloud Messaging for task completion alerts
 - Register iOS app in Firebase Console (bundle ID: com.everbot.mobile-commander) and download the real GoogleService-Info.plist
-- Add Google Sign-In SDK if you want proper Google auth (currently falls back to anonymous)
-- Set DEVELOPMENT_TEAM in project.yml if you want to run on a physical device
-- Push to GitHub remote
-- Consider adding push notifications for task completion (Firebase Cloud Messaging)
 
 **Files changed**:
-- `project.yml` — XcodeGen project spec (iOS 17+, Firebase dependencies)
-- `Resources/Info.plist` — iOS app config
-- `Resources/GoogleService-Info.plist` — Firebase config (needs real values from Firebase Console)
-- `Sources/App/MobileCommanderApp.swift` — App entry point with mode switching
-- `Sources/App/AppMode.swift` — Developer/Owner mode enum
-- `Sources/Design/DesignSystem.swift` — Color palette, typography, card components (Palmr-inspired)
-- `Sources/Models/Task.swift` — Task model matching Firestore schema
-- `Sources/Models/Worker.swift` — Worker model
-- `Sources/Services/AuthService.swift` — Firebase Auth wrapper
-- `Sources/Services/FirestoreService.swift` — Real-time Firestore listener for tasks/workers/chat/output
-- `Sources/Views/Developer/DeveloperTabView.swift` — 5-tab developer interface
-- `Sources/Views/Developer/DashboardView.swift` — Stats grid, workers, recent tasks
-- `Sources/Views/Developer/TaskListView.swift` — Filterable task list with search
-- `Sources/Views/Developer/TaskDetailView.swift` — Full task view with output/chat/result tabs
-- `Sources/Views/Developer/CreateTaskView.swift` — Full task creation form
-- `Sources/Views/Developer/WorkersView.swift` — Worker fleet monitoring
-- `Sources/Views/Developer/SettingsView.swift` — Account, mode switch, app info
-- `Sources/Views/Owner/OwnerTabView.swift` — 3-tab simplified interface
-- `Sources/Views/Owner/OwnerHomeView.swift` — Status dashboard for owners
-- `Sources/Views/Owner/OwnerRequestView.swift` — Template-based task creation (Bug Fix, New Feature, UI Change, Content Update)
-- `Sources/Views/Owner/OwnerStatusView.swift` — Project progress overview
-- `Sources/Views/Shared/LoginView.swift` — Sign-in screen
-- `Sources/Views/Shared/ModeSwitcher.swift` — Mode selection sheet
-- `.gitignore` — Standard iOS gitignore
+- `Sources/App/MobileCommanderApp.swift` — Added splash screen, account-based mode switching, effective mode calculation
+- `Sources/Models/Worker.swift` — Added `restartRequested` field, `timeSinceHeartbeat` computed property
+- `Sources/Models/Notification.swift` — New: notification model and type enum
+- `Sources/Services/FirestoreService.swift` — Major expansion: notifications listener, task CRUD (edit, delete, approve/reject), bulk operations, worker restart, computed properties
+- `Sources/Views/Developer/DeveloperTabView.swift` — Added Activity tab (5 tabs total)
+- `Sources/Views/Developer/DashboardView.swift` — Notification bell, review section, pull-to-refresh, NavigationStack
+- `Sources/Views/Developer/TaskListView.swift` — Project filter, sort options, bulk select mode
+- `Sources/Views/Developer/TaskDetailView.swift` — Edit sheet, delete, approve/reject review, status change menu, text selection
+- `Sources/Views/Developer/CreateTaskView.swift` — Project picker, worker picker, dependency field
+- `Sources/Views/Developer/WorkersView.swift` — Restart button with confirmation
+- `Sources/Views/Developer/SettingsView.swift` — System stats, notification link, role display
+- `Sources/Views/Developer/NotificationsView.swift` — New: notification list with swipe-to-read, mark all read
+- `Sources/Views/Developer/ActivityView.swift` — New: today summary, failed tasks, completed history
+- `Sources/Views/Owner/OwnerTabView.swift` — Cleaned up
+- `Sources/Views/Owner/OwnerHomeView.swift` — Palmr-inspired card layout, sticky top bar, queue section, greeting
+- `Sources/Views/Owner/OwnerRequestView.swift` — Added performance and testing templates (6 total)
+- `Sources/Views/Owner/OwnerStatusView.swift` — Workers status card, per-project progress bars
+- `Sources/Views/Owner/OwnerSettingsView.swift` — New: owner-specific settings with conditional dev mode switch
+- `Sources/Views/Shared/LoginView.swift` — Feature list card, loading state
+- `Sources/Views/Shared/ModeSwitcher.swift` — Admin requirement display, disabled state for non-admins
+- `MobileCommander.xcodeproj/project.pbxproj` — Regenerated via xcodegen to include all new files

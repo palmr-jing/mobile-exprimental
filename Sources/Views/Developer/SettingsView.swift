@@ -2,11 +2,13 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var authService: AuthService
+    @EnvironmentObject var firestoreService: FirestoreService
     @AppStorage("appMode") private var appMode: AppMode = .developer
     @State private var showModeSwitcher = false
+    @State private var showNotifications = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 Section("Account") {
                     if let user = authService.user {
@@ -21,6 +23,13 @@ struct SettingsView: View {
                                     .font(DS.Typography.caption)
                                     .foregroundStyle(DS.Colors.secondary)
                             }
+                        }
+
+                        HStack {
+                            Text("Role")
+                            Spacer()
+                            Text(authService.isAdmin ? "Admin" : "User")
+                                .foregroundStyle(DS.Colors.secondary)
                         }
                     }
 
@@ -46,6 +55,48 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("System") {
+                    NavigationLink {
+                        NotificationsView()
+                            .environmentObject(firestoreService)
+                    } label: {
+                        HStack {
+                            Text("Notifications")
+                            Spacer()
+                            if firestoreService.unreadCount > 0 {
+                                Text("\(firestoreService.unreadCount)")
+                                    .font(DS.Typography.small)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(DS.Colors.red)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+
+                    HStack {
+                        Text("Tasks")
+                        Spacer()
+                        Text("\(firestoreService.tasks.count)")
+                            .foregroundStyle(DS.Colors.secondary)
+                    }
+
+                    HStack {
+                        Text("Workers")
+                        Spacer()
+                        Text("\(firestoreService.workers.filter(\.isOnline).count) online")
+                            .foregroundStyle(DS.Colors.secondary)
+                    }
+
+                    HStack {
+                        Text("Total Cost")
+                        Spacer()
+                        Text(String(format: "$%.2f", firestoreService.totalCost))
+                            .foregroundStyle(DS.Colors.secondary)
+                    }
+                }
+
                 Section("Info") {
                     HStack {
                         Text("Version")
@@ -54,9 +105,9 @@ struct SettingsView: View {
                             .foregroundStyle(DS.Colors.secondary)
                     }
                     HStack {
-                        Text("Firebase Project")
+                        Text("Build")
                         Spacer()
-                        Text("fir-web-codelab-8ace9")
+                        Text("iOS \(appMode.rawValue)")
                             .font(DS.Typography.caption)
                             .foregroundStyle(DS.Colors.secondary)
                     }

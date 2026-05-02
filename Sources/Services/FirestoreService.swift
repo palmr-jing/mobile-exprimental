@@ -6,21 +6,27 @@ import Combine
 class FirestoreService: ObservableObject {
     @Published var tasks: [CommanderTask] = []
     @Published var workers: [CommanderWorker] = []
+    @Published var notifications: [CommanderNotification] = []
     @Published var isLoading = true
+    @Published var unreadCount = 0
 
     private let db = Firestore.firestore()
     private var taskListener: ListenerRegistration?
     private var workerListener: ListenerRegistration?
+    private var notificationListener: ListenerRegistration?
 
     init() {
         listenToTasks()
         listenToWorkers()
+        listenToNotifications()
     }
+
+    // MARK: - Listeners
 
     func listenToTasks() {
         taskListener = db.collection("commander_tasks")
             .order(by: "created_at", descending: true)
-            .limit(to: 100)
+            .limit(to: 200)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let docs = snapshot?.documents else { return }
                 Task { @MainActor in
@@ -40,9 +46,24 @@ class FirestoreService: ObservableObject {
             }
     }
 
-    func createTask(project: String, path: String, task: String, description: String, priority: Int) async throws {
+    func listenToNotifications() {
+        notificationListener = db.collection("commander_notifications")
+            .order(by: "created_at", descending: true)
+            .limit(to: 50)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let docs = snapshot?.documents else { return }
+                Task { @MainActor in
+                    self?.notifications = docs.compactMap { Self.parseNotification($0) }
+                    self?.unreadCount = self?.notifications.filter { !$0.read }.count ?? 0
+                }
+            }
+    }
+
+    // MARK: - Task CRUD
+
+    func createTask(project: String, path: String, task: String, description: String, priority: Int, assignedWorker: String? = nil, dependsOn: [Int] = []) async throws {
         let maxNumId = tasks.map(\.numId).max() ?? 0
-        let data: [String: Any] = [
+        var data: [String: Any] = [
             "num_id": maxNumId + 1,
             "project": project,
             "path": path,
@@ -50,19 +71,43 @@ class FirestoreService: ObservableObject {
             "description": description,
             "status": "pending",
             "priority": priority,
-            "depends_on": [] as [Int],
+            "depends_on": dependsOn,
             "allow_parallel": false,
             "created_at": FieldValue.serverTimestamp(),
             "updated_at": FieldValue.serverTimestamp()
         ]
+        if let worker = assignedWorker {
+            data["assigned_worker"] = worker
+        }
         try await db.collection("commander_tasks").addDocument(data: data)
     }
 
     func updateTaskStatus(taskId: String, status: TaskStatus) async throws {
-        try await db.collection("commander_tasks").document(taskId).updateData([
+        var data: [String: Any] = [
             "status": status.rawValue,
             "updated_at": FieldValue.serverTimestamp()
+        ]
+        if status == .done {
+            data["completed_at"] = FieldValue.serverTimestamp()
+        }
+        try await db.collection("commander_tasks").document(taskId).updateData(data)
+    }
+
+    func updateTaskPriority(taskId: String, priority: Int) async throws {
+        try await db.collection("commander_tasks").document(taskId).updateData([
+            "priority": priority,
+            "updated_at": FieldValue.serverTimestamp()
         ])
+    }
+
+    func updateTaskFields(taskId: String, fields: [String: Any]) async throws {
+        var data = fields
+        data["updated_at"] = FieldValue.serverTimestamp()
+        try await db.collection("commander_tasks").document(taskId).updateData(data)
+    }
+
+    func deleteTask(taskId: String) async throws {
+        try await db.collection("commander_tasks").document(taskId).delete()
     }
 
     func retryTask(taskId: String) async throws {
@@ -78,6 +123,65 @@ class FirestoreService: ObservableObject {
             "updated_at": FieldValue.serverTimestamp()
         ])
     }
+
+    func approveTask(taskId: String) async throws {
+        try await db.collection("commander_tasks").document(taskId).updateData([
+            "review_status": "approved",
+            "updated_at": FieldValue.serverTimestamp()
+        ])
+    }
+
+    func rejectTask(taskId: String) async throws {
+        try await db.collection("commander_tasks").document(taskId).updateData([
+            "review_status": "rejected",
+            "status": "pending",
+            "updated_at": FieldValue.serverTimestamp()
+        ])
+    }
+
+    // MARK: - Bulk Operations
+
+    func bulkUpdateStatus(taskIds: [String], status: TaskStatus) async throws {
+        let batch = db.batch()
+        for taskId in taskIds {
+            let ref = db.collection("commander_tasks").document(taskId)
+            batch.updateData([
+                "status": status.rawValue,
+                "updated_at": FieldValue.serverTimestamp()
+            ], forDocument: ref)
+        }
+        try await batch.commit()
+    }
+
+    func bulkRetry(taskIds: [String]) async throws {
+        let batch = db.batch()
+        for taskId in taskIds {
+            let ref = db.collection("commander_tasks").document(taskId)
+            batch.updateData([
+                "status": "pending",
+                "claimed_by": FieldValue.delete(),
+                "claimed_at": FieldValue.delete(),
+                "started_at": FieldValue.delete(),
+                "completed_at": FieldValue.delete(),
+                "exit_code": FieldValue.delete(),
+                "error": FieldValue.delete(),
+                "review_status": FieldValue.delete(),
+                "updated_at": FieldValue.serverTimestamp()
+            ], forDocument: ref)
+        }
+        try await batch.commit()
+    }
+
+    // MARK: - Workers
+
+    func restartWorker(workerId: String) async throws {
+        try await db.collection("commander_workers").document(workerId).updateData([
+            "restart_requested": true,
+            "restart_requested_at": FieldValue.serverTimestamp()
+        ])
+    }
+
+    // MARK: - Chat & Output
 
     func sendChatMessage(taskId: String, content: String) async throws {
         let data: [String: Any] = [
@@ -129,6 +233,44 @@ class FirestoreService: ObservableObject {
             }
     }
 
+    // MARK: - Notifications
+
+    func markNotificationRead(notificationId: String) async throws {
+        try await db.collection("commander_notifications").document(notificationId).updateData([
+            "read": true
+        ])
+    }
+
+    func markAllNotificationsRead() async throws {
+        let unread = notifications.filter { !$0.read }
+        let batch = db.batch()
+        for notification in unread {
+            let ref = db.collection("commander_notifications").document(notification.id)
+            batch.updateData(["read": true], forDocument: ref)
+        }
+        try await batch.commit()
+    }
+
+    // MARK: - Computed Properties
+
+    var projects: [String] {
+        Array(Set(tasks.map(\.project))).sorted()
+    }
+
+    var tasksByProject: [String: [CommanderTask]] {
+        Dictionary(grouping: tasks, by: \.project)
+    }
+
+    func tasksForStatus(_ status: TaskStatus) -> [CommanderTask] {
+        tasks.filter { $0.effectiveStatus == status }
+    }
+
+    var totalCost: Double {
+        tasks.compactMap(\.costUsd).reduce(0, +)
+    }
+
+    // MARK: - Parsing
+
     private static func parseTask(_ doc: QueryDocumentSnapshot) -> CommanderTask? {
         let data = doc.data()
         let statusStr = data["status"] as? String ?? "pending"
@@ -179,12 +321,27 @@ class FirestoreService: ObservableObject {
             tasksCompleted: data["tasks_completed"] as? Int ?? 0,
             totalCost: data["total_cost"] as? Double ?? 0,
             lastHeartbeat: (data["last_heartbeat"] as? Timestamp)?.dateValue(),
-            activeTaskCount: data["active_task_count"] as? Int ?? 0
+            activeTaskCount: data["active_task_count"] as? Int ?? 0,
+            restartRequested: data["restart_requested"] as? Bool ?? false
+        )
+    }
+
+    private static func parseNotification(_ doc: QueryDocumentSnapshot) -> CommanderNotification? {
+        let data = doc.data()
+        return CommanderNotification(
+            id: doc.documentID,
+            message: data["message"] as? String ?? "",
+            type: NotificationType(rawValue: data["type"] as? String ?? "info") ?? .info,
+            read: data["read"] as? Bool ?? false,
+            taskId: data["task_id"] as? String,
+            workerId: data["worker_id"] as? String,
+            createdAt: (data["created_at"] as? Timestamp)?.dateValue()
         )
     }
 
     deinit {
         taskListener?.remove()
         workerListener?.remove()
+        notificationListener?.remove()
     }
 }

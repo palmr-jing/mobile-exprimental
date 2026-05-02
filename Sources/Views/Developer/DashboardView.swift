@@ -2,12 +2,16 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject var firestoreService: FirestoreService
+    @State private var showNotifications = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     statsGrid
+                    if !firestoreService.tasksForStatus(.needsReview).isEmpty {
+                        reviewSection
+                    }
                     workersSection
                     recentTasksSection
                 }
@@ -15,6 +19,35 @@ struct DashboardView: View {
             }
             .background(DS.Colors.background.ignoresSafeArea())
             .navigationTitle("Commander")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showNotifications = true
+                    } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "bell")
+                                .foregroundStyle(DS.Colors.text)
+                            if firestoreService.unreadCount > 0 {
+                                Text("\(firestoreService.unreadCount)")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(3)
+                                    .background(DS.Colors.red)
+                                    .clipShape(Circle())
+                                    .offset(x: 6, y: -6)
+                            }
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showNotifications) {
+                NotificationsView()
+                    .environmentObject(firestoreService)
+            }
+            .refreshable {
+                firestoreService.listenToTasks()
+                firestoreService.listenToWorkers()
+            }
         }
     }
 
@@ -26,27 +59,69 @@ struct DashboardView: View {
         ], spacing: DS.Spacing.md) {
             StatCard(
                 title: "Running",
-                value: "\(firestoreService.tasks.filter { $0.status == .running }.count)",
+                value: "\(firestoreService.tasksForStatus(.running).count)",
                 color: DS.Colors.amber
             )
             StatCard(
                 title: "Pending",
-                value: "\(firestoreService.tasks.filter { $0.status == .pending }.count)",
+                value: "\(firestoreService.tasksForStatus(.pending).count)",
                 color: DS.Colors.blue
             )
             StatCard(
+                title: "Review",
+                value: "\(firestoreService.tasksForStatus(.needsReview).count)",
+                color: DS.Colors.amber
+            )
+            StatCard(
                 title: "Done",
-                value: "\(firestoreService.tasks.filter { $0.status == .done }.count)",
+                value: "\(firestoreService.tasksForStatus(.done).count)",
                 color: DS.Colors.green
             )
+            StatCard(
+                title: "Failed",
+                value: "\(firestoreService.tasksForStatus(.failed).count)",
+                color: DS.Colors.red
+            )
+            StatCard(
+                title: "Cost",
+                value: String(format: "$%.2f", firestoreService.totalCost),
+                color: DS.Colors.text
+            )
+        }
+    }
+
+    private var reviewSection: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            HStack {
+                Image(systemName: "eye.circle.fill")
+                    .foregroundStyle(DS.Colors.amber)
+                Text("Needs Review")
+                    .font(DS.Typography.headline)
+                    .foregroundStyle(DS.Colors.text)
+                Spacer()
+            }
+
+            ForEach(firestoreService.tasksForStatus(.needsReview).prefix(3)) { task in
+                NavigationLink(destination: TaskDetailView(task: task)) {
+                    TaskRow(task: task)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
     private var workersSection: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
-            Text("Workers")
-                .font(DS.Typography.headline)
-                .foregroundStyle(DS.Colors.text)
+            HStack {
+                Text("Workers")
+                    .font(DS.Typography.headline)
+                    .foregroundStyle(DS.Colors.text)
+                Spacer()
+                let onlineCount = firestoreService.workers.filter(\.isOnline).count
+                Text("\(onlineCount) online")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(onlineCount > 0 ? DS.Colors.green : DS.Colors.secondary)
+            }
 
             if firestoreService.workers.isEmpty {
                 CommanderCard {
@@ -81,7 +156,7 @@ struct DashboardView: View {
                 .foregroundStyle(DS.Colors.accent)
             }
 
-            ForEach(firestoreService.tasks.prefix(5)) { task in
+            ForEach(firestoreService.tasks.prefix(8)) { task in
                 NavigationLink(destination: TaskDetailView(task: task)) {
                     TaskRow(task: task)
                 }
@@ -100,8 +175,10 @@ struct StatCard: View {
         CommanderCard {
             VStack(spacing: DS.Spacing.xs) {
                 Text(value)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundStyle(color)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
                 Text(title)
                     .font(DS.Typography.caption)
                     .foregroundStyle(DS.Colors.secondary)
@@ -133,7 +210,7 @@ struct WorkerRow: View {
                 Spacer()
 
                 if worker.totalCost > 0 {
-                    Text("$\(worker.totalCost, specifier: "%.2f")")
+                    Text(String(format: "$%.2f", worker.totalCost))
                         .font(DS.Typography.caption)
                         .foregroundStyle(DS.Colors.secondary)
                 }

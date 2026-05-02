@@ -1,16 +1,21 @@
 import SwiftUI
 
 struct ModeSwitcher: View {
+    @EnvironmentObject var authService: AuthService
     @AppStorage("appMode") private var appMode: AppMode = .developer
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 ForEach(AppMode.allCases, id: \.self) { mode in
+                    let isDisabled = mode == .developer && !authService.isAdmin
+
                     Button {
-                        appMode = mode
-                        dismiss()
+                        if !isDisabled {
+                            appMode = mode
+                            dismiss()
+                        }
                     } label: {
                         HStack(spacing: DS.Spacing.md) {
                             Image(systemName: mode.icon)
@@ -21,10 +26,15 @@ struct ModeSwitcher: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(mode.displayName)
                                     .font(DS.Typography.subheading)
-                                    .foregroundStyle(DS.Colors.text)
+                                    .foregroundStyle(isDisabled ? DS.Colors.secondary : DS.Colors.text)
                                 Text(mode.description)
                                     .font(DS.Typography.caption)
                                     .foregroundStyle(DS.Colors.secondary)
+                                if isDisabled {
+                                    Text("Admin access required")
+                                        .font(DS.Typography.small)
+                                        .foregroundStyle(DS.Colors.red)
+                                }
                             }
 
                             Spacer()
@@ -36,6 +46,7 @@ struct ModeSwitcher: View {
                         }
                         .padding(.vertical, DS.Spacing.xs)
                     }
+                    .disabled(isDisabled)
                 }
             }
             .navigationTitle("Switch Mode")

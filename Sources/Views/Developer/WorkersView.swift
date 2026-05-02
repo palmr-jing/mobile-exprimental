@@ -4,7 +4,7 @@ struct WorkersView: View {
     @EnvironmentObject var firestoreService: FirestoreService
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     summaryCard
@@ -24,6 +24,7 @@ struct WorkersView: View {
                             Text("Start a worker with: cd worker && node index.js")
                                 .font(DS.Typography.caption)
                                 .foregroundStyle(DS.Colors.secondary)
+                                .multilineTextAlignment(.center)
                         }
                         .padding(.top, 60)
                     }
@@ -32,6 +33,9 @@ struct WorkersView: View {
             }
             .background(DS.Colors.background.ignoresSafeArea())
             .navigationTitle("Workers")
+            .refreshable {
+                firestoreService.listenToWorkers()
+            }
         }
     }
 
@@ -59,7 +63,7 @@ struct WorkersView: View {
 
                 VStack {
                     let cost = firestoreService.workers.reduce(0.0) { $0 + $1.totalCost }
-                    Text("$\(cost, specifier: "%.2f")")
+                    Text(String(format: "$%.2f", cost))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                     Text("Total Cost")
@@ -74,6 +78,8 @@ struct WorkersView: View {
 
 struct WorkerDetailCard: View {
     let worker: CommanderWorker
+    @EnvironmentObject var firestoreService: FirestoreService
+    @State private var showRestartAlert = false
 
     var body: some View {
         CommanderCard {
@@ -86,9 +92,15 @@ struct WorkerDetailCard: View {
                         .font(DS.Typography.subheading)
                         .foregroundStyle(DS.Colors.text)
                     Spacer()
-                    Text(worker.isOnline ? "Online" : "Offline")
-                        .font(DS.Typography.caption)
-                        .foregroundStyle(worker.isOnline ? DS.Colors.green : DS.Colors.secondary)
+                    if worker.restartRequested {
+                        Text("Restarting...")
+                            .font(DS.Typography.small)
+                            .foregroundStyle(DS.Colors.amber)
+                    } else {
+                        Text(worker.isOnline ? "Online" : "Offline")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(worker.isOnline ? DS.Colors.green : DS.Colors.secondary)
+                    }
                 }
 
                 HStack(spacing: DS.Spacing.lg) {
@@ -114,18 +126,40 @@ struct WorkerDetailCard: View {
                         Text("Cost")
                             .font(DS.Typography.caption)
                             .foregroundStyle(DS.Colors.secondary)
-                        Text("$\(worker.totalCost, specifier: "%.2f")")
+                        Text(String(format: "$%.2f", worker.totalCost))
                             .font(DS.Typography.subheading)
                             .foregroundStyle(DS.Colors.text)
                     }
                 }
 
-                if let heartbeat = worker.lastHeartbeat {
-                    Text("Last seen: \(heartbeat, style: .relative) ago")
-                        .font(DS.Typography.caption)
-                        .foregroundStyle(DS.Colors.secondary)
+                HStack {
+                    if let heartbeat = worker.lastHeartbeat {
+                        Text("Last seen: \(heartbeat, style: .relative) ago")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.secondary)
+                    }
+
+                    Spacer()
+
+                    if worker.isOnline {
+                        Button {
+                            showRestartAlert = true
+                        } label: {
+                            Label("Restart", systemImage: "arrow.clockwise")
+                                .font(DS.Typography.small)
+                                .foregroundStyle(DS.Colors.amber)
+                        }
+                    }
                 }
             }
+        }
+        .alert("Restart Worker?", isPresented: $showRestartAlert) {
+            Button("Restart", role: .destructive) {
+                Task { try? await firestoreService.restartWorker(workerId: worker.id) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will restart \(worker.hostname). Active tasks may be interrupted.")
         }
     }
 }

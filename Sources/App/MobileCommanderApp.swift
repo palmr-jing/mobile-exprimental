@@ -12,18 +12,52 @@ struct MobileCommanderApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if authService.isSignedIn {
-                switch appMode {
-                case .developer:
-                    DeveloperTabView()
-                        .environmentObject(authService)
-                case .owner:
-                    OwnerTabView()
+            Group {
+                if authService.isLoading {
+                    splashView
+                } else if authService.isSignedIn {
+                    mainContent
+                } else {
+                    LoginView()
                         .environmentObject(authService)
                 }
-            } else {
-                LoginView()
-                    .environmentObject(authService)
+            }
+            .onChange(of: authService.isAdmin) { _, isAdmin in
+                if !isAdmin {
+                    appMode = .owner
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var mainContent: some View {
+        switch effectiveMode {
+        case .developer:
+            DeveloperTabView()
+                .environmentObject(authService)
+        case .owner:
+            OwnerTabView()
+                .environmentObject(authService)
+        }
+    }
+
+    private var effectiveMode: AppMode {
+        if !authService.isAdmin {
+            return .owner
+        }
+        return appMode
+    }
+
+    private var splashView: some View {
+        ZStack {
+            DS.Colors.background.ignoresSafeArea()
+            VStack(spacing: DS.Spacing.md) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 48))
+                    .foregroundStyle(DS.Colors.accent)
+                ProgressView()
+                    .tint(DS.Colors.accent)
             }
         }
     }

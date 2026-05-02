@@ -2,7 +2,6 @@ import SwiftUI
 
 struct OwnerTabView: View {
     @StateObject private var firestoreService = FirestoreService()
-    @State private var showModeSwitcher = false
 
     var body: some View {
         TabView {

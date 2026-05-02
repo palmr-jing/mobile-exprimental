@@ -26,9 +26,9 @@ struct DeveloperTabView: View {
                     Label("Workers", systemImage: "server.rack")
                 }
 
-            SettingsView()
+            ActivityView()
                 .tabItem {
-                    Label("Settings", systemImage: "gear")
+                    Label("Activity", systemImage: "clock.arrow.circlepath")
                 }
         }
         .tint(DS.Colors.accent)

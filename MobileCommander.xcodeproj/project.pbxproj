@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		018E5E2AF194EB327C1180A5 /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BACCBDE8D19530F2AD66C6 /* ActivityView.swift */; };
 		16D43CB1B0A61BA5273A0289 /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */; };
 		1CAF88F53D8E141A28DE0857 /* OwnerTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB5399961D1B4BB73889D26 /* OwnerTabView.swift */; };
 		1E54B0C78BED35091B856A97 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A58536617D0385FF7734F176 /* AuthService.swift */; };
@@ -21,11 +22,14 @@
 		68A6DC81E2933D7B9A46CF17 /* OwnerRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429C44E0037C948917C776C1 /* OwnerRequestView.swift */; };
 		6A2CA38420C310E87557F56E /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24300106A0235189A0CC811B /* TaskDetailView.swift */; };
 		6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838DD355391ACBF64F0A85D /* SettingsView.swift */; };
+		83ECD1F79337DD4B969D0BDF /* OwnerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3486E727D4C24058BF48CA56 /* OwnerSettingsView.swift */; };
 		877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ADB7F04AD144EB3FF98D82 /* CreateTaskView.swift */; };
+		8DAC9A49DDE5C2C215463E16 /* Notification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41696D0C7F60C28777A0431E /* Notification.swift */; };
 		95A43C9BC9C29C67DCEEFC92 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */; };
 		9848556BEA38192F59464B70 /* OwnerHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F71C261EE85889C087FD94 /* OwnerHomeView.swift */; };
 		9C6FD92F6ABFDA4FBF5DBFA8 /* WorkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD25D1286ED63727B1D6D1A /* WorkersView.swift */; };
 		A7AE114261AC579849910ABA /* AppMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD75F006B9819FDCB8065D7 /* AppMode.swift */; };
+		B2A7BD02194AFC2ADA7BB55C /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF87F9CBBA1DE6B021D22EE /* NotificationsView.swift */; };
 		BC7B9953744ED97CE82C0C7A /* ModeSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */; };
 		CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE92C9AA042B981A92E1F41A /* LoginView.swift */; };
 		EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */; };
@@ -39,7 +43,11 @@
 		0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeSwitcher.swift; sourceTree = "<group>"; };
 		0FD25D1286ED63727B1D6D1A /* WorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersView.swift; sourceTree = "<group>"; };
 		24300106A0235189A0CC811B /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
+		26BACCBDE8D19530F2AD66C6 /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 		2838DD355391ACBF64F0A85D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		3486E727D4C24058BF48CA56 /* OwnerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerSettingsView.swift; sourceTree = "<group>"; };
+		3BF87F9CBBA1DE6B021D22EE /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
+		41696D0C7F60C28777A0431E /* Notification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notification.swift; sourceTree = "<group>"; };
 		429C44E0037C948917C776C1 /* OwnerRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerRequestView.swift; sourceTree = "<group>"; };
 		4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		62CE21C127D8B0CBA0629C76 /* Worker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Worker.swift; sourceTree = "<group>"; };
@@ -75,6 +83,7 @@
 			children = (
 				01F71C261EE85889C087FD94 /* OwnerHomeView.swift */,
 				429C44E0037C948917C776C1 /* OwnerRequestView.swift */,
+				3486E727D4C24058BF48CA56 /* OwnerSettingsView.swift */,
 				F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */,
 				FCB5399961D1B4BB73889D26 /* OwnerTabView.swift */,
 			);
@@ -84,9 +93,11 @@
 		1847F402583CAE8F4FE2564C /* Developer */ = {
 			isa = PBXGroup;
 			children = (
+				26BACCBDE8D19530F2AD66C6 /* ActivityView.swift */,
 				81ADB7F04AD144EB3FF98D82 /* CreateTaskView.swift */,
 				0DB11B856542D6EB45A86C10 /* DashboardView.swift */,
 				7E2D099B5A5F0E142DA7E3EA /* DeveloperTabView.swift */,
+				3BF87F9CBBA1DE6B021D22EE /* NotificationsView.swift */,
 				2838DD355391ACBF64F0A85D /* SettingsView.swift */,
 				24300106A0235189A0CC811B /* TaskDetailView.swift */,
 				BB596265733DE9F91A8E46AE /* TaskListView.swift */,
@@ -153,6 +164,7 @@
 		E4C5E4397FE4644B6570B2C7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				41696D0C7F60C28777A0431E /* Notification.swift */,
 				63F83E0B17B9ADE9231A7B26 /* Task.swift */,
 				62CE21C127D8B0CBA0629C76 /* Worker.swift */,
 			);
@@ -242,6 +254,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				018E5E2AF194EB327C1180A5 /* ActivityView.swift in Sources */,
 				A7AE114261AC579849910ABA /* AppMode.swift in Sources */,
 				1E54B0C78BED35091B856A97 /* AuthService.swift in Sources */,
 				877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */,
@@ -252,8 +265,11 @@
 				CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */,
 				2E4A9B3A0875BB52D76782B9 /* MobileCommanderApp.swift in Sources */,
 				BC7B9953744ED97CE82C0C7A /* ModeSwitcher.swift in Sources */,
+				8DAC9A49DDE5C2C215463E16 /* Notification.swift in Sources */,
+				B2A7BD02194AFC2ADA7BB55C /* NotificationsView.swift in Sources */,
 				9848556BEA38192F59464B70 /* OwnerHomeView.swift in Sources */,
 				68A6DC81E2933D7B9A46CF17 /* OwnerRequestView.swift in Sources */,
+				83ECD1F79337DD4B969D0BDF /* OwnerSettingsView.swift in Sources */,
 				EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */,
 				1CAF88F53D8E141A28DE0857 /* OwnerTabView.swift in Sources */,
 				6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */,

@@ -8,7 +8,7 @@ struct OwnerRequestView: View {
     @State private var isSubmitting = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.xl) {
                     headerSection
@@ -35,13 +35,18 @@ struct OwnerRequestView: View {
 
     private var headerSection: some View {
         VStack(spacing: DS.Spacing.sm) {
+            Image(systemName: "wand.and.stars")
+                .font(.system(size: 36))
+                .foregroundStyle(DS.Colors.accent)
             Text("What do you need?")
                 .font(DS.Typography.headline)
                 .foregroundStyle(DS.Colors.text)
             Text("Pick a category and describe what you'd like done.")
                 .font(DS.Typography.body)
                 .foregroundStyle(DS.Colors.secondary)
+                .multilineTextAlignment(.center)
         }
+        .padding(.top, DS.Spacing.md)
     }
 
     private var templateGrid: some View {
@@ -72,7 +77,7 @@ struct OwnerRequestView: View {
             }
 
             TextEditor(text: $customDescription)
-                .frame(minHeight: 100)
+                .frame(minHeight: 120)
                 .padding(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.Radius.sm)
@@ -135,6 +140,8 @@ enum RequestTemplate: String, CaseIterable, Identifiable {
     case newFeature
     case uiChange
     case contentUpdate
+    case performance
+    case testing
 
     var id: String { rawValue }
 
@@ -144,6 +151,8 @@ enum RequestTemplate: String, CaseIterable, Identifiable {
         case .newFeature: return "New Feature"
         case .uiChange: return "UI Change"
         case .contentUpdate: return "Update Content"
+        case .performance: return "Speed Up"
+        case .testing: return "Add Tests"
         }
     }
 
@@ -153,6 +162,8 @@ enum RequestTemplate: String, CaseIterable, Identifiable {
         case .newFeature: return "sparkles"
         case .uiChange: return "paintbrush"
         case .contentUpdate: return "doc.text"
+        case .performance: return "gauge.with.dots.needle.67percent"
+        case .testing: return "checkmark.shield"
         }
     }
 
@@ -162,6 +173,8 @@ enum RequestTemplate: String, CaseIterable, Identifiable {
         case .newFeature: return DS.Colors.blue
         case .uiChange: return DS.Colors.accent
         case .contentUpdate: return DS.Colors.amber
+        case .performance: return DS.Colors.green
+        case .testing: return Color.purple
         }
     }
 
@@ -171,6 +184,8 @@ enum RequestTemplate: String, CaseIterable, Identifiable {
         case .newFeature: return "What feature do you want? How should it work?"
         case .uiChange: return "What should look different? Colors, layout, text?"
         case .contentUpdate: return "What text, images, or content needs to change?"
+        case .performance: return "What feels slow? Which screen or action?"
+        case .testing: return "Which feature should have tests? Any specific scenarios?"
         }
     }
 
@@ -180,6 +195,8 @@ enum RequestTemplate: String, CaseIterable, Identifiable {
         case .newFeature: return "This is a new feature request from the app owner. Implement it following existing patterns and conventions. Add basic tests."
         case .uiChange: return "This is a UI change request from the app owner. Make the visual changes as described. Ensure it looks good on different screen sizes."
         case .contentUpdate: return "This is a content update request from the app owner. Update the text/content as described. Ensure no formatting is broken."
+        case .performance: return "This is a performance improvement request. Profile the identified area, find bottlenecks, and optimize. Verify with before/after measurements."
+        case .testing: return "This is a testing request. Add unit and/or integration tests for the specified feature. Ensure good coverage of edge cases."
         }
     }
 
@@ -191,6 +208,8 @@ enum RequestTemplate: String, CaseIterable, Identifiable {
         case .newFeature: return 5
         case .uiChange: return 5
         case .contentUpdate: return 7
+        case .performance: return 4
+        case .testing: return 6
         }
     }
 }
@@ -210,6 +229,7 @@ struct TemplateCard: View {
                 Text(template.displayName)
                     .font(DS.Typography.subheading)
                     .foregroundStyle(DS.Colors.text)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, DS.Spacing.xl)

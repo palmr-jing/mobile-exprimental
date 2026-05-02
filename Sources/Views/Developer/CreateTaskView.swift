@@ -7,17 +7,34 @@ struct CreateTaskView: View {
     @State private var taskName = ""
     @State private var description = ""
     @State private var priority = 5
+    @State private var assignedWorker = ""
+    @State private var dependsOnText = ""
     @State private var showSuccess = false
     @State private var isSubmitting = false
+    @State private var showProjectPicker = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     VStack(alignment: .leading, spacing: DS.Spacing.md) {
                         FormField(label: "Project") {
-                            TextField("e.g. palmr-ios", text: $project)
-                                .textFieldStyle(.roundedBorder)
+                            HStack {
+                                TextField("e.g. palmr-ios", text: $project)
+                                    .textFieldStyle(.roundedBorder)
+                                if !firestoreService.projects.isEmpty {
+                                    Menu {
+                                        ForEach(firestoreService.projects, id: \.self) { proj in
+                                            Button(proj) {
+                                                project = proj
+                                            }
+                                        }
+                                    } label: {
+                                        Image(systemName: "chevron.down.circle")
+                                            .foregroundStyle(DS.Colors.accent)
+                                    }
+                                }
+                            }
                         }
 
                         FormField(label: "Working Directory") {
@@ -43,11 +60,58 @@ struct CreateTaskView: View {
                         }
 
                         FormField(label: "Priority (\(priority))") {
-                            Slider(value: Binding(
-                                get: { Double(priority) },
-                                set: { priority = Int($0) }
-                            ), in: 1...10, step: 1)
-                            .tint(DS.Colors.accent)
+                            HStack {
+                                Text("High")
+                                    .font(DS.Typography.caption)
+                                    .foregroundStyle(DS.Colors.red)
+                                Slider(value: Binding(
+                                    get: { Double(priority) },
+                                    set: { priority = Int($0) }
+                                ), in: 1...10, step: 1)
+                                .tint(DS.Colors.accent)
+                                Text("Low")
+                                    .font(DS.Typography.caption)
+                                    .foregroundStyle(DS.Colors.secondary)
+                            }
+                        }
+
+                        FormField(label: "Assigned Worker (optional)") {
+                            if firestoreService.workers.isEmpty {
+                                TextField("Worker hostname", text: $assignedWorker)
+                                    .textFieldStyle(.roundedBorder)
+                                    .autocorrectionDisabled()
+                                    .textInputAutocapitalization(.never)
+                            } else {
+                                Menu {
+                                    Button("None") { assignedWorker = "" }
+                                    ForEach(firestoreService.workers.filter(\.isOnline)) { worker in
+                                        Button(worker.hostname) {
+                                            assignedWorker = worker.hostname
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(assignedWorker.isEmpty ? "Select worker..." : assignedWorker)
+                                            .foregroundStyle(assignedWorker.isEmpty ? DS.Colors.secondary : DS.Colors.text)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundStyle(DS.Colors.secondary)
+                                    }
+                                    .padding(10)
+                                    .background(DS.Colors.surface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(DS.Colors.border, lineWidth: 1)
+                                    )
+                                }
+                            }
+                        }
+
+                        FormField(label: "Depends On (comma-separated IDs)") {
+                            TextField("e.g. 45, 46", text: $dependsOnText)
+                                .textFieldStyle(.roundedBorder)
+                                .keyboardType(.numbersAndPunctuation)
                         }
                     }
 
@@ -86,6 +150,12 @@ struct CreateTaskView: View {
         !project.isEmpty && !path.isEmpty && !taskName.isEmpty && !description.isEmpty
     }
 
+    private var parsedDependencies: [Int] {
+        dependsOnText
+            .split(separator: ",")
+            .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+    }
+
     private func submitTask() {
         isSubmitting = true
         Task {
@@ -95,7 +165,9 @@ struct CreateTaskView: View {
                     path: path,
                     task: taskName,
                     description: description,
-                    priority: priority
+                    priority: priority,
+                    assignedWorker: assignedWorker.isEmpty ? nil : assignedWorker,
+                    dependsOn: parsedDependencies
                 )
                 showSuccess = true
             } catch {
@@ -111,6 +183,8 @@ struct CreateTaskView: View {
         taskName = ""
         description = ""
         priority = 5
+        assignedWorker = ""
+        dependsOnText = ""
     }
 }
 

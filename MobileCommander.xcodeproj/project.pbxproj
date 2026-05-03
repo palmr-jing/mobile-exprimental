@@ -32,6 +32,7 @@
 		DB4363148D3900EEFAA0DB0C /* ProjectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ACBA1195835D92F2EB091A5 /* ProjectDetailView.swift */; };
 		EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */; };
 		F7FEE266AFA86EF39D63B6EA /* Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F83E0B17B9ADE9231A7B26 /* Task.swift */; };
+		FE0130D64E517F2B2734E9EB /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DA0A87C3BCF9883A3F744F1A /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,6 +55,7 @@
 		BB596265733DE9F91A8E46AE /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
 		BE92C9AA042B981A92E1F41A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
+		DA0A87C3BCF9883A3F744F1A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		EAD75F006B9819FDCB8065D7 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
 		F5A960B6DBF40C36DF2CD5AC /* MobileCommanderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileCommanderApp.swift; sourceTree = "<group>"; };
 		F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerStatusView.swift; sourceTree = "<group>"; };
@@ -83,6 +85,14 @@
 				FCB5399961D1B4BB73889D26 /* OwnerTabView.swift */,
 			);
 			path = Owner;
+			sourceTree = "<group>";
+		};
+		105199316A261F7818ABCA33 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				DA0A87C3BCF9883A3F744F1A /* GoogleService-Info.plist */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		1847F402583CAE8F4FE2564C /* Developer */ = {
@@ -142,6 +152,7 @@
 		AC33F41020B68452FF5E82E0 = {
 			isa = PBXGroup;
 			children = (
+				105199316A261F7818ABCA33 /* Resources */,
 				7503FC2177954D49E8911AC0 /* Sources */,
 				52A82F08451B9E6995504322 /* Products */,
 			);
@@ -191,6 +202,7 @@
 			buildConfigurationList = 5B63F1B23D41F742E526CFA1 /* Build configuration list for PBXNativeTarget "MobileCommander" */;
 			buildPhases = (
 				AB020F2A07A412D36EF9C0A1 /* Sources */,
+				E6B3F72C513F176487B323FC /* Resources */,
 				E4807AD4EC45819E83BD3DB7 /* Frameworks */,
 			);
 			buildRules = (
@@ -242,6 +254,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E6B3F72C513F176487B323FC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FE0130D64E517F2B2734E9EB /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		AB020F2A07A412D36EF9C0A1 /* Sources */ = {

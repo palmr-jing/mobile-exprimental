@@ -17,8 +17,10 @@ targets:
     platform: iOS
     sources:
       - Sources
-    resources:
-      - Resources
+      - path: Resources
+        buildPhase: resources
+        excludes:
+          - Info.plist
     settings:
       base:
         INFOPLIST_FILE: Resources/Info.plist

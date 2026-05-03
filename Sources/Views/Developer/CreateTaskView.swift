@@ -7,8 +7,19 @@ struct CreateTaskView: View {
     @State private var taskName = ""
     @State private var description = ""
     @State private var priority = 5
+    @State private var dependsOn = ""
+    @State private var assignedWorker = ""
+    @State private var allowParallel = false
     @State private var showSuccess = false
     @State private var isSubmitting = false
+
+    private var availableProjects: [String] {
+        Array(Set(firestoreService.tasks.map(\.project))).sorted()
+    }
+
+    private var availableWorkers: [String] {
+        firestoreService.workers.map(\.hostname)
+    }
 
     var body: some View {
         NavigationView {
@@ -18,6 +29,31 @@ struct CreateTaskView: View {
                         FormField(label: "Project") {
                             TextField("e.g. palmr-ios", text: $project)
                                 .textFieldStyle(.roundedBorder)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                        }
+
+                        if !availableProjects.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: DS.Spacing.sm) {
+                                    ForEach(availableProjects, id: \.self) { proj in
+                                        Button {
+                                            project = proj
+                                        } label: {
+                                            Text(proj)
+                                                .font(DS.Typography.small)
+                                                .foregroundStyle(project == proj ? .white : DS.Colors.text)
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 5)
+                                                .background(project == proj ? DS.Colors.accent : DS.Colors.surface)
+                                                .clipShape(Capsule())
+                                                .overlay(
+                                                    Capsule().stroke(DS.Colors.border, lineWidth: project == proj ? 0 : 0.5)
+                                                )
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         FormField(label: "Working Directory") {
@@ -49,6 +85,45 @@ struct CreateTaskView: View {
                             ), in: 1...10, step: 1)
                             .tint(DS.Colors.accent)
                         }
+
+                        FormField(label: "Depends On (task IDs, comma separated)") {
+                            TextField("e.g. 12, 15, 18", text: $dependsOn)
+                                .textFieldStyle(.roundedBorder)
+                                .keyboardType(.numbersAndPunctuation)
+                        }
+
+                        if !availableWorkers.isEmpty {
+                            FormField(label: "Assign Worker") {
+                                Picker("Worker", selection: $assignedWorker) {
+                                    Text("Auto (any worker)").tag("")
+                                    ForEach(availableWorkers, id: \.self) { worker in
+                                        Text(worker).tag(worker)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 4)
+                                .padding(.horizontal, 8)
+                                .background(DS.Colors.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(DS.Colors.border, lineWidth: 1)
+                                )
+                            }
+                        }
+
+                        Toggle(isOn: $allowParallel) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Allow Parallel Execution")
+                                    .font(DS.Typography.subheading)
+                                    .foregroundStyle(DS.Colors.text)
+                                Text("Let multiple workers run this task")
+                                    .font(DS.Typography.caption)
+                                    .foregroundStyle(DS.Colors.secondary)
+                            }
+                        }
+                        .tint(DS.Colors.accent)
                     }
 
                     Button {
@@ -86,6 +161,12 @@ struct CreateTaskView: View {
         !project.isEmpty && !path.isEmpty && !taskName.isEmpty && !description.isEmpty
     }
 
+    private func parseDependsOn() -> [Int] {
+        dependsOn
+            .split(separator: ",")
+            .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+    }
+
     private func submitTask() {
         isSubmitting = true
         Task {
@@ -95,7 +176,10 @@ struct CreateTaskView: View {
                     path: path,
                     task: taskName,
                     description: description,
-                    priority: priority
+                    priority: priority,
+                    dependsOn: parseDependsOn(),
+                    assignedWorker: assignedWorker.isEmpty ? nil : assignedWorker,
+                    allowParallel: allowParallel
                 )
                 showSuccess = true
             } catch {
@@ -111,6 +195,9 @@ struct CreateTaskView: View {
         taskName = ""
         description = ""
         priority = 5
+        dependsOn = ""
+        assignedWorker = ""
+        allowParallel = false
     }
 }
 

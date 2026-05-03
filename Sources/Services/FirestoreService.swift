@@ -40,9 +40,18 @@ class FirestoreService: ObservableObject {
             }
     }
 
-    func createTask(project: String, path: String, task: String, description: String, priority: Int) async throws {
+    func createTask(
+        project: String,
+        path: String,
+        task: String,
+        description: String,
+        priority: Int,
+        dependsOn: [Int] = [],
+        assignedWorker: String? = nil,
+        allowParallel: Bool = false
+    ) async throws {
         let maxNumId = tasks.map(\.numId).max() ?? 0
-        let data: [String: Any] = [
+        var data: [String: Any] = [
             "num_id": maxNumId + 1,
             "project": project,
             "path": path,
@@ -50,11 +59,14 @@ class FirestoreService: ObservableObject {
             "description": description,
             "status": "pending",
             "priority": priority,
-            "depends_on": [] as [Int],
-            "allow_parallel": false,
+            "depends_on": dependsOn,
+            "allow_parallel": allowParallel,
             "created_at": FieldValue.serverTimestamp(),
             "updated_at": FieldValue.serverTimestamp()
         ]
+        if let worker = assignedWorker {
+            data["assigned_worker"] = worker
+        }
         try await db.collection("commander_tasks").addDocument(data: data)
     }
 

@@ -3,11 +3,20 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var firestoreService: FirestoreService
 
+    private var projects: [(name: String, tasks: [CommanderTask])] {
+        let grouped = Dictionary(grouping: firestoreService.tasks, by: \.project)
+        return grouped
+            .map { (name: $0.key, tasks: $0.value) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     statsGrid
+                    overallProgress
+                    projectsSection
                     workersSection
                     recentTasksSection
                 }
@@ -22,6 +31,7 @@ struct DashboardView: View {
         LazyVGrid(columns: [
             GridItem(.flexible()),
             GridItem(.flexible()),
+            GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: DS.Spacing.md) {
             StatCard(
@@ -31,8 +41,13 @@ struct DashboardView: View {
             )
             StatCard(
                 title: "Pending",
-                value: "\(firestoreService.tasks.filter { $0.status == .pending }.count)",
+                value: "\(firestoreService.tasks.filter { $0.status == .pending || $0.status == .claimed }.count)",
                 color: DS.Colors.blue
+            )
+            StatCard(
+                title: "Review",
+                value: "\(firestoreService.tasks.filter { $0.effectiveStatus == .needsReview }.count)",
+                color: DS.Colors.amber
             )
             StatCard(
                 title: "Done",
@@ -42,11 +57,76 @@ struct DashboardView: View {
         }
     }
 
-    private var workersSection: some View {
+    private var overallProgress: some View {
+        let total = firestoreService.tasks.count
+        let done = firestoreService.tasks.filter { $0.status == .done }.count
+        let progress = total > 0 ? Double(done) / Double(total) : 0
+        let totalCost = firestoreService.tasks.compactMap(\.costUsd).reduce(0, +)
+
+        return CommanderDarkCard {
+            VStack(spacing: DS.Spacing.sm) {
+                HStack {
+                    Text("\(done)/\(total) tasks complete")
+                        .font(DS.Typography.subheading)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    if totalCost > 0 {
+                        Text("$\(totalCost, specifier: "%.2f") spent")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(.gray)
+                    }
+                }
+                ProgressView(value: progress)
+                    .tint(DS.Colors.green)
+            }
+        }
+    }
+
+    private var projectsSection: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
-            Text("Workers")
+            Text("Projects")
                 .font(DS.Typography.headline)
                 .foregroundStyle(DS.Colors.text)
+
+            if projects.isEmpty {
+                CommanderCard {
+                    HStack {
+                        Image(systemName: "folder")
+                            .foregroundStyle(DS.Colors.secondary)
+                        Text("No projects yet")
+                            .font(DS.Typography.body)
+                            .foregroundStyle(DS.Colors.secondary)
+                        Spacer()
+                    }
+                }
+            } else {
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: DS.Spacing.md) {
+                    ForEach(projects, id: \.name) { project in
+                        NavigationLink(destination: ProjectDetailView(projectName: project.name)) {
+                            ProjectCard(name: project.name, tasks: project.tasks)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private var workersSection: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            HStack {
+                Text("Workers")
+                    .font(DS.Typography.headline)
+                    .foregroundStyle(DS.Colors.text)
+                Spacer()
+                let onlineCount = firestoreService.workers.filter(\.isOnline).count
+                Text("\(onlineCount) online")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(onlineCount > 0 ? DS.Colors.green : DS.Colors.secondary)
+            }
 
             if firestoreService.workers.isEmpty {
                 CommanderCard {
@@ -100,13 +180,69 @@ struct StatCard: View {
         CommanderCard {
             VStack(spacing: DS.Spacing.xs) {
                 Text(value)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundStyle(color)
                 Text(title)
-                    .font(DS.Typography.caption)
+                    .font(DS.Typography.small)
                     .foregroundStyle(DS.Colors.secondary)
             }
             .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+struct ProjectCard: View {
+    let name: String
+    let tasks: [CommanderTask]
+
+    private var done: Int { tasks.filter { $0.status == .done }.count }
+    private var running: Int { tasks.filter { $0.status == .running }.count }
+    private var failed: Int { tasks.filter { $0.status == .failed }.count }
+    private var progress: Double { tasks.isEmpty ? 0 : Double(done) / Double(tasks.count) }
+
+    var body: some View {
+        CommanderCard {
+            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                HStack {
+                    Image(systemName: "folder.fill")
+                        .font(.caption)
+                        .foregroundStyle(DS.Colors.accent)
+                    Text(name)
+                        .font(DS.Typography.subheading)
+                        .foregroundStyle(DS.Colors.text)
+                        .lineLimit(1)
+                }
+
+                ProgressView(value: progress)
+                    .tint(DS.Colors.green)
+
+                HStack(spacing: DS.Spacing.sm) {
+                    Text("\(done)/\(tasks.count)")
+                        .font(DS.Typography.small)
+                        .foregroundStyle(DS.Colors.secondary)
+                    Spacer()
+                    if running > 0 {
+                        HStack(spacing: 2) {
+                            Circle()
+                                .fill(DS.Colors.amber)
+                                .frame(width: 6, height: 6)
+                            Text("\(running)")
+                                .font(DS.Typography.small)
+                                .foregroundStyle(DS.Colors.amber)
+                        }
+                    }
+                    if failed > 0 {
+                        HStack(spacing: 2) {
+                            Circle()
+                                .fill(DS.Colors.red)
+                                .frame(width: 6, height: 6)
+                            Text("\(failed)")
+                                .font(DS.Typography.small)
+                                .foregroundStyle(DS.Colors.red)
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -21,9 +21,9 @@ struct DeveloperTabView: View {
                     Label("New", systemImage: "plus.circle.fill")
                 }
 
-            WorkersView()
+            ReportsView()
                 .tabItem {
-                    Label("Workers", systemImage: "server.rack")
+                    Label("Reports", systemImage: "chart.bar")
                 }
 
             SettingsView()

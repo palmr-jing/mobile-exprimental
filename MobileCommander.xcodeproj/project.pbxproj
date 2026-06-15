@@ -41,6 +41,7 @@
 		851552C32CFDB516DD46F9AE /* NewChannelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E10E706E56CF2DCEAA20C1A /* NewChannelSheet.swift */; };
 		877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ADB7F04AD144EB3FF98D82 /* CreateTaskView.swift */; };
 		90A1E27820C011CC4FDBB8B7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8AFC93A31577FAFF6225C9CA /* GoogleSignInSwift */; };
+		92E7E5426B90EC57DAE44185 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A7809AA71F47C8B7C15CC08 /* Assets.xcassets */; };
 		95A43C9BC9C29C67DCEEFC92 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */; };
 		9674E937D3D672236E905B81 /* TestConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D360CC57BCCE6F73C6611B6 /* TestConfig.swift */; };
 		9848556BEA38192F59464B70 /* OwnerHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F71C261EE85889C087FD94 /* OwnerHomeView.swift */; };
@@ -88,6 +89,7 @@
 		01F71C261EE85889C087FD94 /* OwnerHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerHomeView.swift; sourceTree = "<group>"; };
 		04F5C36771C11A3914D8E066 /* PresenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceModels.swift; sourceTree = "<group>"; };
 		08270619DFD37905061EE766 /* MobileCommander.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MobileCommander.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A7809AA71F47C8B7C15CC08 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0DB11B856542D6EB45A86C10 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeSwitcher.swift; sourceTree = "<group>"; };
 		0FD25D1286ED63727B1D6D1A /* WorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersView.swift; sourceTree = "<group>"; };
@@ -173,6 +175,7 @@
 		105199316A261F7818ABCA33 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				0A7809AA71F47C8B7C15CC08 /* Assets.xcassets */,
 				DA0A87C3BCF9883A3F744F1A /* GoogleService-Info.plist */,
 			);
 			path = Resources;
@@ -454,6 +457,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				92E7E5426B90EC57DAE44185 /* Assets.xcassets in Resources */,
 				FE0130D64E517F2B2734E9EB /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -567,7 +571,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.palmr.emma;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -744,7 +748,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.palmr.emma;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

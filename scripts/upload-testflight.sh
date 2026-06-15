@@ -17,6 +17,14 @@ ASC_KEY_PATH="${ASC_KEY_PATH:-$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_
 TEAM_ID="${TEAM_ID:-9SCSBH976W}"
 : "${ASC_ISSUER_ID:?Set ASC_ISSUER_ID (App Store Connect > Users and Access > Integrations > Keys > Issuer ID)}"
 
+# Unlock the permanent signing keychain (holds the Apple Distribution cert+key).
+# Survives reboots but locks on boot, so unlock it before codesign runs.
+# Password defaults to 'palmr'; override with SIGNING_KC_PW.
+SIGN_KC="$HOME/Library/Keychains/palmr-signing.keychain-db"
+if [ -f "$SIGN_KC" ]; then
+  security unlock-keychain -p "${SIGNING_KC_PW:-palmr}" "$SIGN_KC" 2>/dev/null || true
+fi
+
 ARCHIVE="build/MobileCommander.xcarchive"
 EXPORT_DIR="build/export"
 

@@ -1,10 +1,11 @@
-// Add accepted ASC team users to Emma's internal TestFlight group.
-// Run AFTER the invitees accept their App Store Connect invitation:
-//   ASC_ISSUER_ID=<uuid> node scripts/add-internal-testers.mjs dan@palmr.ai jing@palmr.ai tim@palmr.ai
+// Add accepted ASC team users to an app's internal TestFlight group.
+// Run AFTER the invitees accept their App Store Connect invitation.
+//   Emma:  ASC_ISSUER_ID=<uuid> node scripts/add-internal-testers.mjs dan@palmr.ai jing@palmr.ai tim@palmr.ai
+//   Palmr: ASC_ISSUER_ID=<uuid> APP_ID=6780315130 node scripts/add-internal-testers.mjs dan@palmr.ai ...
 import { asc } from './asc.mjs';
 
-const APP = '6780673334';            // Emma by Palmr
-const GROUP_NAME = 'Beta Testers';   // internal group
+const APP = process.env.APP_ID || '6780673334';  // default Emma by Palmr (Palmr = 6780315130)
+const GROUP_NAME = 'Beta Testers';               // internal group
 const emails = process.argv.slice(2);
 if (!emails.length) { console.error('usage: node add-internal-testers.mjs <email> [email...]'); process.exit(1); }
 

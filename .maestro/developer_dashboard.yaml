@@ -1,0 +1,30 @@
+appId: com.everbot.mobile-commander
+name: Developer dashboard with mock data
+tags:
+  - developer
+  - dashboard
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Dashboard is the default tab
+- assertVisible: "Commander"
+
+# Stats grid — mock data has 1 running, 1 pending, 1 done
+- assertVisible: "Running"
+- assertVisible: "Pending"
+- assertVisible: "Done"
+- takeScreenshot: dev_dashboard_01_stats
+
+# Workers section — mock data has 2 workers
+- assertVisible: "Workers"
+- assertVisible: "mac-studio-1"
+- takeScreenshot: dev_dashboard_02_workers
+
+# Recent Tasks section
+- assertVisible: "Recent Tasks"
+- assertVisible: "See All"
+- assertVisible: "Fix login crash on iOS 17"
+- takeScreenshot: dev_dashboard_03_recent_tasks

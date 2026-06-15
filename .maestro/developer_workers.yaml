@@ -1,0 +1,30 @@
+appId: com.everbot.mobile-commander
+name: Developer workers view with mock data
+tags:
+  - developer
+  - workers
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Navigate to Workers tab
+- tapOn: "Workers"
+- assertVisible: "Workers"
+
+# Summary card
+- assertVisible: "Online"
+- assertVisible: "Active"
+- assertVisible: "Total Cost"
+- takeScreenshot: dev_workers_01_summary
+
+# Mock workers should be visible
+- assertVisible: "mac-studio-1"
+- assertVisible: "macbook-pro-2"
+
+# Worker details
+- assertVisible: "Tasks Active"
+- assertVisible: "Completed"
+- assertVisible: "Cost"
+- takeScreenshot: dev_workers_02_details

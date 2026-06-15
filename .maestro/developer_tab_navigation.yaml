@@ -1,0 +1,56 @@
+appId: com.everbot.mobile-commander
+name: Developer mode tab navigation
+tags:
+  - developer
+  - smoke
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Default mode is Developer — Dashboard tab
+- assertVisible: "Dashboard"
+- assertVisible: "Commander"
+- assertVisible: "Running"
+- assertVisible: "Pending"
+- assertVisible: "Done"
+- assertVisible: "Workers"
+- assertVisible: "Recent Tasks"
+- takeScreenshot: dev_01_dashboard
+
+# Tasks tab
+- tapOn: "Tasks"
+- assertVisible: "Tasks"
+- assertVisible: "All"
+- takeScreenshot: dev_02_tasks
+
+# New Task tab
+- tapOn: "New"
+- assertVisible: "New Task"
+- assertVisible: "Project"
+- assertVisible: "Task Name"
+- assertVisible: "Create Task"
+- takeScreenshot: dev_03_new_task
+
+# Workers tab
+- tapOn: "Workers"
+- assertVisible: "Workers"
+- assertVisible: "Online"
+- assertVisible: "Active"
+- assertVisible: "Total Cost"
+- takeScreenshot: dev_04_workers
+
+# Settings tab
+- tapOn: "Settings"
+- assertVisible: "Settings"
+- assertVisible: "Account"
+- assertVisible: "Sign Out"
+- assertVisible: "Mode"
+- assertVisible: "Version"
+- takeScreenshot: dev_05_settings
+
+# Back to Dashboard
+- tapOn: "Dashboard"
+- assertVisible: "Commander"
+- takeScreenshot: dev_06_dashboard_final

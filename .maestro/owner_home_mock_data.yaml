@@ -1,0 +1,23 @@
+appId: com.everbot.mobile-commander
+name: Owner home with mock data
+tags:
+  - owner
+  - dashboard
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+      "-OwnerMode": ""
+
+# Owner Home tab should show status card
+- assertVisible: "Home"
+- assertVisible: "Your App Status"
+- assertVisible: "In Progress"
+- assertVisible: "Done Today"
+- assertVisible: "Attention"
+- takeScreenshot: owner_home_01_status_card
+
+# Recently Completed section
+- assertVisible: "Recently Completed"
+- takeScreenshot: owner_home_02_completed

@@ -1,0 +1,24 @@
+appId: com.everbot.mobile-commander
+name: Owner status view with mock data
+tags:
+  - owner
+  - status
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+      "-OwnerMode": ""
+
+# Navigate to Status tab
+- tapOn: "Status"
+- assertVisible: "Status"
+
+# Overall progress card
+- assertVisible: "Overall Progress"
+- assertVisible: "tasks complete"
+- takeScreenshot: owner_status_01_progress
+
+# Project grouping — mock data uses "palmr-ios" project
+- assertVisible: "palmr-ios"
+- takeScreenshot: owner_status_02_projects

@@ -1,0 +1,31 @@
+appId: com.everbot.mobile-commander
+name: Developer settings view
+tags:
+  - developer
+  - settings
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Navigate to Settings tab
+- tapOn: "Settings"
+- assertVisible: "Settings"
+
+# Account section
+- assertVisible: "Account"
+- assertVisible: "Sign Out"
+- takeScreenshot: dev_settings_01_account
+
+# Mode section
+- assertVisible: "Mode"
+- assertVisible: "Developer"
+- takeScreenshot: dev_settings_02_mode
+
+# Info section
+- assertVisible: "Version"
+- assertVisible: "1.0.0"
+- assertVisible: "Firebase Project"
+- assertVisible: "fir-web-codelab-8ace9"
+- takeScreenshot: dev_settings_03_info

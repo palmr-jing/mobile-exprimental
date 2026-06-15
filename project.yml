@@ -10,6 +10,9 @@ packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk.git
     from: "11.0.0"
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS.git
+    from: "7.1.0"
 
 targets:
   MobileCommander:
@@ -21,6 +24,7 @@ targets:
         buildPhase: resources
         excludes:
           - Info.plist
+          - MobileCommander.entitlements
     settings:
       base:
         INFOPLIST_FILE: Resources/Info.plist
@@ -29,6 +33,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.9"
         DEVELOPMENT_TEAM: ""
+        CODE_SIGN_ENTITLEMENTS: Resources/MobileCommander.entitlements
     dependencies:
       - package: Firebase
         product: FirebaseAuth
@@ -36,3 +41,9 @@ targets:
         product: FirebaseFirestore
       - package: Firebase
         product: FirebaseStorage
+      - package: Firebase
+        product: FirebaseMessaging
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift

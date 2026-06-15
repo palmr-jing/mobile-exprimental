@@ -12,6 +12,7 @@ struct CreateTaskView: View {
     @State private var allowParallel = false
     @State private var showSuccess = false
     @State private var isSubmitting = false
+    @State private var showAskEmma = false
 
     private var availableProjects: [String] {
         Array(Set(firestoreService.tasks.map(\.project))).sorted()
@@ -25,6 +26,23 @@ struct CreateTaskView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
+                    Button {
+                        showAskEmma = true
+                    } label: {
+                        HStack(spacing: DS.Spacing.sm) {
+                            Image(systemName: "sparkles")
+                            Text("Ask Emma instead — she'll pick the project")
+                                .font(DS.Typography.caption)
+                            Spacer()
+                            Image(systemName: "chevron.right").font(DS.Typography.caption)
+                        }
+                        .foregroundStyle(DS.Colors.accent)
+                        .padding(DS.Spacing.md)
+                        .frame(maxWidth: .infinity)
+                        .background(DS.Colors.accent.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                    }
+
                     VStack(alignment: .leading, spacing: DS.Spacing.md) {
                         FormField(label: "Project") {
                             TextField("e.g. palmr-ios", text: $project)
@@ -153,6 +171,9 @@ struct CreateTaskView: View {
                 Button("OK") { clearForm() }
             } message: {
                 Text("Task has been added to the queue.")
+            }
+            .sheet(isPresented: $showAskEmma) {
+                AskEmmaView()
             }
         }
     }

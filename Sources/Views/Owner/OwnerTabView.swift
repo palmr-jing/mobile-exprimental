@@ -11,6 +11,11 @@ struct OwnerTabView: View {
                     Label("Home", systemImage: "house")
                 }
 
+            ChatView()
+                .tabItem {
+                    Label("Chat", systemImage: "bubble.left.and.bubble.right")
+                }
+
             OwnerRequestView()
                 .tabItem {
                     Label("Request", systemImage: "plus.bubble")

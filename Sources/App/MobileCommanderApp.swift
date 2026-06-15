@@ -1,29 +1,48 @@
 import SwiftUI
-import FirebaseCore
 
 @main
 struct MobileCommanderApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var authService = AuthService()
+    @StateObject private var chatService = ChatService()
+    @StateObject private var presenceService = PresenceService()
+    @StateObject private var notificationService = NotificationService()
     @AppStorage("appMode") private var appMode: AppMode = .developer
-
-    init() {
-        FirebaseApp.configure()
-    }
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
-            if authService.isSignedIn {
-                switch appMode {
-                case .developer:
-                    DeveloperTabView()
-                        .environmentObject(authService)
-                case .owner:
-                    OwnerTabView()
-                        .environmentObject(authService)
+            Group {
+                if authService.isSignedIn {
+                    switch appMode {
+                    case .developer:
+                        DeveloperTabView()
+                    case .owner:
+                        OwnerTabView()
+                    }
+                } else {
+                    LoginView()
                 }
-            } else {
-                LoginView()
-                    .environmentObject(authService)
+            }
+            .environmentObject(authService)
+            .environmentObject(chatService)
+            .environmentObject(notificationService)
+            // When the signed-in user is known, start the live chat/presence
+            // subscriptions and register for push. Tear them down on sign-out.
+            .onChange(of: authService.currentUser) { _, account in
+                if let account {
+                    chatService.start(user: account)
+                    notificationService.start(email: account.email)
+                    presenceService.start(user: account)
+                    PushService.shared.register(uid: account.uid)
+                } else {
+                    chatService.stop()
+                    notificationService.stop()
+                    presenceService.stop()
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                presenceService.scenePhaseChanged(phase)
             }
         }
     }

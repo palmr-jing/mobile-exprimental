@@ -9,15 +9,13 @@ struct SettingsView: View {
         NavigationView {
             List {
                 Section("Account") {
-                    if let user = authService.user {
+                    if let user = authService.currentUser {
                         HStack {
-                            Image(systemName: "person.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(DS.Colors.accent)
+                            AvatarView(name: user.displayName, photoURL: user.photoURL, size: 36)
                             VStack(alignment: .leading) {
-                                Text(user.displayName ?? "Anonymous")
+                                Text(user.displayName.isEmpty ? "Account" : user.displayName)
                                     .font(DS.Typography.subheading)
-                                Text(user.email ?? "No email")
+                                Text(user.email.isEmpty ? "No email" : user.email)
                                     .font(DS.Typography.caption)
                                     .foregroundStyle(DS.Colors.secondary)
                             }

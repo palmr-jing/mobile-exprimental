@@ -1,0 +1,34 @@
+appId: com.everbot.mobile-commander
+name: Developer create task form
+tags:
+  - developer
+  - create
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Navigate to New Task tab
+- tapOn: "New"
+- assertVisible: "New Task"
+
+# Verify form fields are present
+- assertVisible: "Project"
+- assertVisible: "Working Directory"
+- assertVisible: "Task Name"
+- assertVisible: "Description"
+- assertVisible: "Priority (5)"
+- assertVisible: "Create Task"
+- takeScreenshot: dev_create_01_empty_form
+
+# Fill in the form
+- tapOn: "e.g. palmr-ios"
+- inputText: "test-project"
+
+- tapOn: "e.g. ~/repos/palmr-ios"
+- inputText: "~/repos/test-project"
+
+- tapOn: "Short description of the task"
+- inputText: "Test task from Maestro"
+- takeScreenshot: dev_create_02_filled_form

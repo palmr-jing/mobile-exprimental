@@ -21,6 +21,11 @@ struct DeveloperTabView: View {
                     Label("New", systemImage: "plus.circle.fill")
                 }
 
+            ChatView()
+                .tabItem {
+                    Label("Chat", systemImage: "bubble.left.and.bubble.right")
+                }
+
             ReportsView()
                 .tabItem {
                     Label("Reports", systemImage: "chart.bar")

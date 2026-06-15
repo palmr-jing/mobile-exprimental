@@ -1,0 +1,39 @@
+appId: com.everbot.mobile-commander
+name: Owner request template flow
+tags:
+  - owner
+  - create
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+      "-OwnerMode": ""
+
+# Navigate to Request tab
+- tapOn: "Request"
+- assertVisible: "New Request"
+- assertVisible: "What do you need?"
+- takeScreenshot: owner_request_01_templates
+
+# Select "Fix a Bug" template
+- tapOn: "Fix a Bug"
+- assertVisible: "Describe what you need"
+- assertVisible: "Describe the bug"
+- assertVisible: "Submit Request"
+- takeScreenshot: owner_request_02_bug_selected
+
+# Select "New Feature" template
+- tapOn: "New Feature"
+- assertVisible: "What feature do you want?"
+- takeScreenshot: owner_request_03_feature_selected
+
+# Select "UI Change" template
+- tapOn: "UI Change"
+- assertVisible: "What should look different?"
+- takeScreenshot: owner_request_04_ui_selected
+
+# Select "Update Content" template
+- tapOn: "Update Content"
+- assertVisible: "What text, images, or content needs to change?"
+- takeScreenshot: owner_request_05_content_selected

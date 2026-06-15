@@ -1,0 +1,9 @@
+appId: com.everbot.mobile-commander
+name: Login screen smoke test
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Commander"
+- assertVisible: "Mobile Task Control"
+- assertVisible: "Sign In"
+- takeScreenshot: login_screen

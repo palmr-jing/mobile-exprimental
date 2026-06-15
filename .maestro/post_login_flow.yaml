@@ -1,0 +1,38 @@
+appId: com.everbot.mobile-commander
+name: Owner mode tab navigation
+tags:
+  - owner
+  - smoke
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+      "-OwnerMode": ""
+
+# Owner Home tab
+- assertVisible: "Home"
+- assertVisible: "Your App Status"
+- assertVisible: "In Progress"
+- assertVisible: "Done Today"
+- takeScreenshot: owner_01_home
+
+# Request tab
+- tapOn: "Request"
+- assertVisible: "New Request"
+- assertVisible: "What do you need?"
+- assertVisible: "Fix a Bug"
+- assertVisible: "New Feature"
+- assertVisible: "UI Change"
+- assertVisible: "Update Content"
+- takeScreenshot: owner_02_request
+
+# Status tab
+- tapOn: "Status"
+- assertVisible: "Status"
+- assertVisible: "Overall Progress"
+- takeScreenshot: owner_03_status
+
+# Back to Home
+- tapOn: "Home"
+- takeScreenshot: owner_04_home_final

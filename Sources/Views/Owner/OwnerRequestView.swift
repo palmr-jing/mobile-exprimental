@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OwnerRequestView: View {
     @EnvironmentObject var firestoreService: FirestoreService
+    @EnvironmentObject var chatService: ChatService
     @State private var selectedTemplate: RequestTemplate?
     @State private var customDescription = ""
     @State private var showSuccess = false
@@ -101,30 +102,18 @@ struct OwnerRequestView: View {
         .disabled(customDescription.isEmpty || isSubmitting)
     }
 
+    // Route the request through Emma instead of a manual project picker: she
+    // infers the right project (scoped to the owner's access) and files the work.
     private func submitRequest() {
         guard let template = selectedTemplate else { return }
         isSubmitting = true
 
-        let taskDescription = """
-        Category: \(template.displayName)
-        Request: \(customDescription)
-
-        \(template.systemPrompt)
-        """
+        let message = "@emma \(template.displayName): \(customDescription)"
 
         Task {
-            do {
-                try await firestoreService.createTask(
-                    project: template.defaultProject,
-                    path: template.defaultPath,
-                    task: "\(template.displayName): \(customDescription.prefix(60))",
-                    description: taskDescription,
-                    priority: template.defaultPriority
-                )
-                showSuccess = true
-            } catch {
-                // Handle error
-            }
+            chatService.setActiveChannel(ChatService.generalId)
+            await chatService.sendText(message)
+            showSuccess = true
             isSubmitting = false
         }
     }

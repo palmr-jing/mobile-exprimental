@@ -1,0 +1,54 @@
+appId: com.everbot.mobile-commander
+name: Mode switching between Developer and Owner
+tags:
+  - modes
+  - settings
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Start in Developer mode (default)
+- assertVisible: "Dashboard"
+- assertVisible: "Commander"
+- takeScreenshot: mode_01_developer
+
+# Navigate to Settings to switch mode
+- tapOn: "Settings"
+- assertVisible: "Mode"
+- assertVisible: "Developer"
+- tapOn: "Developer"
+
+# Mode switcher sheet should appear
+- assertVisible: "Switch Mode"
+- assertVisible: "Developer"
+- assertVisible: "Owner"
+- assertVisible: "Full control over tasks, workers, and system"
+- assertVisible: "Simple task creation and status monitoring"
+- takeScreenshot: mode_02_switcher
+
+# Switch to Owner mode
+- tapOn:
+    text: "Owner"
+    index: 0
+- assertVisible: "Done"
+- tapOn: "Done"
+
+# Should now see Owner mode tabs
+- assertVisible: "Home"
+- assertVisible: "Your App Status"
+- takeScreenshot: mode_03_owner
+
+# Navigate back via gear icon to switch back
+- tapOn:
+    id: "gear"
+- assertVisible: "Switch Mode"
+- tapOn:
+    text: "Developer"
+    index: 0
+- tapOn: "Done"
+
+# Should be back in Developer mode
+- assertVisible: "Dashboard"
+- takeScreenshot: mode_04_back_to_developer

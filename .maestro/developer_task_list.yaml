@@ -1,0 +1,48 @@
+appId: com.everbot.mobile-commander
+name: Developer task list with mock data
+tags:
+  - developer
+  - tasks
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Navigate to Tasks tab
+- tapOn: "Tasks"
+- assertVisible: "Tasks"
+
+# Mock tasks should be visible
+- assertVisible: "Fix login crash on iOS 17"
+- assertVisible: "Add dark mode support"
+- assertVisible: "Update onboarding flow"
+- assertVisible: "Fix notification badge count"
+- takeScreenshot: dev_tasks_01_list
+
+# Filter chips should be present
+- assertVisible: "All"
+- assertVisible: "Running"
+- assertVisible: "Pending"
+- assertVisible: "Done"
+- assertVisible: "Failed"
+
+# Filter by Running — index 0 is the filter chip
+- tapOn:
+    text: "Running"
+    index: 0
+- extendedWaitUntil:
+    visible: "Fix login crash on iOS 17"
+    timeout: 3000
+- assertNotVisible: "Add dark mode support"
+- takeScreenshot: dev_tasks_02_filter_running
+
+# Back to All
+- tapOn:
+    text: "All"
+    index: 0
+- extendedWaitUntil:
+    visible: "Fix login crash on iOS 17"
+    timeout: 3000
+- assertVisible: "Add dark mode support"
+- takeScreenshot: dev_tasks_03_filter_all

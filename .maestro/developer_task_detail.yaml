@@ -1,0 +1,44 @@
+appId: com.everbot.mobile-commander
+name: Developer task detail view
+tags:
+  - developer
+  - tasks
+  - detail
+---
+- launchApp:
+    clearState: true
+    arguments:
+      "-UITesting": ""
+
+# Navigate to Tasks tab
+- tapOn: "Tasks"
+- assertVisible: "Tasks"
+
+# Tap on a task to open detail view
+- tapOn: "Fix login crash on iOS 17"
+
+# Task detail header
+- assertVisible: "Task #1"
+- assertVisible: "Fix login crash on iOS 17"
+- assertVisible: "mac-studio-1"
+- takeScreenshot: dev_task_detail_01_header
+
+# Metadata section
+- assertVisible: "Project"
+- assertVisible: "palmr-ios"
+- assertVisible: "Priority"
+- takeScreenshot: dev_task_detail_02_metadata
+
+# Tab switcher: Output, Chat, Result
+- assertVisible: "Output"
+- assertVisible: "Chat"
+- assertVisible: "Result"
+
+# Switch to Chat tab
+- tapOn: "Chat"
+- takeScreenshot: dev_task_detail_03_chat
+
+# Switch to Result tab
+- tapOn: "Result"
+- assertVisible: "No results yet"
+- takeScreenshot: dev_task_detail_04_result

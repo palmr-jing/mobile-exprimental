@@ -1,4 +1,5 @@
 import SwiftUI
+import GoogleSignInSwift
 
 struct LoginView: View {
     @EnvironmentObject var authService: AuthService
@@ -27,20 +28,10 @@ struct LoginView: View {
                 Spacer()
 
                 VStack(spacing: DS.Spacing.md) {
-                    Button {
+                    GoogleSignInButton(scheme: .light, style: .wide) {
                         Task { await authService.signInWithGoogle() }
-                    } label: {
-                        HStack(spacing: DS.Spacing.sm) {
-                            Image(systemName: "person.circle.fill")
-                            Text("Sign In")
-                        }
-                        .font(DS.Typography.subheading)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(DS.Colors.dark)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                     }
+                    .accessibilityIdentifier("google-sign-in")
 
                     if let error = authService.errorMessage {
                         Text(error)

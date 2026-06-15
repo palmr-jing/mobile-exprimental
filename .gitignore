@@ -47,3 +47,6 @@ storage-debug.log
 
 # stray simulator screenshots
 *.png
+
+# but DO track asset catalog icons
+!Resources/Assets.xcassets/**/*.png

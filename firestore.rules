@@ -1,0 +1,61 @@
+rules_version = '2';
+// Vendored copy for the Firebase Local Emulator Suite used by the iOS E2E tests.
+// SOURCE OF TRUTH: ~/repos/experimental/commander/firestore.rules (covers ALL
+// palmr apps). This is a trimmed subset of the commander_* collections the iOS
+// app touches — keep the rules here in sync with that file; do not deploy from
+// this repo.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function canAccessProject(project) {
+      let userDoc = get(/databases/$(database)/documents/commander_user_projects/$(request.auth.uid));
+      return userDoc != null && (
+        userDoc.data.isAdmin == true ||
+        userDoc.data.projects == null ||
+        '*' in userDoc.data.projects ||
+        project in userDoc.data.projects
+      );
+    }
+
+    match /commander_user_projects/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    match /commander_allowed_users/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    match /commander_tasks/{taskId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && canAccessProject(request.resource.data.project);
+      allow update: if request.auth != null &&
+        canAccessProject(resource.data.project) &&
+        canAccessProject(request.resource.data.project);
+      allow delete: if request.auth != null && canAccessProject(resource.data.project);
+    }
+
+    match /commander_notifications/{notifId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /commander_repo_registry/{repoName} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Presence: read the roster; write only your own uid-keyed heartbeat.
+    match /commander_presence/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Channels + messages: any signed-in user (UI filters private membership).
+    match /commander_channels/{channelId} {
+      allow read, write: if request.auth != null;
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}

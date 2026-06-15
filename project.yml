@@ -47,3 +47,42 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
+
+  MobileCommanderTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests/Unit
+    dependencies:
+      - target: MobileCommander
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: com.everbot.mobile-commander.tests
+        SWIFT_VERSION: "5.9"
+
+  MobileCommanderUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Tests/UITests
+    dependencies:
+      - target: MobileCommander
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: MobileCommander
+        PRODUCT_BUNDLE_IDENTIFIER: com.everbot.mobile-commander.uitests
+        SWIFT_VERSION: "5.9"
+
+schemes:
+  MobileCommander:
+    build:
+      targets:
+        MobileCommander: all
+        MobileCommanderTests: [test]
+        MobileCommanderUITests: [test]
+    test:
+      targets:
+        - MobileCommanderTests
+        - MobileCommanderUITests

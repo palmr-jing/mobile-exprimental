@@ -1,0 +1,60 @@
+name: iOS Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app || true
+
+      - name: Install tooling
+        run: |
+          brew install xcodegen
+          npm install -g firebase-tools
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Unit tests
+        run: |
+          xcodebuild test \
+            -scheme MobileCommander \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -only-testing:MobileCommanderTests \
+            -resultBundlePath unit.xcresult
+
+      - name: UI tests (Firebase emulator)
+        run: |
+          firebase emulators:exec \
+            --only auth,firestore,storage \
+            --project demo-commander \
+            "node scripts/seed-emulator.mjs && \
+             xcodebuild test \
+               -scheme MobileCommander \
+               -destination 'platform=iOS Simulator,name=iPhone 15' \
+               -only-testing:MobileCommanderUITests \
+               -resultBundlePath ui.xcresult"
+
+      - name: Upload results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcresults
+          path: |
+            unit.xcresult
+            ui.xcresult

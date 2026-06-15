@@ -1,0 +1,14 @@
+{
+  "name": "mobile-commander-tooling",
+  "private": true,
+  "description": "Test/E2E tooling for the MobileCommander iOS app (Firebase emulator + seed).",
+  "type": "module",
+  "scripts": {
+    "test": "scripts/run-tests.sh",
+    "emulators": "firebase emulators:start --only auth,firestore,storage --project demo-commander"
+  },
+  "devDependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-tools": "^13.0.0"
+  }
+}

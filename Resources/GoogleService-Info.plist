@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>668742431794-he0518hskkqd0mdrsmvoadba6h6iq72r.apps.googleusercontent.com</string>
+	<string>668742431794-g0r5tbnog0d6h81i75rpua3u9pc6q4vi.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.668742431794-he0518hskkqd0mdrsmvoadba6h6iq72r</string>
+	<string>com.googleusercontent.apps.668742431794-g0r5tbnog0d6h81i75rpua3u9pc6q4vi</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDrb02KKrYncsS89Id11fPkUd8rxMCUwR0</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.everbot.mobile-commander</string>
+	<string>ai.palmr.emma</string>
 	<key>PROJECT_ID</key>
 	<string>fir-web-codelab-8ace9</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:668742431794:ios:ee0c890d9f9ebc2d57f82b</string>
+	<string>1:668742431794:ios:2e07cd6e1c18268b57f82b</string>
 </dict>
 </plist>

@@ -1,9 +1,9 @@
 import SwiftUI
 
-// "Ask Emma" entry point: opens #general (where Emma lives), prefills an
-// "@emma " prompt, and optionally auto-starts voice. The user describes what
-// they want WITHOUT naming a project — the backend infers it (access-scoped).
-// This replaces the manual project picker for the Owner flow.
+// Voice-first "Ask Emma" entry point. The big mic (VoiceInputButton: on-device
+// speech, audio-level ring, haptics) is the primary action; text is the
+// fallback. The request is sent WITHOUT naming a project — the backend infers
+// it (access-scoped) via the @emma chat path.
 struct AskEmmaView: View {
     @EnvironmentObject var chatService: ChatService
     @Environment(\.dismiss) private var dismiss
@@ -11,80 +11,83 @@ struct AskEmmaView: View {
     var prefill: String = ""
     var autoStartVoice: Bool = false
 
-    @StateObject private var transcriber = VoiceTranscriberFactory.make()
+    @StateObject private var speech = SpeechRecognitionService()
     @State private var text = ""
+
+    private var hasText: Bool { !text.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: DS.Spacing.lg) {
-                VStack(spacing: DS.Spacing.sm) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 44))
-                        .foregroundStyle(DS.Colors.accent)
-                    Text("Ask Emma")
-                        .font(DS.Typography.headline)
-                        .foregroundStyle(DS.Colors.text)
-                    Text("Describe what you need. Emma figures out the right project and files the work.")
-                        .font(DS.Typography.body)
-                        .foregroundStyle(DS.Colors.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, DS.Spacing.xl)
+            VStack(spacing: DS.Spacing.xl) {
+                header
 
-                HStack(alignment: .bottom, spacing: DS.Spacing.sm) {
-                    TextField("e.g. the login button is broken", text: $text, axis: .vertical)
+                // Primary: big voice button. Transcript flows into the text field.
+                VoiceInputButton(speechService: speech) { transcript in
+                    let t = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !t.isEmpty else { return }
+                    text = t
+                }
+                .padding(.top, DS.Spacing.md)
+
+                // Fallback / review: editable text + send.
+                VStack(spacing: DS.Spacing.md) {
+                    TextField("…or type what you need", text: $text, axis: .vertical)
                         .lineLimit(2...6)
                         .padding(DS.Spacing.md)
                         .background(DS.Colors.surface)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
                         .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).stroke(DS.Colors.border, lineWidth: 0.5))
                         .accessibilityIdentifier("ask-emma-input")
-                    MicButton(transcriber: transcriber) { transcript in
-                        text = transcript
-                    }
-                }
-                .padding(.horizontal, DS.Spacing.lg)
 
-                Button {
-                    send()
-                } label: {
-                    Text("Send to Emma")
-                        .font(DS.Typography.subheading)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(text.trimmingCharacters(in: .whitespaces).isEmpty ? DS.Colors.secondary : DS.Colors.accent)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                    Button {
+                        send()
+                    } label: {
+                        Text("Send to Emma")
+                            .font(DS.Typography.subheading)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(hasText ? DS.Colors.accent : DS.Colors.secondary)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                    }
+                    .disabled(!hasText)
                 }
-                .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
                 .padding(.horizontal, DS.Spacing.lg)
 
                 Spacer()
             }
+            .padding(.top, DS.Spacing.lg)
             .background(DS.Colors.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
             .onAppear {
                 if text.isEmpty { text = prefill }
-                if autoStartVoice {
-                    Task {
-                        if !transcriber.isAuthorized { await transcriber.requestAuthorization() }
-                        try? transcriber.start()
-                    }
-                }
             }
         }
     }
 
+    private var header: some View {
+        VStack(spacing: DS.Spacing.sm) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 44))
+                .foregroundStyle(DS.Colors.accent)
+            Text("Ask Emma")
+                .font(DS.Typography.headline)
+                .foregroundStyle(DS.Colors.text)
+            Text("Tap the mic and just say what you need. Emma figures out the right project and files the work.")
+                .font(DS.Typography.body)
+                .foregroundStyle(DS.Colors.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, DS.Spacing.lg)
+        }
+    }
+
     private func send() {
-        // Ensure the message reaches Emma's worker path.
         var message = text.trimmingCharacters(in: .whitespaces)
+        guard !message.isEmpty else { return }
         if !Presence.mentionsEmma(message) { message = "@emma \(message)" }
-        if transcriber.isRecording { transcriber.stop() }
         chatService.setActiveChannel(ChatService.generalId)
         Task { await chatService.sendText(message) }
         dismiss()

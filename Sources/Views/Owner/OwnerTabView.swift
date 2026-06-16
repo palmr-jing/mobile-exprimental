@@ -6,6 +6,11 @@ struct OwnerTabView: View {
 
     var body: some View {
         TabView {
+            AskEmmaView()
+                .tabItem {
+                    Label("Ask Emma", systemImage: "mic.fill")
+                }
+
             OwnerHomeView()
                 .tabItem {
                     Label("Home", systemImage: "house")

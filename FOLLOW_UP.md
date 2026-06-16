@@ -1,42 +1,29 @@
-# Follow-Up
+# Follow-Up — Voice-First / Ask Emma (Task 725)
 
-**What was done**: Built the Mobile Commander iOS app — a SwiftUI frontend for the existing Commander task orchestration system. Two modes: Developer (full task/worker/output control) and Owner (simplified request templates for non-technical gym owners).
+**What was done**: Added voice-first "Ask Emma" as the primary Owner mode entry point, with on-device speech recognition (SFSpeechRecognizer), a reusable voice input button with audio-level animation and haptics, and voice input in the task chat interface.
 
 **What needs review**:
-- Verify Firebase auth works on device (currently uses anonymous auth for development — Google Sign-In needs the GoogleSignIn SDK added and configured in the Firebase Console with the iOS bundle ID)
-- Confirm Firestore real-time listeners properly sync tasks and workers from the existing `commander_tasks` and `commander_workers` collections
-- Check that task creation from Owner mode generates tasks compatible with existing workers
-- Verify the GoogleService-Info.plist matches what Firebase Console generates for the iOS app (current one is placeholder-ish — needs a real iOS app registered in Firebase)
+- Verify on a physical device that `requiresOnDeviceRecognition` works with the user's locale (fallback to server-based is automatic when on-device is unavailable)
+- Confirm haptic feedback feels right on iPhone hardware (simulator doesn't produce haptics)
+- Check that the "Ask Emma" tab icon (mic.fill) is visually distinct from other tabs at small sizes
+- Test the auto-send silence timeout (1.8s) — may need tuning based on real usage patterns
+- Confirm empty-project tasks created by `createEmmaTask` are handled correctly by the backend task router
 
 **Action items**:
-- Register iOS app in Firebase Console (bundle ID: com.everbot.mobile-commander) and download the real GoogleService-Info.plist
-- Add Google Sign-In SDK if you want proper Google auth (currently falls back to anonymous)
-- Set DEVELOPMENT_TEAM in project.yml if you want to run on a physical device
-- Push to GitHub remote
-- Consider adding push notifications for task completion (Firebase Cloud Messaging)
+- The backend needs to handle tasks with empty `project` and `path` fields — these are "Ask Emma" tasks where the backend should infer the target project
+- Add a `source: "voice"` field handler in the backend if you want analytics on voice vs text submissions
+- Consider adding a test target to `project.yml` for unit testing the SpeechRecognitionService
+- No deployment needed — this is a native iOS app
 
 **Files changed**:
-- `project.yml` — XcodeGen project spec (iOS 17+, Firebase dependencies)
-- `Resources/Info.plist` — iOS app config
-- `Resources/GoogleService-Info.plist` — Firebase config (needs real values from Firebase Console)
-- `Sources/App/MobileCommanderApp.swift` — App entry point with mode switching
-- `Sources/App/AppMode.swift` — Developer/Owner mode enum
-- `Sources/Design/DesignSystem.swift` — Color palette, typography, card components (Palmr-inspired)
-- `Sources/Models/Task.swift` — Task model matching Firestore schema
-- `Sources/Models/Worker.swift` — Worker model
-- `Sources/Services/AuthService.swift` — Firebase Auth wrapper
-- `Sources/Services/FirestoreService.swift` — Real-time Firestore listener for tasks/workers/chat/output
-- `Sources/Views/Developer/DeveloperTabView.swift` — 5-tab developer interface
-- `Sources/Views/Developer/DashboardView.swift` — Stats grid, workers, recent tasks
-- `Sources/Views/Developer/TaskListView.swift` — Filterable task list with search
-- `Sources/Views/Developer/TaskDetailView.swift` — Full task view with output/chat/result tabs
-- `Sources/Views/Developer/CreateTaskView.swift` — Full task creation form
-- `Sources/Views/Developer/WorkersView.swift` — Worker fleet monitoring
-- `Sources/Views/Developer/SettingsView.swift` — Account, mode switch, app info
-- `Sources/Views/Owner/OwnerTabView.swift` — 3-tab simplified interface
-- `Sources/Views/Owner/OwnerHomeView.swift` — Status dashboard for owners
-- `Sources/Views/Owner/OwnerRequestView.swift` — Template-based task creation (Bug Fix, New Feature, UI Change, Content Update)
-- `Sources/Views/Owner/OwnerStatusView.swift` — Project progress overview
-- `Sources/Views/Shared/LoginView.swift` — Sign-in screen
-- `Sources/Views/Shared/ModeSwitcher.swift` — Mode selection sheet
-- `.gitignore` — Standard iOS gitignore
+
+| File | Change |
+|------|--------|
+| `Sources/Services/SpeechRecognitionService.swift` | NEW — Core speech-to-text service wrapping SFSpeechRecognizer with on-device recognition, audio level monitoring, silence detection, and auto-send callback |
+| `Sources/Views/Shared/VoiceInputButton.swift` | NEW — Reusable voice button (VoiceInputButton for full-size, CompactVoiceButton for inline chat) with audio-level ring animation, haptics, tap-to-dictate and hold-to-talk |
+| `Sources/Views/Owner/AskEmmaView.swift` | NEW — Full-screen voice-first "Ask Emma" view with big mic button, live transcript, text fallback input, auto-send toggle |
+| `Sources/Views/Owner/OwnerTabView.swift` | Added "Ask Emma" as the first (default) tab in Owner mode |
+| `Sources/Views/Owner/OwnerHomeView.swift` | Added "Ask Emma" quick-action card below the greeting card |
+| `Sources/Views/Developer/TaskDetailView.swift` | Added CompactVoiceButton to chat input bar with live transcript preview |
+| `Sources/Services/FirestoreService.swift` | Added `createEmmaTask(message:)` for project-less voice task creation |
+| `Resources/Info.plist` | Added NSMicrophoneUsageDescription and NSSpeechRecognitionUsageDescription |

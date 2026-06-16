@@ -4,6 +4,7 @@ import FirebaseFirestore
 struct TaskDetailView: View {
     let task: CommanderTask
     @EnvironmentObject var firestoreService: FirestoreService
+    @StateObject private var speechService = SpeechRecognitionService()
     @State private var outputChunks: [OutputChunk] = []
     @State private var chatMessages: [ChatMessage] = []
     @State private var chatInput = ""
@@ -154,9 +155,26 @@ struct TaskDetailView: View {
             }
             .frame(minHeight: 150)
 
+            if speechService.isRecording {
+                HStack(spacing: DS.Spacing.sm) {
+                    Text(speechService.transcript.isEmpty ? "Listening..." : speechService.transcript)
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(speechService.transcript.isEmpty ? DS.Colors.secondary : DS.Colors.text)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .italic(speechService.transcript.isEmpty)
+                }
+                .padding(.horizontal, DS.Spacing.sm)
+            }
+
             HStack(spacing: DS.Spacing.sm) {
                 TextField("Message...", text: $chatInput)
                     .textFieldStyle(.roundedBorder)
+
+                CompactVoiceButton(speechService: speechService) { text in
+                    chatInput = ""
+                    Task { try? await firestoreService.sendChatMessage(taskId: task.id, content: text) }
+                }
 
                 Button {
                     let content = chatInput

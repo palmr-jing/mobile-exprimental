@@ -13,6 +13,7 @@
 		2E4A9B3A0875BB52D76782B9 /* MobileCommanderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A960B6DBF40C36DF2CD5AC /* MobileCommanderApp.swift */; };
 		30B6BF012D8D0EB6C9EDA113 /* Worker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62CE21C127D8B0CBA0629C76 /* Worker.swift */; };
 		35D5E43F1DA53EBECC6A84E5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = AB23456EB3674E91E5161D12 /* FirebaseFirestore */; };
+		3F39F5EBF1759B2D1D74C1DF /* VoiceInputButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33564207E7BD5526689ADD0 /* VoiceInputButton.swift */; };
 		42E88099A35F6A74C17543A0 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 5878561A43406C06A26413C2 /* FirebaseStorage */; };
 		43A1406DF5DF27E2B7008303 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7B6F4A6D359B044ED82C055A /* FirebaseAuth */; };
 		478CB0FCB2E4A8A8F73EFB80 /* DeveloperTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2D099B5A5F0E142DA7E3EA /* DeveloperTabView.swift */; };
@@ -21,11 +22,13 @@
 		68A6DC81E2933D7B9A46CF17 /* OwnerRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429C44E0037C948917C776C1 /* OwnerRequestView.swift */; };
 		6A2CA38420C310E87557F56E /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24300106A0235189A0CC811B /* TaskDetailView.swift */; };
 		6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838DD355391ACBF64F0A85D /* SettingsView.swift */; };
+		7E5CD74CBE0AD9B172CD5FD2 /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71341C368CEADCCFE3A2310 /* SpeechRecognitionService.swift */; };
 		877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ADB7F04AD144EB3FF98D82 /* CreateTaskView.swift */; };
 		95A43C9BC9C29C67DCEEFC92 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */; };
 		9848556BEA38192F59464B70 /* OwnerHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F71C261EE85889C087FD94 /* OwnerHomeView.swift */; };
 		9C6FD92F6ABFDA4FBF5DBFA8 /* WorkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD25D1286ED63727B1D6D1A /* WorkersView.swift */; };
 		A7AE114261AC579849910ABA /* AppMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD75F006B9819FDCB8065D7 /* AppMode.swift */; };
+		B83671ED228F958F2BFCDBE9 /* AskEmmaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117BE33BB364CC0E35F0FE4D /* AskEmmaView.swift */; };
 		BC7B9953744ED97CE82C0C7A /* ModeSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */; };
 		CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE92C9AA042B981A92E1F41A /* LoginView.swift */; };
 		EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */; };
@@ -38,6 +41,7 @@
 		0DB11B856542D6EB45A86C10 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeSwitcher.swift; sourceTree = "<group>"; };
 		0FD25D1286ED63727B1D6D1A /* WorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersView.swift; sourceTree = "<group>"; };
+		117BE33BB364CC0E35F0FE4D /* AskEmmaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskEmmaView.swift; sourceTree = "<group>"; };
 		24300106A0235189A0CC811B /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
 		2838DD355391ACBF64F0A85D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		429C44E0037C948917C776C1 /* OwnerRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerRequestView.swift; sourceTree = "<group>"; };
@@ -47,9 +51,11 @@
 		7E2D099B5A5F0E142DA7E3EA /* DeveloperTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperTabView.swift; sourceTree = "<group>"; };
 		81ADB7F04AD144EB3FF98D82 /* CreateTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateTaskView.swift; sourceTree = "<group>"; };
 		A58536617D0385FF7734F176 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		B33564207E7BD5526689ADD0 /* VoiceInputButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputButton.swift; sourceTree = "<group>"; };
 		BB596265733DE9F91A8E46AE /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
 		BE92C9AA042B981A92E1F41A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
+		E71341C368CEADCCFE3A2310 /* SpeechRecognitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionService.swift; sourceTree = "<group>"; };
 		EAD75F006B9819FDCB8065D7 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
 		F5A960B6DBF40C36DF2CD5AC /* MobileCommanderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileCommanderApp.swift; sourceTree = "<group>"; };
 		F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerStatusView.swift; sourceTree = "<group>"; };
@@ -73,6 +79,7 @@
 		02574DA049E27D36569B5502 /* Owner */ = {
 			isa = PBXGroup;
 			children = (
+				117BE33BB364CC0E35F0FE4D /* AskEmmaView.swift */,
 				01F71C261EE85889C087FD94 /* OwnerHomeView.swift */,
 				429C44E0037C948917C776C1 /* OwnerRequestView.swift */,
 				F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */,
@@ -120,6 +127,7 @@
 			children = (
 				A58536617D0385FF7734F176 /* AuthService.swift */,
 				C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */,
+				E71341C368CEADCCFE3A2310 /* SpeechRecognitionService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -146,6 +154,7 @@
 			children = (
 				BE92C9AA042B981A92E1F41A /* LoginView.swift */,
 				0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */,
+				B33564207E7BD5526689ADD0 /* VoiceInputButton.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -243,6 +252,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A7AE114261AC579849910ABA /* AppMode.swift in Sources */,
+				B83671ED228F958F2BFCDBE9 /* AskEmmaView.swift in Sources */,
 				1E54B0C78BED35091B856A97 /* AuthService.swift in Sources */,
 				877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */,
 				648FF4F950395D8709CEBCF3 /* DashboardView.swift in Sources */,
@@ -257,9 +267,11 @@
 				EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */,
 				1CAF88F53D8E141A28DE0857 /* OwnerTabView.swift in Sources */,
 				6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */,
+				7E5CD74CBE0AD9B172CD5FD2 /* SpeechRecognitionService.swift in Sources */,
 				F7FEE266AFA86EF39D63B6EA /* Task.swift in Sources */,
 				6A2CA38420C310E87557F56E /* TaskDetailView.swift in Sources */,
 				6511EAE2670DE68090EE4139 /* TaskListView.swift in Sources */,
+				3F39F5EBF1759B2D1D74C1DF /* VoiceInputButton.swift in Sources */,
 				30B6BF012D8D0EB6C9EDA113 /* Worker.swift in Sources */,
 				9C6FD92F6ABFDA4FBF5DBFA8 /* WorkersView.swift in Sources */,
 			);

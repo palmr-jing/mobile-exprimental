@@ -27,6 +27,10 @@
         <key>UIApplicationSupportsMultipleScenes</key>
         <false/>
     </dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Commander needs microphone access for voice input to Ask Emma.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Commander uses on-device speech recognition to convert your voice to text.</string>
     <key>UILaunchScreen</key>
     <dict/>
     <key>UISupportedInterfaceOrientations</key>

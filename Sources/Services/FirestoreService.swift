@@ -79,6 +79,25 @@ class FirestoreService: ObservableObject {
         ])
     }
 
+    func createEmmaTask(message: String) async throws {
+        let maxNumId = tasks.map(\.numId).max() ?? 0
+        let data: [String: Any] = [
+            "num_id": maxNumId + 1,
+            "project": "",
+            "path": "",
+            "task": "Ask Emma: \(String(message.prefix(80)))",
+            "description": message,
+            "status": "pending",
+            "priority": 3,
+            "depends_on": [] as [Int],
+            "allow_parallel": false,
+            "source": "voice",
+            "created_at": FieldValue.serverTimestamp(),
+            "updated_at": FieldValue.serverTimestamp()
+        ]
+        try await db.collection("commander_tasks").addDocument(data: data)
+    }
+
     func sendChatMessage(taskId: String, content: String) async throws {
         let data: [String: Any] = [
             "role": "user",

@@ -28,6 +28,7 @@ struct OwnerHomeView: View {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     greetingCard
+                    askEmmaCard
                     if !needsAttention.isEmpty { attentionSection }
                     if !activeTasks.isEmpty { activeSection }
                     summarySection
@@ -49,6 +50,33 @@ struct OwnerHomeView: View {
             .sheet(isPresented: $showModeSwitcher) {
                 ModeSwitcher()
                     .presentationDetents([.medium])
+            }
+        }
+    }
+
+    private var askEmmaCard: some View {
+        CommanderCard {
+            HStack(spacing: DS.Spacing.lg) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                    Text("Ask Emma")
+                        .font(DS.Typography.headline)
+                        .foregroundStyle(DS.Colors.text)
+                    Text("Tap the mic to get started")
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(DS.Colors.secondary)
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .fill(DS.Colors.accent)
+                        .frame(width: 52, height: 52)
+                        .shadow(color: DS.Colors.accent.opacity(0.3), radius: 6, y: 3)
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(.white)
+                }
             }
         }
     }

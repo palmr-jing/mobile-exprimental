@@ -106,9 +106,83 @@ struct StatusBadge: View {
         Text(status.displayName)
             .font(DS.Typography.small)
             .foregroundStyle(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
             .background(status.color)
             .clipShape(Capsule())
+    }
+}
+
+struct EmptyStateView: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    var actionLabel: String? = nil
+    var action: (() -> Void)? = nil
+
+    var body: some View {
+        VStack(spacing: DS.Spacing.lg) {
+            Image(systemName: icon)
+                .font(.system(size: 48))
+                .foregroundStyle(DS.Colors.secondary.opacity(0.5))
+
+            VStack(spacing: DS.Spacing.xs) {
+                Text(title)
+                    .font(DS.Typography.subheading)
+                    .foregroundStyle(DS.Colors.text)
+
+                Text(subtitle)
+                    .font(DS.Typography.body)
+                    .foregroundStyle(DS.Colors.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            if let label = actionLabel, let action = action {
+                Button(action: action) {
+                    Text(label)
+                        .font(DS.Typography.subheading)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, DS.Spacing.xl)
+                        .padding(.vertical, DS.Spacing.md)
+                        .background(DS.Colors.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                }
+            }
+        }
+        .padding(DS.Spacing.xxl)
+    }
+}
+
+struct FirstRunHintView: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture { onDismiss() }
+
+            VStack(spacing: DS.Spacing.md) {
+                Image(systemName: "mic.circle.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(DS.Colors.accent)
+                    .symbolEffect(.pulse)
+
+                Text(message)
+                    .font(DS.Typography.headline)
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+
+                Text("Tap anywhere to dismiss")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(DS.Spacing.xxl)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+            .padding(.horizontal, 40)
+        }
+        .transition(.opacity)
     }
 }

@@ -20,7 +20,7 @@ struct TaskListView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 filterBar
                     .padding(.horizontal, DS.Spacing.lg)
@@ -32,14 +32,13 @@ struct TaskListView: View {
                     Spacer()
                 } else if filteredTasks.isEmpty {
                     Spacer()
-                    VStack(spacing: DS.Spacing.md) {
-                        Image(systemName: "tray")
-                            .font(.system(size: 40))
-                            .foregroundStyle(DS.Colors.secondary)
-                        Text("No tasks")
-                            .font(DS.Typography.body)
-                            .foregroundStyle(DS.Colors.secondary)
-                    }
+                    EmptyStateView(
+                        icon: filterStatus != nil ? "line.3.horizontal.decrease.circle" : "tray",
+                        title: filterStatus != nil ? "No matching tasks" : "No tasks yet",
+                        subtitle: filterStatus != nil
+                            ? "Try a different filter or clear the current one."
+                            : "Tasks will appear here once created."
+                    )
                     Spacer()
                 } else {
                     ScrollView {
@@ -85,10 +84,10 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(DS.Typography.small)
+                .font(DS.Typography.caption)
                 .foregroundStyle(isSelected ? .white : DS.Colors.text)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
                 .background(isSelected ? DS.Colors.dark : DS.Colors.surface)
                 .clipShape(Capsule())
                 .overlay(

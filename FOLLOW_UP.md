@@ -1,42 +1,22 @@
 # Follow-Up
 
-**What was done**: Built the Mobile Commander iOS app — a SwiftUI frontend for the existing Commander task orchestration system. Two modes: Developer (full task/worker/output control) and Owner (simplified request templates for non-technical gym owners).
+**What was done**: Added text-to-speech for Emma (assistant) replies in the task chat view. Created a SpeechService using AVSpeechSynthesizer with silent-switch-aware audio session (`.ambient` + `.duckOthers`), added a speaker button on each Emma chat bubble, and an auto-speak toggle for hands-free mode.
 
 **What needs review**:
-- Verify Firebase auth works on device (currently uses anonymous auth for development — Google Sign-In needs the GoogleSignIn SDK added and configured in the Firebase Console with the iOS bundle ID)
-- Confirm Firestore real-time listeners properly sync tasks and workers from the existing `commander_tasks` and `commander_workers` collections
-- Check that task creation from Owner mode generates tasks compatible with existing workers
-- Verify the GoogleService-Info.plist matches what Firebase Console generates for the iOS app (current one is placeholder-ish — needs a real iOS app registered in Firebase)
+- Verify the speaker button on Emma bubbles triggers playback on a real device (simulator TTS may sound robotic)
+- Confirm auto-speak only fires for newly arrived messages, not historical ones on initial load
+- Test that tapping Send stops any in-progress speech
+- Check that the auto-speak toggle state persists across app launches (stored in UserDefaults as `emma_auto_speak`)
+- Verify audio ducking works when music or other audio is playing
+- Confirm silent switch on a physical device suppresses TTS output
 
 **Action items**:
-- Register iOS app in Firebase Console (bundle ID: com.everbot.mobile-commander) and download the real GoogleService-Info.plist
-- Add Google Sign-In SDK if you want proper Google auth (currently falls back to anonymous)
-- Set DEVELOPMENT_TEAM in project.yml if you want to run on a physical device
+- Test on a physical iOS device — TTS voice quality and silent switch behavior can't be verified in the simulator
+- If users report the voice sounds unnatural, consider downloading enhanced/premium voices in device Settings > Accessibility > Spoken Content > Voices
 - Push to GitHub remote
-- Consider adding push notifications for task completion (Firebase Cloud Messaging)
 
 **Files changed**:
-- `project.yml` — XcodeGen project spec (iOS 17+, Firebase dependencies)
-- `Resources/Info.plist` — iOS app config
-- `Resources/GoogleService-Info.plist` — Firebase config (needs real values from Firebase Console)
-- `Sources/App/MobileCommanderApp.swift` — App entry point with mode switching
-- `Sources/App/AppMode.swift` — Developer/Owner mode enum
-- `Sources/Design/DesignSystem.swift` — Color palette, typography, card components (Palmr-inspired)
-- `Sources/Models/Task.swift` — Task model matching Firestore schema
-- `Sources/Models/Worker.swift` — Worker model
-- `Sources/Services/AuthService.swift` — Firebase Auth wrapper
-- `Sources/Services/FirestoreService.swift` — Real-time Firestore listener for tasks/workers/chat/output
-- `Sources/Views/Developer/DeveloperTabView.swift` — 5-tab developer interface
-- `Sources/Views/Developer/DashboardView.swift` — Stats grid, workers, recent tasks
-- `Sources/Views/Developer/TaskListView.swift` — Filterable task list with search
-- `Sources/Views/Developer/TaskDetailView.swift` — Full task view with output/chat/result tabs
-- `Sources/Views/Developer/CreateTaskView.swift` — Full task creation form
-- `Sources/Views/Developer/WorkersView.swift` — Worker fleet monitoring
-- `Sources/Views/Developer/SettingsView.swift` — Account, mode switch, app info
-- `Sources/Views/Owner/OwnerTabView.swift` — 3-tab simplified interface
-- `Sources/Views/Owner/OwnerHomeView.swift` — Status dashboard for owners
-- `Sources/Views/Owner/OwnerRequestView.swift` — Template-based task creation (Bug Fix, New Feature, UI Change, Content Update)
-- `Sources/Views/Owner/OwnerStatusView.swift` — Project progress overview
-- `Sources/Views/Shared/LoginView.swift` — Sign-in screen
-- `Sources/Views/Shared/ModeSwitcher.swift` — Mode selection sheet
-- `.gitignore` — Standard iOS gitignore
+- `Sources/Services/SpeechService.swift` — New file. AVSpeechSynthesizer wrapper with audio session config, voice selection (premium > enhanced > default), published speaking state, auto-speak persistence via UserDefaults.
+- `Sources/Views/Developer/TaskDetailView.swift` — Added SpeechService as StateObject; chatView gains auto-speak capsule toggle; ChatBubble shows speaker/stop button on non-user messages; speech stops on send and on view disappear; auto-speak triggers on new Emma messages only.
+- `MobileCommander.xcodeproj/project.pbxproj` — Added SpeechService.swift to file references, build files, Services group, and Sources build phase.
+- `TEST_REPORT.md` — Updated with build verification results and manual testing checklist for TTS.

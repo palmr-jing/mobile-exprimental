@@ -4,12 +4,14 @@ import FirebaseFirestore
 struct TaskDetailView: View {
     let task: CommanderTask
     @EnvironmentObject var firestoreService: FirestoreService
+    @StateObject private var speechService = SpeechService()
     @State private var outputChunks: [OutputChunk] = []
     @State private var chatMessages: [ChatMessage] = []
     @State private var chatInput = ""
     @State private var selectedTab = 0
     @State private var outputListener: ListenerRegistration?
     @State private var chatListener: ListenerRegistration?
+    @State private var lastSeenMessageCount = 0
 
     var body: some View {
         ScrollView {
@@ -25,7 +27,19 @@ struct TaskDetailView: View {
         .navigationTitle("Task #\(task.numId)")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { startListeners() }
-        .onDisappear { stopListeners() }
+        .onDisappear {
+            stopListeners()
+            speechService.stop()
+        }
+        .onChange(of: chatMessages.count) { oldCount, newCount in
+            guard speechService.autoSpeak,
+                  newCount > oldCount,
+                  newCount > lastSeenMessageCount,
+                  let last = chatMessages.last,
+                  last.role != "user"
+            else { return }
+            speechService.speak(text: last.content, messageId: last.id)
+        }
     }
 
     private var headerSection: some View {
@@ -145,10 +159,32 @@ struct TaskDetailView: View {
 
     private var chatView: some View {
         VStack(spacing: DS.Spacing.md) {
+            HStack {
+                Spacer()
+                Button {
+                    speechService.autoSpeak.toggle()
+                } label: {
+                    Label(
+                        speechService.autoSpeak ? "Auto-speak On" : "Auto-speak",
+                        systemImage: speechService.autoSpeak ? "speaker.wave.3.fill" : "speaker.slash"
+                    )
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(speechService.autoSpeak ? DS.Colors.accent : DS.Colors.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        speechService.autoSpeak
+                            ? DS.Colors.accent.opacity(0.12)
+                            : DS.Colors.border.opacity(0.5)
+                    )
+                    .clipShape(Capsule())
+                }
+            }
+
             ScrollView {
                 LazyVStack(spacing: DS.Spacing.sm) {
                     ForEach(chatMessages) { msg in
-                        ChatBubble(message: msg)
+                        ChatBubble(message: msg, speechService: speechService)
                     }
                 }
             }
@@ -159,6 +195,7 @@ struct TaskDetailView: View {
                     .textFieldStyle(.roundedBorder)
 
                 Button {
+                    speechService.stop()
                     let content = chatInput
                     chatInput = ""
                     Task { try? await firestoreService.sendChatMessage(taskId: task.id, content: content) }
@@ -205,6 +242,9 @@ struct TaskDetailView: View {
             self.outputChunks = chunks
         }
         chatListener = firestoreService.listenToChat(taskId: task.id) { messages in
+            if self.lastSeenMessageCount == 0 {
+                self.lastSeenMessageCount = messages.count
+            }
             self.chatMessages = messages
         }
     }
@@ -245,22 +285,48 @@ struct MetadataRow: View {
 
 struct ChatBubble: View {
     let message: ChatMessage
+    @ObservedObject var speechService: SpeechService
 
-    var isUser: Bool { message.role == "user" }
+    private var isUser: Bool { message.role == "user" }
+    private var isSpeaking: Bool { speechService.speakingMessageId == message.id }
 
     var body: some View {
-        HStack {
+        HStack(alignment: .bottom) {
             if isUser { Spacer() }
-            Text(message.content)
-                .font(DS.Typography.body)
-                .foregroundStyle(isUser ? .white : DS.Colors.text)
-                .padding(DS.Spacing.md)
-                .background(isUser ? DS.Colors.accent : DS.Colors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
-                .overlay(
-                    RoundedRectangle(cornerRadius: DS.Radius.md)
-                        .stroke(isUser ? Color.clear : DS.Colors.border, lineWidth: 0.5)
-                )
+            VStack(alignment: isUser ? .trailing : .leading, spacing: DS.Spacing.xs) {
+                Text(message.content)
+                    .font(DS.Typography.body)
+                    .foregroundStyle(isUser ? .white : DS.Colors.text)
+                    .padding(DS.Spacing.md)
+                    .background(isUser ? DS.Colors.accent : DS.Colors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Radius.md)
+                            .stroke(isUser ? Color.clear : DS.Colors.border, lineWidth: 0.5)
+                    )
+
+                if !isUser {
+                    Button {
+                        if isSpeaking {
+                            speechService.stop()
+                        } else {
+                            speechService.speak(text: message.content, messageId: message.id)
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: isSpeaking ? "stop.fill" : "speaker.wave.2")
+                                .font(.system(size: 11))
+                            if isSpeaking {
+                                Text("Stop")
+                                    .font(DS.Typography.small)
+                            }
+                        }
+                        .foregroundStyle(isSpeaking ? DS.Colors.accent : DS.Colors.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                    }
+                }
+            }
             if !isUser { Spacer() }
         }
     }

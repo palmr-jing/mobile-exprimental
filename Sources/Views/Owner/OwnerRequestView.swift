@@ -8,28 +8,28 @@ struct OwnerRequestView: View {
     @State private var isSubmitting = false
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: DS.Spacing.xl) {
-                    headerSection
-                    templateGrid
-                    if selectedTemplate != nil {
-                        descriptionSection
-                        submitButton
-                    }
+        ScrollView {
+            VStack(spacing: DS.Spacing.xl) {
+                headerSection
+                templateGrid
+                if selectedTemplate != nil {
+                    descriptionSection
+                    submitButton
                 }
-                .padding(DS.Spacing.lg)
             }
-            .background(DS.Colors.background.ignoresSafeArea())
-            .navigationTitle("New Request")
-            .alert("Request Sent!", isPresented: $showSuccess) {
-                Button("OK") {
-                    selectedTemplate = nil
-                    customDescription = ""
-                }
-            } message: {
-                Text("Your request is in the queue. You'll see progress on the Home tab.")
+            .frame(maxWidth: 700)
+            .padding(DS.Spacing.lg)
+            .frame(maxWidth: .infinity)
+        }
+        .background(DS.Colors.background.ignoresSafeArea())
+        .navigationTitle("New Request")
+        .alert("Request Sent!", isPresented: $showSuccess) {
+            Button("OK") {
+                selectedTemplate = nil
+                customDescription = ""
             }
+        } message: {
+            Text("Your request is in the queue. You'll see progress on the Home tab.")
         }
     }
 
@@ -45,7 +45,7 @@ struct OwnerRequestView: View {
     }
 
     private var templateGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DS.Spacing.md) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: DS.Spacing.md)], spacing: DS.Spacing.md) {
             ForEach(RequestTemplate.allCases) { template in
                 TemplateCard(
                     template: template,

@@ -4,35 +4,35 @@ struct WorkersView: View {
     @EnvironmentObject var firestoreService: FirestoreService
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: DS.Spacing.lg) {
-                    summaryCard
+        ScrollView {
+            VStack(spacing: DS.Spacing.lg) {
+                summaryCard
 
-                    ForEach(firestoreService.workers) { worker in
-                        WorkerDetailCard(worker: worker)
+                if firestoreService.workers.isEmpty {
+                    VStack(spacing: DS.Spacing.md) {
+                        Image(systemName: "server.rack")
+                            .font(.system(size: 48))
+                            .foregroundStyle(DS.Colors.secondary.opacity(0.5))
+                        Text("No workers online")
+                            .font(DS.Typography.body)
+                            .foregroundStyle(DS.Colors.secondary)
+                        Text("Start a worker with: cd worker && node index.js")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.secondary)
                     }
-
-                    if firestoreService.workers.isEmpty {
-                        VStack(spacing: DS.Spacing.md) {
-                            Image(systemName: "server.rack")
-                                .font(.system(size: 48))
-                                .foregroundStyle(DS.Colors.secondary.opacity(0.5))
-                            Text("No workers online")
-                                .font(DS.Typography.body)
-                                .foregroundStyle(DS.Colors.secondary)
-                            Text("Start a worker with: cd worker && node index.js")
-                                .font(DS.Typography.caption)
-                                .foregroundStyle(DS.Colors.secondary)
+                    .padding(.top, 60)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: DS.Spacing.lg)], spacing: DS.Spacing.lg) {
+                        ForEach(firestoreService.workers) { worker in
+                            WorkerDetailCard(worker: worker)
                         }
-                        .padding(.top, 60)
                     }
                 }
-                .padding(DS.Spacing.lg)
             }
-            .background(DS.Colors.background.ignoresSafeArea())
-            .navigationTitle("Workers")
+            .padding(DS.Spacing.lg)
         }
+        .background(DS.Colors.background.ignoresSafeArea())
+        .navigationTitle("Workers")
     }
 
     private var summaryCard: some View {

@@ -20,45 +20,43 @@ struct TaskListView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                filterBar
-                    .padding(.horizontal, DS.Spacing.lg)
-                    .padding(.vertical, DS.Spacing.sm)
+        VStack(spacing: 0) {
+            filterBar
+                .padding(.horizontal, DS.Spacing.lg)
+                .padding(.vertical, DS.Spacing.sm)
 
-                if firestoreService.isLoading {
-                    Spacer()
-                    ProgressView()
-                    Spacer()
-                } else if filteredTasks.isEmpty {
-                    Spacer()
-                    VStack(spacing: DS.Spacing.md) {
-                        Image(systemName: "tray")
-                            .font(.system(size: 40))
-                            .foregroundStyle(DS.Colors.secondary)
-                        Text("No tasks")
-                            .font(DS.Typography.body)
-                            .foregroundStyle(DS.Colors.secondary)
-                    }
-                    Spacer()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: DS.Spacing.sm) {
-                            ForEach(filteredTasks) { task in
-                                NavigationLink(destination: TaskDetailView(task: task)) {
-                                    TaskRow(task: task)
-                                }
-                                .buttonStyle(.plain)
+            if firestoreService.isLoading {
+                Spacer()
+                ProgressView()
+                Spacer()
+            } else if filteredTasks.isEmpty {
+                Spacer()
+                VStack(spacing: DS.Spacing.md) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 40))
+                        .foregroundStyle(DS.Colors.secondary)
+                    Text("No tasks")
+                        .font(DS.Typography.body)
+                        .foregroundStyle(DS.Colors.secondary)
+                }
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: DS.Spacing.sm)], spacing: DS.Spacing.sm) {
+                        ForEach(filteredTasks) { task in
+                            NavigationLink(destination: TaskDetailView(task: task)) {
+                                TaskRow(task: task)
                             }
+                            .buttonStyle(.plain)
                         }
-                        .padding(DS.Spacing.lg)
                     }
+                    .padding(DS.Spacing.lg)
                 }
             }
-            .background(DS.Colors.background.ignoresSafeArea())
-            .navigationTitle("Tasks")
-            .searchable(text: $searchText, prompt: "Search tasks...")
         }
+        .background(DS.Colors.background.ignoresSafeArea())
+        .navigationTitle("Tasks")
+        .searchable(text: $searchText, prompt: "Search tasks...")
     }
 
     private var filterBar: some View {

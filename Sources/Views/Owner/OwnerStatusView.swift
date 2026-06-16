@@ -8,20 +8,20 @@ struct OwnerStatusView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: DS.Spacing.lg) {
-                    overallProgress
+        ScrollView {
+            VStack(spacing: DS.Spacing.lg) {
+                overallProgress
 
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: DS.Spacing.lg)], spacing: DS.Spacing.lg) {
                     ForEach(Array(groupedByProject.keys.sorted()), id: \.self) { project in
                         projectSection(project: project, tasks: groupedByProject[project] ?? [])
                     }
                 }
-                .padding(DS.Spacing.lg)
             }
-            .background(DS.Colors.background.ignoresSafeArea())
-            .navigationTitle("Status")
+            .padding(DS.Spacing.lg)
         }
+        .background(DS.Colors.background.ignoresSafeArea())
+        .navigationTitle("Status")
     }
 
     private var overallProgress: some View {

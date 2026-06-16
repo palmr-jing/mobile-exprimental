@@ -24,32 +24,30 @@ struct OwnerHomeView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: DS.Spacing.lg) {
-                    greetingCard
-                    if !needsAttention.isEmpty { attentionSection }
-                    if !activeTasks.isEmpty { activeSection }
-                    summarySection
-                }
-                .padding(DS.Spacing.lg)
+        ScrollView {
+            VStack(spacing: DS.Spacing.lg) {
+                greetingCard
+                if !needsAttention.isEmpty { attentionSection }
+                if !activeTasks.isEmpty { activeSection }
+                summarySection
             }
-            .background(DS.Colors.background.ignoresSafeArea())
-            .navigationTitle("Home")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showModeSwitcher = true
-                    } label: {
-                        Image(systemName: "gear")
-                            .foregroundStyle(DS.Colors.secondary)
-                    }
+            .padding(DS.Spacing.lg)
+        }
+        .background(DS.Colors.background.ignoresSafeArea())
+        .navigationTitle("Home")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showModeSwitcher = true
+                } label: {
+                    Image(systemName: "gear")
+                        .foregroundStyle(DS.Colors.secondary)
                 }
             }
-            .sheet(isPresented: $showModeSwitcher) {
-                ModeSwitcher()
-                    .presentationDetents([.medium])
-            }
+        }
+        .sheet(isPresented: $showModeSwitcher) {
+            ModeSwitcher()
+                .presentationDetents([.medium])
         }
     }
 
@@ -97,8 +95,10 @@ struct OwnerHomeView: View {
                 .font(DS.Typography.subheading)
                 .foregroundStyle(DS.Colors.red)
 
-            ForEach(needsAttention.prefix(3)) { task in
-                OwnerTaskCard(task: task)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: DS.Spacing.md)], spacing: DS.Spacing.md) {
+                ForEach(needsAttention.prefix(3)) { task in
+                    OwnerTaskCard(task: task)
+                }
             }
         }
     }
@@ -109,8 +109,10 @@ struct OwnerHomeView: View {
                 .font(DS.Typography.headline)
                 .foregroundStyle(DS.Colors.text)
 
-            ForEach(activeTasks) { task in
-                OwnerTaskCard(task: task)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: DS.Spacing.md)], spacing: DS.Spacing.md) {
+                ForEach(activeTasks) { task in
+                    OwnerTaskCard(task: task)
+                }
             }
         }
     }
@@ -133,8 +135,10 @@ struct OwnerHomeView: View {
                     }
                 }
             } else {
-                ForEach(completedToday.prefix(5)) { task in
-                    OwnerTaskCard(task: task)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: DS.Spacing.md)], spacing: DS.Spacing.md) {
+                    ForEach(completedToday.prefix(5)) { task in
+                        OwnerTaskCard(task: task)
+                    }
                 }
             }
         }

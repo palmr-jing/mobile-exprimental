@@ -4,25 +4,21 @@ struct DashboardView: View {
     @EnvironmentObject var firestoreService: FirestoreService
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: DS.Spacing.lg) {
-                    statsGrid
-                    workersSection
-                    recentTasksSection
-                }
-                .padding(DS.Spacing.lg)
+        ScrollView {
+            VStack(spacing: DS.Spacing.lg) {
+                statsGrid
+                workersSection
+                recentTasksSection
             }
-            .background(DS.Colors.background.ignoresSafeArea())
-            .navigationTitle("Commander")
+            .padding(DS.Spacing.lg)
         }
+        .background(DS.Colors.background.ignoresSafeArea())
+        .navigationTitle("Commander")
     }
 
     private var statsGrid: some View {
         LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible()),
-            GridItem(.flexible())
+            GridItem(.adaptive(minimum: 100), spacing: DS.Spacing.md)
         ], spacing: DS.Spacing.md) {
             StatCard(
                 title: "Running",
@@ -60,8 +56,10 @@ struct DashboardView: View {
                     }
                 }
             } else {
-                ForEach(firestoreService.workers) { worker in
-                    WorkerRow(worker: worker)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: DS.Spacing.md)], spacing: DS.Spacing.md) {
+                    ForEach(firestoreService.workers) { worker in
+                        WorkerRow(worker: worker)
+                    }
                 }
             }
         }
@@ -81,11 +79,13 @@ struct DashboardView: View {
                 .foregroundStyle(DS.Colors.accent)
             }
 
-            ForEach(firestoreService.tasks.prefix(5)) { task in
-                NavigationLink(destination: TaskDetailView(task: task)) {
-                    TaskRow(task: task)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: DS.Spacing.sm)], spacing: DS.Spacing.sm) {
+                ForEach(firestoreService.tasks.prefix(5)) { task in
+                    NavigationLink(destination: TaskDetailView(task: task)) {
+                        TaskRow(task: task)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }

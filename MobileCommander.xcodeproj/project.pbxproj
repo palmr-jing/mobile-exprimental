@@ -21,6 +21,7 @@
 		68A6DC81E2933D7B9A46CF17 /* OwnerRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429C44E0037C948917C776C1 /* OwnerRequestView.swift */; };
 		6A2CA38420C310E87557F56E /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24300106A0235189A0CC811B /* TaskDetailView.swift */; };
 		6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838DD355391ACBF64F0A85D /* SettingsView.swift */; };
+		86D7DD4EF91EB406122FDDBF /* TaskTextHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34F5E34EE965EDD7E40F7CC2 /* TaskTextHelper.swift */; };
 		877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ADB7F04AD144EB3FF98D82 /* CreateTaskView.swift */; };
 		95A43C9BC9C29C67DCEEFC92 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */; };
 		9848556BEA38192F59464B70 /* OwnerHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F71C261EE85889C087FD94 /* OwnerHomeView.swift */; };
@@ -40,6 +41,7 @@
 		0FD25D1286ED63727B1D6D1A /* WorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersView.swift; sourceTree = "<group>"; };
 		24300106A0235189A0CC811B /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
 		2838DD355391ACBF64F0A85D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		34F5E34EE965EDD7E40F7CC2 /* TaskTextHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTextHelper.swift; sourceTree = "<group>"; };
 		429C44E0037C948917C776C1 /* OwnerRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerRequestView.swift; sourceTree = "<group>"; };
 		4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		62CE21C127D8B0CBA0629C76 /* Worker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Worker.swift; sourceTree = "<group>"; };
@@ -108,6 +110,7 @@
 			children = (
 				A10107B769D14042A73A6E8C /* App */,
 				FAF0A659E964DC2C563FFFE4 /* Design */,
+				905F30F18F3C525D129C690E /* Helpers */,
 				E4C5E4397FE4644B6570B2C7 /* Models */,
 				8EF3E893A4C6117678C894BE /* Services */,
 				F1279A3C60B781873ECCF006 /* Views */,
@@ -122,6 +125,14 @@
 				C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		905F30F18F3C525D129C690E /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				34F5E34EE965EDD7E40F7CC2 /* TaskTextHelper.swift */,
+			);
+			path = Helpers;
 			sourceTree = "<group>";
 		};
 		A10107B769D14042A73A6E8C /* App */ = {
@@ -260,6 +271,7 @@
 				F7FEE266AFA86EF39D63B6EA /* Task.swift in Sources */,
 				6A2CA38420C310E87557F56E /* TaskDetailView.swift in Sources */,
 				6511EAE2670DE68090EE4139 /* TaskListView.swift in Sources */,
+				86D7DD4EF91EB406122FDDBF /* TaskTextHelper.swift in Sources */,
 				30B6BF012D8D0EB6C9EDA113 /* Worker.swift in Sources */,
 				9C6FD92F6ABFDA4FBF5DBFA8 /* WorkersView.swift in Sources */,
 			);

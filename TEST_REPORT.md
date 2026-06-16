@@ -4,7 +4,7 @@
 - **Platform**: iOS 17.0+ (Simulator)
 - **Status**: BUILD SUCCEEDED
 - **Warnings**: None
-- **Date**: 2026-04-20
+- **Date**: 2026-06-16
 
 ## How to Build
 ```bash
@@ -16,6 +16,7 @@ xcodebuild -project MobileCommander.xcodeproj -scheme MobileCommander -destinati
 No unit test target yet. The app builds and runs on iOS Simulator. Core functionality depends on live Firebase backend (same Firestore as web Commander).
 
 ## What's Verified
-- All Swift files compile without errors or warnings
-- Firebase SDK dependencies resolve correctly (v11.15.0)
-- XcodeGen project generation works from project.yml
+- All 21 Swift files compile without errors (20 existing + 1 new `TaskTextHelper.swift`)
+- XcodeGen regenerated the project with the new `Sources/Helpers/` directory
+- Firebase SDK dependencies resolve correctly
+- No type errors, no missing imports, no ambiguous references

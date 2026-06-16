@@ -1,42 +1,22 @@
 # Follow-Up
 
-**What was done**: Built the Mobile Commander iOS app — a SwiftUI frontend for the existing Commander task orchestration system. Two modes: Developer (full task/worker/output control) and Owner (simplified request templates for non-technical gym owners).
+**What was done**: Replaced the Owner Home's bare status numbers with labeled, tappable status cards that show plain-language subtitles. Added a TaskTextHelper that strips `[browser]`-style jargon prefixes, IP addresses, file paths, stack traces, and template prefixes from task text. Mapped repo slugs (like `palmr-ios`) to friendly names (like "Palmr") in both the home and status views.
 
 **What needs review**:
-- Verify Firebase auth works on device (currently uses anonymous auth for development — Google Sign-In needs the GoogleSignIn SDK added and configured in the Firebase Console with the iOS bundle ID)
-- Confirm Firestore real-time listeners properly sync tasks and workers from the existing `commander_tasks` and `commander_workers` collections
-- Check that task creation from Owner mode generates tasks compatible with existing workers
-- Verify the GoogleService-Info.plist matches what Firebase Console generates for the iOS app (current one is placeholder-ish — needs a real iOS app registered in Firebase)
+- Verify the status cards render correctly in the 2-column grid on different device sizes (iPhone SE through Pro Max)
+- Confirm tap-to-scroll works for each card (In Progress scrolls to "Working On" section, Done Today to "Recently Completed", Needs Attention to its section)
+- Check that `TaskTextHelper.humanize()` doesn't accidentally mangle clean, already-friendly task titles
+- Verify `friendlyProjectName()` returns sensible output for any project slugs in your Firestore data beyond `palmr-ios`
+- Confirm the `ownerDisplayName` labels ("Working on it", "Something went wrong", etc.) match the tone you want
 
 **Action items**:
-- Register iOS app in Firebase Console (bundle ID: com.everbot.mobile-commander) and download the real GoogleService-Info.plist
-- Add Google Sign-In SDK if you want proper Google auth (currently falls back to anonymous)
-- Set DEVELOPMENT_TEAM in project.yml if you want to run on a physical device
-- Push to GitHub remote
-- Consider adding push notifications for task completion (Firebase Cloud Messaging)
+- Add any additional project slugs to the `knownProjects` dictionary in `TaskTextHelper.swift` if the auto-generated title-case fallback isn't good enough for specific repos
+- Run the app on a simulator and check the Owner Home tab end-to-end with real Firestore data
+- Consider whether the 4th "Total Tasks" card is useful or should show something else
 
 **Files changed**:
-- `project.yml` — XcodeGen project spec (iOS 17+, Firebase dependencies)
-- `Resources/Info.plist` — iOS app config
-- `Resources/GoogleService-Info.plist` — Firebase config (needs real values from Firebase Console)
-- `Sources/App/MobileCommanderApp.swift` — App entry point with mode switching
-- `Sources/App/AppMode.swift` — Developer/Owner mode enum
-- `Sources/Design/DesignSystem.swift` — Color palette, typography, card components (Palmr-inspired)
-- `Sources/Models/Task.swift` — Task model matching Firestore schema
-- `Sources/Models/Worker.swift` — Worker model
-- `Sources/Services/AuthService.swift` — Firebase Auth wrapper
-- `Sources/Services/FirestoreService.swift` — Real-time Firestore listener for tasks/workers/chat/output
-- `Sources/Views/Developer/DeveloperTabView.swift` — 5-tab developer interface
-- `Sources/Views/Developer/DashboardView.swift` — Stats grid, workers, recent tasks
-- `Sources/Views/Developer/TaskListView.swift` — Filterable task list with search
-- `Sources/Views/Developer/TaskDetailView.swift` — Full task view with output/chat/result tabs
-- `Sources/Views/Developer/CreateTaskView.swift` — Full task creation form
-- `Sources/Views/Developer/WorkersView.swift` — Worker fleet monitoring
-- `Sources/Views/Developer/SettingsView.swift` — Account, mode switch, app info
-- `Sources/Views/Owner/OwnerTabView.swift` — 3-tab simplified interface
-- `Sources/Views/Owner/OwnerHomeView.swift` — Status dashboard for owners
-- `Sources/Views/Owner/OwnerRequestView.swift` — Template-based task creation (Bug Fix, New Feature, UI Change, Content Update)
-- `Sources/Views/Owner/OwnerStatusView.swift` — Project progress overview
-- `Sources/Views/Shared/LoginView.swift` — Sign-in screen
-- `Sources/Views/Shared/ModeSwitcher.swift` — Mode selection sheet
-- `.gitignore` — Standard iOS gitignore
+- `Sources/Helpers/TaskTextHelper.swift` — New file. Text humanizer (strips jargon, IPs, paths, stack traces), project name mapper (known dict + kebab-to-title fallback), owner-friendly status labels.
+- `Sources/Views/Owner/OwnerHomeView.swift` — Replaced inline number HStack with 2x2 grid of tappable `StatusMetricCard` views with subtitles. Added ScrollViewReader for tap-to-scroll. Updated `OwnerTaskCard` to show humanized task text, friendly project name, and plain-language status line.
+- `Sources/Views/Owner/OwnerStatusView.swift` — Project headers now use `friendlyProjectName()`. Task text uses `humanize()`. Completion ratio changed from "5/10" to "5 of 10 done".
+- `TEST_REPORT.md` — Updated build verification report.
+- `FOLLOW_UP.md` — This file.

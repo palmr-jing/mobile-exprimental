@@ -25,14 +25,16 @@ struct OwnerHomeView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: DS.Spacing.lg) {
-                    greetingCard
-                    if !needsAttention.isEmpty { attentionSection }
-                    if !activeTasks.isEmpty { activeSection }
-                    summarySection
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: DS.Spacing.lg) {
+                        statusCards(proxy: proxy)
+                        if !needsAttention.isEmpty { attentionSection }
+                        if !activeTasks.isEmpty { activeSection }
+                        summarySection
+                    }
+                    .padding(DS.Spacing.lg)
                 }
-                .padding(DS.Spacing.lg)
             }
             .background(DS.Colors.background.ignoresSafeArea())
             .navigationTitle("Home")
@@ -53,43 +55,65 @@ struct OwnerHomeView: View {
         }
     }
 
-    private var greetingCard: some View {
-        CommanderDarkCard {
-            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-                Text("Your App Status")
-                    .font(DS.Typography.headline)
-                    .foregroundStyle(.white)
+    // MARK: - Status Cards
 
-                HStack(spacing: DS.Spacing.xl) {
-                    VStack {
-                        Text("\(activeTasks.count)")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundStyle(DS.Colors.amber)
-                        Text("In Progress")
-                            .font(DS.Typography.caption)
-                            .foregroundStyle(.gray)
-                    }
-                    VStack {
-                        Text("\(completedToday.count)")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundStyle(DS.Colors.green)
-                        Text("Done Today")
-                            .font(DS.Typography.caption)
-                            .foregroundStyle(.gray)
-                    }
-                    VStack {
-                        Text("\(needsAttention.count)")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundStyle(needsAttention.isEmpty ? .gray : DS.Colors.red)
-                        Text("Attention")
-                            .font(DS.Typography.caption)
-                            .foregroundStyle(.gray)
-                    }
+    private func statusCards(proxy: ScrollViewProxy) -> some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            Text("Your App Status")
+                .font(DS.Typography.headline)
+                .foregroundStyle(DS.Colors.text)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DS.Spacing.md) {
+                StatusMetricCard(
+                    icon: "hammer.fill",
+                    count: activeTasks.count,
+                    label: "In Progress",
+                    subtitle: activeTasks.isEmpty
+                        ? "Nothing running right now"
+                        : "\(activeTasks.count) task\(activeTasks.count == 1 ? "" : "s") being worked on",
+                    color: DS.Colors.amber
+                ) {
+                    withAnimation { proxy.scrollTo("active", anchor: .top) }
                 }
-                .frame(maxWidth: .infinity)
+
+                StatusMetricCard(
+                    icon: "checkmark.circle.fill",
+                    count: completedToday.count,
+                    label: "Done Today",
+                    subtitle: completedToday.isEmpty
+                        ? "No tasks finished yet today"
+                        : "\(completedToday.count) finished since midnight",
+                    color: DS.Colors.green
+                ) {
+                    withAnimation { proxy.scrollTo("completed", anchor: .top) }
+                }
+
+                StatusMetricCard(
+                    icon: "exclamationmark.triangle.fill",
+                    count: needsAttention.count,
+                    label: "Needs Attention",
+                    subtitle: needsAttention.isEmpty
+                        ? "Everything looks good"
+                        : "\(needsAttention.count) need\(needsAttention.count == 1 ? "s" : "") your review",
+                    color: needsAttention.isEmpty ? DS.Colors.secondary : DS.Colors.red
+                ) {
+                    withAnimation { proxy.scrollTo("attention", anchor: .top) }
+                }
+
+                StatusMetricCard(
+                    icon: "tray.full.fill",
+                    count: firestoreService.tasks.count,
+                    label: "Total Tasks",
+                    subtitle: "All time across projects",
+                    color: DS.Colors.blue
+                ) {
+                    // No-op — informational card
+                }
             }
         }
     }
+
+    // MARK: - Sections
 
     private var attentionSection: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
@@ -101,6 +125,7 @@ struct OwnerHomeView: View {
                 OwnerTaskCard(task: task)
             }
         }
+        .id("attention")
     }
 
     private var activeSection: some View {
@@ -113,6 +138,7 @@ struct OwnerHomeView: View {
                 OwnerTaskCard(task: task)
             }
         }
+        .id("active")
     }
 
     private var summarySection: some View {
@@ -138,8 +164,56 @@ struct OwnerHomeView: View {
                 }
             }
         }
+        .id("completed")
     }
 }
+
+// MARK: - Status Metric Card
+
+struct StatusMetricCard: View {
+    let icon: String
+    let count: Int
+    let label: String
+    let subtitle: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundStyle(color)
+                    Spacer()
+                    Text("\(count)")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(color)
+                }
+
+                Text(label)
+                    .font(DS.Typography.subheading)
+                    .foregroundStyle(DS.Colors.text)
+
+                Text(subtitle)
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(DS.Spacing.md)
+            .background(DS.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.md)
+                    .stroke(DS.Colors.border, lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Owner Task Card
 
 struct OwnerTaskCard: View {
     let task: CommanderTask
@@ -150,17 +224,31 @@ struct OwnerTaskCard: View {
                 HStack {
                     StatusBadge(status: task.effectiveStatus)
                     Spacer()
+                    if !task.project.isEmpty {
+                        Text(TaskTextHelper.friendlyProjectName(task.project))
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.accent)
+                    }
+                }
+
+                Text(TaskTextHelper.humanize(task.task))
+                    .font(DS.Typography.subheading)
+                    .foregroundStyle(DS.Colors.text)
+                    .lineLimit(2)
+
+                HStack {
+                    Text(TaskTextHelper.ownerDisplayName(for: task.effectiveStatus))
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(task.effectiveStatus.color)
+
+                    Spacer()
+
                     if let date = task.completedAt ?? task.createdAt {
                         Text(date, style: .relative)
                             .font(DS.Typography.caption)
                             .foregroundStyle(DS.Colors.secondary)
                     }
                 }
-
-                Text(task.task)
-                    .font(DS.Typography.subheading)
-                    .foregroundStyle(DS.Colors.text)
-                    .lineLimit(2)
 
                 if task.status == .running {
                     ProgressView()

@@ -39,6 +39,7 @@
 		7F2F4B9D5E5F69463159D171 /* MentionAutocompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C9190DD3288483A1C8431B /* MentionAutocompleteView.swift */; };
 		8240B000A65C4EE70F9A0C2C /* PresenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04F5C36771C11A3914D8E066 /* PresenceModels.swift */; };
 		851552C32CFDB516DD46F9AE /* NewChannelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E10E706E56CF2DCEAA20C1A /* NewChannelSheet.swift */; };
+		86D7DD4EF91EB406122FDDBF /* TaskTextHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34F5E34EE965EDD7E40F7CC2 /* TaskTextHelper.swift */; };
 		877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81ADB7F04AD144EB3FF98D82 /* CreateTaskView.swift */; };
 		90A1E27820C011CC4FDBB8B7 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8AFC93A31577FAFF6225C9CA /* GoogleSignInSwift */; };
 		92E7E5426B90EC57DAE44185 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A7809AA71F47C8B7C15CC08 /* Assets.xcassets */; };
@@ -100,6 +101,7 @@
 		24300106A0235189A0CC811B /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
 		2838DD355391ACBF64F0A85D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		308A8B6DCACA137B7F76E423 /* NotificationBell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationBell.swift; sourceTree = "<group>"; };
+		34F5E34EE965EDD7E40F7CC2 /* TaskTextHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTextHelper.swift; sourceTree = "<group>"; };
 		3D44F76C5A2172EDD778D55F /* AskEmmaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskEmmaView.swift; sourceTree = "<group>"; };
 		3F5BA382DB636BDDEFC46235 /* MicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicButton.swift; sourceTree = "<group>"; };
 		429C44E0037C948917C776C1 /* OwnerRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerRequestView.swift; sourceTree = "<group>"; };
@@ -257,6 +259,7 @@
 			children = (
 				A10107B769D14042A73A6E8C /* App */,
 				FAF0A659E964DC2C563FFFE4 /* Design */,
+				905F30F18F3C525D129C690E /* Helpers */,
 				19B5A20AD83BB645C63D2EF8 /* Logic */,
 				E4C5E4397FE4644B6570B2C7 /* Models */,
 				8EF3E893A4C6117678C894BE /* Services */,
@@ -280,6 +283,14 @@
 				803F15849AA0AEB833140A96 /* VoiceTranscriber.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		905F30F18F3C525D129C690E /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				34F5E34EE965EDD7E40F7CC2 /* TaskTextHelper.swift */,
+			);
+			path = Helpers;
 			sourceTree = "<group>";
 		};
 		A10107B769D14042A73A6E8C /* App */ = {
@@ -524,6 +535,7 @@
 				F7FEE266AFA86EF39D63B6EA /* Task.swift in Sources */,
 				6A2CA38420C310E87557F56E /* TaskDetailView.swift in Sources */,
 				6511EAE2670DE68090EE4139 /* TaskListView.swift in Sources */,
+				86D7DD4EF91EB406122FDDBF /* TaskTextHelper.swift in Sources */,
 				9674E937D3D672236E905B81 /* TestConfig.swift in Sources */,
 				6C3AE16C094D5C84D6857E0D /* UserAccount.swift in Sources */,
 				333BCB1C27CB5937DDFB3553 /* VoiceTranscriber.swift in Sources */,

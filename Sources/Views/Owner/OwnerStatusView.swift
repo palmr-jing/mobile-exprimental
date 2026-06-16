@@ -52,15 +52,16 @@ struct OwnerStatusView: View {
     }
 
     private func projectSection(project: String, tasks: [CommanderTask]) -> some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        let done = tasks.filter { $0.status == .done }.count
+        return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             HStack {
                 Image(systemName: "folder.fill")
                     .foregroundStyle(DS.Colors.accent)
-                Text(project)
+                Text(TaskTextHelper.friendlyProjectName(project))
                     .font(DS.Typography.subheading)
                     .foregroundStyle(DS.Colors.text)
                 Spacer()
-                Text("\(tasks.filter { $0.status == .done }.count)/\(tasks.count)")
+                Text("\(done) of \(tasks.count) done")
                     .font(DS.Typography.caption)
                     .foregroundStyle(DS.Colors.secondary)
             }
@@ -71,7 +72,7 @@ struct OwnerStatusView: View {
                         .font(.caption)
                         .foregroundStyle(task.effectiveStatus.color)
                         .frame(width: 20)
-                    Text(task.task)
+                    Text(TaskTextHelper.humanize(task.task))
                         .font(DS.Typography.body)
                         .foregroundStyle(DS.Colors.text)
                         .lineLimit(1)

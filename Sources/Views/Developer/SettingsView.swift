@@ -6,7 +6,7 @@ struct SettingsView: View {
     @State private var showModeSwitcher = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 Section("Account") {
                     if let user = authService.user {

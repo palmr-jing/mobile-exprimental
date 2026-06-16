@@ -8,13 +8,22 @@ struct OwnerStatusView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
-                    overallProgress
+                    if firestoreService.tasks.isEmpty {
+                        EmptyStateView(
+                            icon: "chart.bar",
+                            title: "No activity yet",
+                            subtitle: "Submit a request and your progress will be tracked here."
+                        )
+                        .padding(.top, 40)
+                    } else {
+                        overallProgress
 
-                    ForEach(Array(groupedByProject.keys.sorted()), id: \.self) { project in
-                        projectSection(project: project, tasks: groupedByProject[project] ?? [])
+                        ForEach(Array(groupedByProject.keys.sorted()), id: \.self) { project in
+                            projectSection(project: project, tasks: groupedByProject[project] ?? [])
+                        }
                     }
                 }
                 .padding(DS.Spacing.lg)
@@ -77,7 +86,7 @@ struct OwnerStatusView: View {
                         .lineLimit(1)
                     Spacer()
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, DS.Spacing.sm)
             }
         }
         .padding(DS.Spacing.lg)

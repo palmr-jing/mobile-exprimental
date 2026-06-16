@@ -82,7 +82,7 @@ struct TaskDetailView: View {
                         .font(DS.Typography.subheading)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 14)
                         .background(DS.Colors.accent)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                 }
@@ -96,7 +96,7 @@ struct TaskDetailView: View {
                         .font(DS.Typography.subheading)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 14)
                         .background(DS.Colors.red)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                 }
@@ -128,10 +128,16 @@ struct TaskDetailView: View {
         CommanderDarkCard {
             ScrollView {
                 if outputChunks.isEmpty {
-                    Text("No output yet")
-                        .font(DS.Typography.caption)
-                        .foregroundStyle(.gray)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(spacing: DS.Spacing.sm) {
+                        Image(systemName: "text.alignleft")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.gray.opacity(0.5))
+                        Text("Waiting for output\u{2026}")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(.gray)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DS.Spacing.xl)
                 } else {
                     Text(outputChunks.map(\.text).joined())
                         .font(.system(size: 12, design: .monospaced))
@@ -164,7 +170,9 @@ struct TaskDetailView: View {
                     Task { try? await firestoreService.sendChatMessage(taskId: task.id, content: content) }
                 } label: {
                     Image(systemName: "paperplane.fill")
-                        .foregroundStyle(DS.Colors.accent)
+                        .font(.system(size: 18))
+                        .foregroundStyle(chatInput.isEmpty ? DS.Colors.secondary : DS.Colors.accent)
+                        .frame(width: 44, height: 44)
                 }
                 .disabled(chatInput.isEmpty)
             }
@@ -191,9 +199,17 @@ struct TaskDetailView: View {
                         .foregroundStyle(DS.Colors.secondary)
                 }
                 if task.resultText == nil && task.followUp == nil {
-                    Text("No results yet")
-                        .font(DS.Typography.body)
-                        .foregroundStyle(DS.Colors.secondary)
+                    VStack(spacing: DS.Spacing.sm) {
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 24))
+                            .foregroundStyle(DS.Colors.secondary.opacity(0.5))
+                        Text("Results will appear here once the task completes.")
+                            .font(DS.Typography.body)
+                            .foregroundStyle(DS.Colors.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DS.Spacing.md)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

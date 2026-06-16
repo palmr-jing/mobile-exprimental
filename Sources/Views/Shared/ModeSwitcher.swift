@@ -5,7 +5,7 @@ struct ModeSwitcher: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 ForEach(AppMode.allCases, id: \.self) { mode in
                     Button {

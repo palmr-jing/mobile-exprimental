@@ -11,7 +11,7 @@ struct CreateTaskView: View {
     @State private var isSubmitting = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     VStack(alignment: .leading, spacing: DS.Spacing.md) {

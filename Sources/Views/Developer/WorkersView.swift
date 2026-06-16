@@ -4,28 +4,24 @@ struct WorkersView: View {
     @EnvironmentObject var firestoreService: FirestoreService
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
-                    summaryCard
+                    if !firestoreService.workers.isEmpty {
+                        summaryCard
+                    }
 
                     ForEach(firestoreService.workers) { worker in
                         WorkerDetailCard(worker: worker)
                     }
 
                     if firestoreService.workers.isEmpty {
-                        VStack(spacing: DS.Spacing.md) {
-                            Image(systemName: "server.rack")
-                                .font(.system(size: 48))
-                                .foregroundStyle(DS.Colors.secondary.opacity(0.5))
-                            Text("No workers online")
-                                .font(DS.Typography.body)
-                                .foregroundStyle(DS.Colors.secondary)
-                            Text("Start a worker with: cd worker && node index.js")
-                                .font(DS.Typography.caption)
-                                .foregroundStyle(DS.Colors.secondary)
-                        }
-                        .padding(.top, 60)
+                        EmptyStateView(
+                            icon: "server.rack",
+                            title: "No workers online",
+                            subtitle: "Workers process tasks automatically. They'll appear here once connected and running."
+                        )
+                        .padding(.top, 40)
                     }
                 }
                 .padding(DS.Spacing.lg)

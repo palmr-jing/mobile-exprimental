@@ -4,7 +4,7 @@ struct DashboardView: View {
     @EnvironmentObject var firestoreService: FirestoreService
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     statsGrid
@@ -50,14 +50,20 @@ struct DashboardView: View {
 
             if firestoreService.workers.isEmpty {
                 CommanderCard {
-                    HStack {
+                    VStack(spacing: DS.Spacing.md) {
                         Image(systemName: "server.rack")
-                            .foregroundStyle(DS.Colors.secondary)
+                            .font(.system(size: 32))
+                            .foregroundStyle(DS.Colors.secondary.opacity(0.5))
                         Text("No workers connected")
-                            .font(DS.Typography.body)
+                            .font(DS.Typography.subheading)
+                            .foregroundStyle(DS.Colors.text)
+                        Text("Workers pick up tasks automatically once they come online.")
+                            .font(DS.Typography.caption)
                             .foregroundStyle(DS.Colors.secondary)
-                        Spacer()
+                            .multilineTextAlignment(.center)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, DS.Spacing.md)
                 }
             } else {
                 ForEach(firestoreService.workers) { worker in

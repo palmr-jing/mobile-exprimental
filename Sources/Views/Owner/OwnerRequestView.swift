@@ -8,7 +8,7 @@ struct OwnerRequestView: View {
     @State private var isSubmitting = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.xl) {
                     headerSection
@@ -72,12 +72,20 @@ struct OwnerRequestView: View {
             }
 
             TextEditor(text: $customDescription)
-                .frame(minHeight: 100)
+                .frame(minHeight: 120)
                 .padding(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.Radius.sm)
                         .stroke(DS.Colors.border, lineWidth: 1)
                 )
+                .overlay(alignment: .bottomTrailing) {
+                    if customDescription.isEmpty {
+                        Label("Tap the mic on your keyboard to dictate", systemImage: "mic")
+                            .font(DS.Typography.caption)
+                            .foregroundStyle(DS.Colors.secondary.opacity(0.6))
+                            .padding(DS.Spacing.sm)
+                    }
+                }
         }
     }
 
@@ -204,7 +212,7 @@ struct TemplateCard: View {
         Button(action: action) {
             VStack(spacing: DS.Spacing.md) {
                 Image(systemName: template.icon)
-                    .font(.system(size: 28))
+                    .font(.system(size: 32))
                     .foregroundStyle(template.color)
 
                 Text(template.displayName)
@@ -212,7 +220,7 @@ struct TemplateCard: View {
                     .foregroundStyle(DS.Colors.text)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, DS.Spacing.xl)
+            .padding(.vertical, DS.Spacing.xxl)
             .background(isSelected ? template.color.opacity(0.1) : DS.Colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
             .overlay(

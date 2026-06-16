@@ -58,6 +58,7 @@
 		CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE92C9AA042B981A92E1F41A /* LoginView.swift */; };
 		DB4363148D3900EEFAA0DB0C /* ProjectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ACBA1195835D92F2EB091A5 /* ProjectDetailView.swift */; };
 		E1806821C268311FAFF3124C /* ChatUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED5C958A5C01CB45929F160 /* ChatUITests.swift */; };
+		E311EE63FFA165E548EDBBEC /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D2C4E686452B36CB8FBDC68 /* SpeechService.swift */; };
 		E461BE853D381D6D399CECA4 /* NotificationBell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A8B6DCACA137B7F76E423 /* NotificationBell.swift */; };
 		EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */; };
 		EE979AD760821BB595699544 /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8103367E7990884E6FF58408 /* PushService.swift */; };
@@ -90,6 +91,7 @@
 		04F5C36771C11A3914D8E066 /* PresenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceModels.swift; sourceTree = "<group>"; };
 		08270619DFD37905061EE766 /* MobileCommander.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MobileCommander.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A7809AA71F47C8B7C15CC08 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		0D2C4E686452B36CB8FBDC68 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
 		0DB11B856542D6EB45A86C10 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeSwitcher.swift; sourceTree = "<group>"; };
 		0FD25D1286ED63727B1D6D1A /* WorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersView.swift; sourceTree = "<group>"; };
@@ -272,6 +274,7 @@
 				15AA9CFBB8A92904A0D4ECD5 /* NotificationService.swift */,
 				A45E3CF0A7E56DC2F0EA1883 /* PresenceService.swift */,
 				8103367E7990884E6FF58408 /* PushService.swift */,
+				0D2C4E686452B36CB8FBDC68 /* SpeechService.swift */,
 				8B28B14EB1F428977392AB46 /* SpeechVoiceTranscriber.swift */,
 				646C45799112F5E05BBD5CAD /* StorageService.swift */,
 				803F15849AA0AEB833140A96 /* VoiceTranscriber.swift */,
@@ -515,6 +518,7 @@
 				EE979AD760821BB595699544 /* PushService.swift in Sources */,
 				72271861525F951AD3D8C20F /* ReportsView.swift in Sources */,
 				6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */,
+				E311EE63FFA165E548EDBBEC /* SpeechService.swift in Sources */,
 				98FAD93EA42D780ACC35C84F /* SpeechVoiceTranscriber.swift in Sources */,
 				EF07F307F2AF847A1FF687D5 /* StorageService.swift in Sources */,
 				F7FEE266AFA86EF39D63B6EA /* Task.swift in Sources */,

@@ -18,6 +18,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate, UNU
     ) -> Bool {
         FirebaseApp.configure()
 
+        // On a dev-login launch, pin the app mode so the landing layout is
+        // deterministic (the "appMode" AppStorage key has inconsistent defaults
+        // across views, so persisted state alone isn't reliable). Defaults to
+        // developer; override with -DEV_MODE owner.
+        if TestConfig.devLogin {
+            UserDefaults.standard.set(TestConfig.devMode ?? "developer", forKey: "appMode")
+        }
+
         // Route the SDKs at the local emulator when running UI tests so E2E is
         // hermetic and never touches the live fleet.
         if TestConfig.isUITest {

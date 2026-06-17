@@ -17,6 +17,16 @@ class AuthService: ObservableObject {
     private let db = Firestore.firestore()
 
     init() {
+        // Offline dev login: flip straight to a signed-in admin without touching
+        // Firebase, and skip the auth-state listener so its initial nil callback
+        // can't bounce us back to the login screen.
+        if TestConfig.devLogin {
+            let email = TestConfig.fakeUserEmail ?? "dev@palmr.ai"
+            apply(UserAccount(uid: "dev-local", email: email, displayName: email,
+                              photoURL: nil, isAdmin: true, projects: nil))
+            isLoading = false
+            return
+        }
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in await self?.handleAuthChange(user) }
         }

@@ -11,6 +11,20 @@ enum TestConfig {
     /// Point Firestore/Auth/Storage at the local Firebase Emulator Suite.
     static var isUITest: Bool { args.contains("-UITEST") }
 
+    /// Offline dev login: synthesize a signed-in admin with NO Firebase or
+    /// emulator, so the post-login UI is reachable on a bare simulator. Backend
+    /// reads run unauthenticated (lists come back empty) — this is for eyeballing
+    /// layout, not data. Inert in production builds, which never pass the flag.
+    static var devLogin: Bool { args.contains("-DEV_LOGIN") }
+
+    /// Preselect a sidebar/tab destination by its raw name (e.g. "chat"), so a
+    /// specific screen can be opened on launch for screenshots without tapping.
+    static var devInitialTab: String? { value(for: "-DEV_TAB") }
+
+    /// Pin the app mode ("developer"/"owner") on a dev-login launch, so the
+    /// landing layout is deterministic regardless of persisted state.
+    static var devMode: String? { value(for: "-DEV_MODE") }
+
     /// Bypass Google Sign-In with a deterministic fake user.
     static var fakeUserEmail: String? { value(for: "-FAKE_USER_EMAIL") }
     static var fakeUserIsAdmin: Bool { value(for: "-FAKE_USER_ADMIN") == "1" }

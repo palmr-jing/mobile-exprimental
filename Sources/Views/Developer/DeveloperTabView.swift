@@ -34,7 +34,8 @@ enum DeveloperTab: String, CaseIterable, Identifiable, Hashable {
 struct DeveloperTabView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @StateObject private var firestoreService = FirestoreService()
-    @State private var selectedTab: DeveloperTab = .dashboard
+    @State private var selectedTab: DeveloperTab =
+        DeveloperTab(rawValue: TestConfig.devInitialTab ?? "") ?? .dashboard
 
     var body: some View {
         Group {

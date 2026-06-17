@@ -24,7 +24,7 @@ struct OwnerHomeView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: DS.Spacing.lg) {

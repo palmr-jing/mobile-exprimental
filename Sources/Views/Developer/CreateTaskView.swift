@@ -23,7 +23,7 @@ struct CreateTaskView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.lg) {
                     Button {

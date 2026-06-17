@@ -9,7 +9,7 @@ struct OwnerRequestView: View {
     @State private var isSubmitting = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: DS.Spacing.xl) {
                     headerSection

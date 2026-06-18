@@ -102,6 +102,16 @@ class AuthService: ObservableObject {
 
     // Load the user's allowlist record (access scope + display identity).
     private func loadAccount(uid: String, email: String, displayName: String?, photoURL: String?) async -> UserAccount {
+        // An emailless Firebase user (anonymous sign-in, or a provider that
+        // returned no email) yields an empty allowlist doc id. Firestore's
+        // `documentWithPath:` throws an *uncatchable* ObjC NSException on an
+        // empty path, which aborts the whole process (SIGABRT) rather than
+        // landing in the catch below — the crash seen under the test host.
+        // Fail closed without querying.
+        guard !email.isEmpty else {
+            return UserAccount(uid: uid, email: email, displayName: displayName ?? "Unknown",
+                               photoURL: photoURL, isAdmin: false, projects: [])
+        }
         var isAdmin = false
         var projects: [String]? = []
         var name = displayName ?? email

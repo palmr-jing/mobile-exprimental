@@ -1,24 +1,22 @@
 # Follow-Up
 
-**What was done**: Brought Mobile Commander iOS app closer to parity with the web UI. Added projects to the dashboard, removed the standalone Workers tab (workers now live only in the dashboard), added a Reports tab, created a project detail view, and enhanced task creation with missing fields (depends on, assign worker, allow parallel).
+**What was done**: Fixed keyboard blocking tab bar switching and added photo upload/paste support to the Chat composer. Users can now dismiss the keyboard by swiping down or tapping the message area, pick images from their camera roll with a preview before sending, and paste images from their clipboard.
 
 **What needs review**:
-- Verify the Dashboard projects section renders correctly with real Firestore data (progress bars, navigation)
-- Confirm the ProjectDetailView filter chips and search work as expected
-- Check that ReportsView cost/metrics calculations are accurate with production data
-- Verify the enhanced CreateTaskView worker picker populates correctly from live worker data
-- Test that creating a task with the new fields (dependsOn, assignedWorker, allowParallel) writes correctly to Firestore
+- Tap the Chat text field, start typing, then swipe down on the message list — keyboard should dismiss and tab bar should be tappable
+- Same test on the Ask Emma tab — swipe down or tap the conversation thread should dismiss the keyboard
+- In Chat, pick a photo via the paperclip — verify the thumbnail preview appears above the composer with the file name and size
+- Tap the X on the preview to remove it without sending
+- Pick a photo, type some text, then tap send — both the image and text should send (image first, then text)
+- Copy an image to clipboard in another app, return to Chat, verify the paste button (clipboard icon) appears, tap it, confirm the preview shows
+- Test picking a video — it should still upload immediately (no preview), matching prior behavior
 
 **Action items**:
-- Open Xcode and run on simulator or device to visually verify layouts
-- Test navigation flow: Dashboard -> tap project card -> ProjectDetailView
-- Verify the Owner mode still works unaffected (no changes were made to it)
-- Consider adding the following web features in a future pass: Inbox, Auto mode, Admin panel, Activity log, global search
+- Run on a real device to test clipboard paste (UIPasteboard may behave differently in Simulator)
+- Test with large photos (10MB+) to confirm upload doesn't timeout or crash
+- Consider adding a progress indicator during upload when an image is pending
 
 **Files changed**:
-- `Sources/Views/Developer/DeveloperTabView.swift` — Replaced Workers tab with Reports tab
-- `Sources/Views/Developer/DashboardView.swift` — Rewrote: added projects section with per-project progress cards, overall progress bar with cost summary, kept workers section inline
-- `Sources/Views/Developer/ProjectDetailView.swift` — New: project-specific task list with progress header, status filters, search
-- `Sources/Views/Developer/ReportsView.swift` — New: key metrics (today/week/all-time), cost breakdown, per-project stats, status overview bars
-- `Sources/Views/Developer/CreateTaskView.swift` — Added project quick-select pills, depends-on field, assign worker picker, allow parallel toggle
-- `Sources/Services/FirestoreService.swift` — Updated createTask() to accept dependsOn, assignedWorker, allowParallel parameters
+- `Sources/Views/Chat/ChatView.swift` — Added `scrollDismissesKeyboard(.interactively)` and tap-to-dismiss on the message list
+- `Sources/Views/Chat/AskEmmaView.swift` — Same keyboard dismissal on the Ask Emma conversation thread
+- `Sources/Views/Chat/ChatComposerView.swift` — Added pending image state with thumbnail preview, clipboard paste button, wired attachment into send flow with preview-before-send for images

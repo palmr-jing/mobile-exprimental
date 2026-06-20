@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // The full team-chat screen: presence roster strip, channel selector, message
 // thread, and composer. Reaches parity with the web TeamChat.
@@ -105,6 +106,10 @@ struct ChatView: View {
                     }
                 }
                 .padding(DS.Spacing.md)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
             .onChange(of: chatService.messages.count) { _, _ in
                 if let last = chatService.messages.last {

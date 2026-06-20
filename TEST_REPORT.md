@@ -1,21 +1,15 @@
 # Test Report
 
-## Build Status
-- **Platform**: iOS 17.0+ (Simulator)
-- **Status**: BUILD SUCCEEDED
-- **Warnings**: None
-- **Date**: 2026-04-20
+## Unit Tests (MobileCommanderTests)
+- **Status**: All 20 tests passing
+- **Run command**: `xcodebuild test -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:MobileCommanderTests`
+- **Suites**: AccessTests (8 tests), PresenceTests (12 tests)
 
-## How to Build
-```bash
-xcodegen generate
-xcodebuild -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'generic/platform=iOS Simulator' build
-```
+## Build
+- **Status**: Clean build, no errors
+- **Pre-existing warning**: Unused `try?` result in ChatService.swift:274 (not introduced by this change)
+- **Build command**: `xcodebuild build -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`
 
-## Tests
-No unit test target yet. The app builds and runs on iOS Simulator. Core functionality depends on live Firebase backend (same Firestore as web Commander).
-
-## What's Verified
-- All Swift files compile without errors or warnings
-- Firebase SDK dependencies resolve correctly (v11.15.0)
-- XcodeGen project generation works from project.yml
+## Notes
+- Must run `xcodegen generate` before building if project.yml has changed
+- UI tests (MobileCommanderUITests) exist but require a running simulator with network access

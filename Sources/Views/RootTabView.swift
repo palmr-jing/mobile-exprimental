@@ -12,7 +12,7 @@ struct RootTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            AskEmmaView(isTab: true, onSent: { selection = 1 })
+            AskEmmaView(isTab: true)
                 .tabItem { Label("Ask Emma", systemImage: "sparkles") }
                 .tag(0)
 

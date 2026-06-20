@@ -52,17 +52,10 @@ struct VoiceInputButton: View {
             }
             .scaleEffect(isPressing ? 0.92 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressing)
+            // Tap to start recording, tap again to stop + submit — no press-and-hold.
             .onTapGesture {
                 handleTap()
             }
-            .onLongPressGesture(minimumDuration: 0.2, pressing: { pressing in
-                isPressing = pressing
-                if pressing {
-                    handlePressStart()
-                } else if speechService.isRecording {
-                    handlePressEnd()
-                }
-            }, perform: {})
             .alert("Microphone Access Required", isPresented: $showPermissionAlert) {
                 Button("Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {

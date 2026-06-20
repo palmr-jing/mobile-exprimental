@@ -1,24 +1,16 @@
 # Follow-Up
 
-**What was done**: Brought Mobile Commander iOS app closer to parity with the web UI. Added projects to the dashboard, removed the standalone Workers tab (workers now live only in the dashboard), added a Reports tab, created a project detail view, and enhanced task creation with missing fields (depends on, assign worker, allow parallel).
+**What was done**: Fixed the Ask Emma chat so it opens scrolled to the latest message (bottom) instead of the oldest (top), and auto-scrolls to the "thinking" spinner when a new message is sent.
 
 **What needs review**:
-- Verify the Dashboard projects section renders correctly with real Firestore data (progress bars, navigation)
-- Confirm the ProjectDetailView filter chips and search work as expected
-- Check that ReportsView cost/metrics calculations are accurate with production data
-- Verify the enhanced CreateTaskView worker picker populates correctly from live worker data
-- Test that creating a task with the new fields (dependsOn, assignedWorker, allowParallel) writes correctly to Firestore
+- Open the Ask Emma tab with an existing conversation history — verify it starts at the bottom showing the most recent messages
+- Send a message and confirm the view scrolls down to show the "Emma is thinking…" spinner
+- Receive Emma's reply and confirm the view scrolls to show her response
+- Scroll up manually to read old messages — confirm the view does NOT yank you back to the bottom unless a new message arrives
 
 **Action items**:
-- Open Xcode and run on simulator or device to visually verify layouts
-- Test navigation flow: Dashboard -> tap project card -> ProjectDetailView
-- Verify the Owner mode still works unaffected (no changes were made to it)
-- Consider adding the following web features in a future pass: Inbox, Auto mode, Admin panel, Activity log, global search
+- Test on a real device or simulator with a conversation that has enough messages to require scrolling
+- Push to remote when satisfied
 
 **Files changed**:
-- `Sources/Views/Developer/DeveloperTabView.swift` — Replaced Workers tab with Reports tab
-- `Sources/Views/Developer/DashboardView.swift` — Rewrote: added projects section with per-project progress cards, overall progress bar with cost summary, kept workers section inline
-- `Sources/Views/Developer/ProjectDetailView.swift` — New: project-specific task list with progress header, status filters, search
-- `Sources/Views/Developer/ReportsView.swift` — New: key metrics (today/week/all-time), cost breakdown, per-project stats, status overview bars
-- `Sources/Views/Developer/CreateTaskView.swift` — Added project quick-select pills, depends-on field, assign worker picker, allow parallel toggle
-- `Sources/Services/FirestoreService.swift` — Updated createTask() to accept dependsOn, assignedWorker, allowParallel parameters
+- `Sources/Views/Chat/AskEmmaView.swift` — Added `.defaultScrollAnchor(.bottom)` to the ScrollView so it opens at the bottom; updated `onChange` handler to scroll to the "thinking" indicator when visible

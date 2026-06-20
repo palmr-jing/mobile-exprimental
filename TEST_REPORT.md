@@ -4,7 +4,7 @@
 - **Platform**: iOS 17.0+ (Simulator)
 - **Status**: BUILD SUCCEEDED
 - **Warnings**: None
-- **Date**: 2026-04-20
+- **Date**: 2026-06-20
 
 ## How to Build
 ```bash
@@ -17,5 +17,6 @@ No unit test target yet. The app builds and runs on iOS Simulator. Core function
 
 ## What's Verified
 - All Swift files compile without errors or warnings
-- Firebase SDK dependencies resolve correctly (v11.15.0)
+- Firebase SDK dependencies resolve correctly
 - XcodeGen project generation works from project.yml
+- Ask Emma scroll fix: `.defaultScrollAnchor(.bottom)` and updated `onChange` handler compile and build cleanly

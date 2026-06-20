@@ -88,8 +88,11 @@ struct AskEmmaView: View {
 
     private var header: some View {
         VStack(spacing: DS.Spacing.sm) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 44))
+            Image("PalmrMark")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 56, height: 56)
                 .foregroundStyle(DS.Colors.accent)
             Text("Ask Emma")
                 .font(DS.Typography.headline)

@@ -7,19 +7,13 @@ struct MobileCommanderApp: App {
     @StateObject private var chatService = ChatService()
     @StateObject private var presenceService = PresenceService()
     @StateObject private var notificationService = NotificationService()
-    @AppStorage("appMode") private var appMode: AppMode = .developer
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             Group {
                 if authService.isSignedIn {
-                    switch appMode {
-                    case .developer:
-                        DeveloperTabView()
-                    case .owner:
-                        OwnerTabView()
-                    }
+                    RootTabView()
                 } else {
                     LoginView()
                 }

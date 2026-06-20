@@ -1,9 +1,9 @@
 import SwiftUI
 
-// Voice-first "Ask Emma" entry point. The big mic (VoiceInputButton: on-device
-// speech, audio-level ring, haptics) is the primary action; text is the
-// fallback. The request is sent WITHOUT naming a project — the backend infers
-// it (access-scoped) via the @emma chat path.
+// Private, voice-first 1:1 with Emma. The whole conversation lives on THIS
+// screen — its own per-user channel (ChatService.emmaMessages), never posted to
+// the shared team chat, so only this user ever sees it. Tap the mic to start,
+// tap again to stop (no press-and-hold).
 struct AskEmmaView: View {
     @EnvironmentObject var chatService: ChatService
     @EnvironmentObject var authService: AuthService
@@ -11,8 +11,7 @@ struct AskEmmaView: View {
 
     var prefill: String = ""
     var autoStartVoice: Bool = false
-    /// When hosted as a root tab (not a sheet): no Cancel button, and `send()`
-    /// hands off via `onSent` instead of dismissing.
+    /// Hosted as a root tab (vs. a sheet): show Sign Out instead of Cancel.
     var isTab: Bool = false
     var onSent: (() -> Void)? = nil
 
@@ -20,53 +19,26 @@ struct AskEmmaView: View {
     @State private var text = ""
 
     private var hasText: Bool { !text.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var myUid: String { authService.currentUser?.uid ?? "" }
+    private var thinking: Bool {
+        guard let last = chatService.emmaMessages.last else { return false }
+        return last.authorUid == myUid && (last.emmaStatus == "pending" || last.emmaStatus == "processing")
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: DS.Spacing.xl) {
-                header
-
-                // Primary: big voice button. Transcript flows into the text field.
-                VoiceInputButton(speechService: speech) { transcript in
-                    let t = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !t.isEmpty else { return }
-                    text = t
+            VStack(spacing: 0) {
+                if chatService.emmaMessages.isEmpty {
+                    intro
+                } else {
+                    thread
                 }
-                .padding(.top, DS.Spacing.md)
-
-                // Fallback / review: editable text + send.
-                VStack(spacing: DS.Spacing.md) {
-                    TextField("…or type what you need", text: $text, axis: .vertical)
-                        .lineLimit(2...6)
-                        .padding(DS.Spacing.md)
-                        .background(DS.Colors.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
-                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).stroke(DS.Colors.border, lineWidth: 0.5))
-                        .accessibilityIdentifier("ask-emma-input")
-
-                    Button {
-                        send()
-                    } label: {
-                        Text("Send to Emma")
-                            .font(DS.Typography.subheading)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(hasText ? DS.Colors.accent : DS.Colors.secondary)
-                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-                    }
-                    .disabled(!hasText)
-                }
-                .padding(.horizontal, DS.Spacing.lg)
-
-                Spacer()
+                inputBar
             }
-            .padding(.top, DS.Spacing.lg)
             .background(DS.Colors.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if isTab {
-                    // Root tab: no Cancel; surface Sign Out here since there's no Settings screen.
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button(role: .destructive) { authService.signOut() } label: {
@@ -80,14 +52,15 @@ struct AskEmmaView: View {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 }
             }
-            .onAppear {
-                if text.isEmpty { text = prefill }
-            }
+            .onAppear { if text.isEmpty { text = prefill } }
         }
     }
 
-    private var header: some View {
+    // MARK: - Empty state
+
+    private var intro: some View {
         VStack(spacing: DS.Spacing.sm) {
+            Spacer()
             Image("PalmrMark")
                 .renderingMode(.template)
                 .resizable()
@@ -97,25 +70,84 @@ struct AskEmmaView: View {
             Text("Ask Emma")
                 .font(DS.Typography.headline)
                 .foregroundStyle(DS.Colors.text)
-            Text("Tap the mic and just say what you need. Emma figures out the right project and files the work.")
+            Text("Tap the mic and just say what you need. Emma figures out the right project and files the work — privately, just for you.")
                 .font(DS.Typography.body)
                 .foregroundStyle(DS.Colors.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DS.Spacing.lg)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Conversation thread
+
+    private var thread: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                    ForEach(chatService.emmaMessages) { msg in
+                        MessageBubbleView(message: msg,
+                                          isMine: msg.authorUid == myUid,
+                                          myHandle: chatService.myHandle)
+                            .id(msg.id)
+                    }
+                    if thinking {
+                        HStack(spacing: DS.Spacing.xs) {
+                            ProgressView().scaleEffect(0.7)
+                            Text("Emma is thinking…")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(DS.Colors.secondary)
+                        }
+                        .padding(.horizontal, DS.Spacing.md)
+                        .id("thinking")
+                    }
+                }
+                .padding(.vertical, DS.Spacing.md)
+            }
+            .onChange(of: chatService.emmaMessages.count) { _, _ in
+                if let last = chatService.emmaMessages.last {
+                    withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                }
+            }
         }
     }
 
-    private func send() {
-        var message = text.trimmingCharacters(in: .whitespaces)
-        guard !message.isEmpty else { return }
-        if !Presence.mentionsEmma(message) { message = "@emma \(message)" }
-        chatService.setActiveChannel(ChatService.generalId)
-        Task { await chatService.sendText(message) }
-        if isTab {
-            text = ""
-            onSent?()   // hand off to the Chat tab so the reply is visible
-        } else {
-            dismiss()
+    // MARK: - Input (voice-first)
+
+    private var inputBar: some View {
+        VStack(spacing: DS.Spacing.sm) {
+            // Tap to start, tap to stop — fills the field with the transcript to review.
+            VoiceInputButton(speechService: speech, size: 60) { transcript in
+                let t = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !t.isEmpty else { return }
+                text = t
+            }
+            HStack(spacing: DS.Spacing.sm) {
+                TextField("…or type what you need", text: $text, axis: .vertical)
+                    .lineLimit(1...4)
+                    .padding(DS.Spacing.md)
+                    .background(DS.Colors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                    .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).stroke(DS.Colors.border, lineWidth: 0.5))
+                    .accessibilityIdentifier("ask-emma-input")
+                Button { send() } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundStyle(hasText ? DS.Colors.accent : DS.Colors.secondary)
+                }
+                .disabled(!hasText)
+                .accessibilityIdentifier("ask-emma-send")
+            }
         }
+        .padding(DS.Spacing.md)
+    }
+
+    private func send() {
+        let message = text.trimmingCharacters(in: .whitespaces)
+        guard !message.isEmpty else { return }
+        text = ""
+        Task { await chatService.sendToEmma(message) }
+        onSent?()
     }
 }

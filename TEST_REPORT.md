@@ -1,21 +1,20 @@
 # Test Report
 
 ## Build Status
-- **Platform**: iOS 17.0+ (Simulator)
+- **Platform**: iOS (Simulator — iPhone 17 Pro, iOS 26.4)
 - **Status**: BUILD SUCCEEDED
-- **Warnings**: None
-- **Date**: 2026-04-20
+- **Warnings**: 1 pre-existing warning (unused `try?` in ChatService.swift:274, unrelated)
+- **Date**: 2026-06-20
 
 ## How to Build
 ```bash
-xcodegen generate
-xcodebuild -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'generic/platform=iOS Simulator' build
+xcodebuild -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
 ## Tests
-No unit test target yet. The app builds and runs on iOS Simulator. Core functionality depends on live Firebase backend (same Firestore as web Commander).
+No unit test target. The relative timestamp fix is a UI behavior change — verify manually by sending a message in Ask Emma and watching the timestamp transition from "now" to "1m" after 60 seconds.
 
 ## What's Verified
-- All Swift files compile without errors or warnings
-- Firebase SDK dependencies resolve correctly (v11.15.0)
-- XcodeGen project generation works from project.yml
+- All Swift files compile without errors
+- `TimelineView(.periodic(from: .now, by: 30))` compiles and is available on the project's deployment target
+- `relativeTime(_:)` signature change from `Date` to `Date?` has no callers outside MessageBubbleView

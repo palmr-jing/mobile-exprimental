@@ -42,8 +42,8 @@ struct MessageBubbleView: View {
             Text(message.authorName.isEmpty ? message.authorEmail : message.authorName)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(DS.Colors.secondary)
-            if let t = message.createdAt {
-                Text(Self.relativeTime(t))
+            TimelineView(.periodic(from: .now, by: 30)) { _ in
+                Text(Self.relativeTime(message.createdAt))
                     .font(.system(size: 10))
                     .foregroundStyle(DS.Colors.secondary.opacity(0.7))
             }
@@ -144,7 +144,8 @@ struct MessageBubbleView: View {
         return result
     }
 
-    static func relativeTime(_ date: Date) -> String {
+    static func relativeTime(_ date: Date?) -> String {
+        guard let date else { return "now" }
         let diff = Date().timeIntervalSince(date)
         if diff < 60 { return "now" }
         if diff < 3600 { return "\(Int(diff / 60))m" }

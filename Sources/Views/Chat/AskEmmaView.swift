@@ -17,12 +17,24 @@ struct AskEmmaView: View {
 
     @StateObject private var speech = SpeechRecognitionService()
     @State private var text = ""
+    @State private var thinkingElapsed = 0
+    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var hasText: Bool { !text.trimmingCharacters(in: .whitespaces).isEmpty }
     private var myUid: String { authService.currentUser?.uid ?? "" }
     private var thinking: Bool {
         guard let last = chatService.emmaMessages.last else { return false }
         return last.authorUid == myUid && (last.emmaStatus == "pending" || last.emmaStatus == "processing")
+    }
+
+    private var thinkingLabel: String {
+        if thinkingElapsed < 5 { return "Emma is thinking…" }
+        if thinkingElapsed < 120 {
+            return "Emma is thinking… (\(thinkingElapsed)s)"
+        }
+        let min = thinkingElapsed / 60
+        let sec = thinkingElapsed % 60
+        return "Still working… (\(min):\(String(format: "%02d", sec)))"
     }
 
     var body: some View {
@@ -53,6 +65,12 @@ struct AskEmmaView: View {
                 }
             }
             .onAppear { if text.isEmpty { text = prefill } }
+            .onReceive(ticker) { _ in
+                if thinking { thinkingElapsed += 1 }
+            }
+            .onChange(of: thinking) { _, isThinking in
+                if isThinking { thinkingElapsed = 0 }
+            }
         }
     }
 
@@ -95,9 +113,11 @@ struct AskEmmaView: View {
                     if thinking {
                         HStack(spacing: DS.Spacing.xs) {
                             ProgressView().scaleEffect(0.7)
-                            Text("Emma is thinking…")
+                            Text(thinkingLabel)
                                 .font(DS.Typography.caption)
                                 .foregroundStyle(DS.Colors.secondary)
+                                .contentTransition(.numericText())
+                                .animation(.default, value: thinkingElapsed)
                         }
                         .padding(.horizontal, DS.Spacing.md)
                         .id("thinking")

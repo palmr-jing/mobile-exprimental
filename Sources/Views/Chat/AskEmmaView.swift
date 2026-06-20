@@ -6,10 +6,15 @@ import SwiftUI
 // it (access-scoped) via the @emma chat path.
 struct AskEmmaView: View {
     @EnvironmentObject var chatService: ChatService
+    @EnvironmentObject var authService: AuthService
     @Environment(\.dismiss) private var dismiss
 
     var prefill: String = ""
     var autoStartVoice: Bool = false
+    /// When hosted as a root tab (not a sheet): no Cancel button, and `send()`
+    /// hands off via `onSent` instead of dismissing.
+    var isTab: Bool = false
+    var onSent: (() -> Void)? = nil
 
     @StateObject private var speech = SpeechRecognitionService()
     @State private var text = ""
@@ -60,7 +65,20 @@ struct AskEmmaView: View {
             .background(DS.Colors.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                if isTab {
+                    // Root tab: no Cancel; surface Sign Out here since there's no Settings screen.
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button(role: .destructive) { authService.signOut() } label: {
+                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            }
+                        } label: {
+                            Image(systemName: "person.crop.circle")
+                        }
+                    }
+                } else {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                }
             }
             .onAppear {
                 if text.isEmpty { text = prefill }
@@ -90,6 +108,11 @@ struct AskEmmaView: View {
         if !Presence.mentionsEmma(message) { message = "@emma \(message)" }
         chatService.setActiveChannel(ChatService.generalId)
         Task { await chatService.sendText(message) }
-        dismiss()
+        if isTab {
+            text = ""
+            onSent?()   // hand off to the Chat tab so the reply is visible
+        } else {
+            dismiss()
+        }
     }
 }

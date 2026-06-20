@@ -30,7 +30,9 @@ struct NotificationBell: View {
         .accessibilityIdentifier("notification-bell")
         .popover(isPresented: $showList) {
             notificationList
-                .frame(minWidth: 280, minHeight: 200)
+                // Bounded size so the list scrolls *inside* the popover instead
+                // of growing to full content height and running off-screen.
+                .frame(width: 340, height: 460)
                 .presentationCompactAdaptation(.popover)
         }
     }

@@ -1,5 +1,7 @@
 import SwiftUI
+import PhotosUI
 import UIKit
+import UniformTypeIdentifiers
 
 // Private, voice-first 1:1 with Emma. The whole conversation lives on THIS
 // screen — its own per-user channel (ChatService.emmaMessages), never posted to
@@ -19,9 +21,15 @@ struct AskEmmaView: View {
     @StateObject private var speech = SpeechRecognitionService()
     @State private var text = ""
     @State private var thinkingElapsed = 0
+    @State private var photoItem: PhotosPickerItem?
+    @State private var pendingImageData: Data?
+    @State private var pendingImageName: String?
+    @State private var pendingImageMime: String?
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    private var hasText: Bool { !text.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var canSend: Bool {
+        !text.trimmingCharacters(in: .whitespaces).isEmpty || pendingImageData != nil
+    }
     private var myUid: String { authService.currentUser?.uid ?? "" }
     private var thinking: Bool {
         guard let last = chatService.emmaMessages.last else { return false }
@@ -145,38 +153,158 @@ struct AskEmmaView: View {
 
     private var inputBar: some View {
         VStack(spacing: DS.Spacing.sm) {
-            // Tap to start, tap to stop — fills the field with the transcript to review.
             VoiceInputButton(speechService: speech, size: 60) { transcript in
                 let t = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !t.isEmpty else { return }
                 text = t
             }
-            HStack(spacing: DS.Spacing.sm) {
-                TextField("…or type what you need", text: $text, axis: .vertical)
+
+            if let imageData = pendingImageData, let uiImage = UIImage(data: imageData) {
+                pendingImagePreview(uiImage)
+            }
+
+            HStack(alignment: .bottom, spacing: DS.Spacing.xs) {
+                PhotosPicker(selection: $photoItem, matching: .any(of: [.images, .videos])) {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 20))
+                        .foregroundStyle(DS.Colors.secondary)
+                        .frame(width: 36, height: 36)
+                }
+                .accessibilityIdentifier("ask-emma-attach-button")
+
+                if UIPasteboard.general.hasImages {
+                    Button {
+                        pasteFromClipboard()
+                    } label: {
+                        Image(systemName: "doc.on.clipboard")
+                            .font(.system(size: 18))
+                            .foregroundStyle(DS.Colors.secondary)
+                            .frame(width: 36, height: 36)
+                    }
+                    .accessibilityIdentifier("ask-emma-paste-image")
+                }
+
+                TextField(chatService.isUploading ? "Uploading…" : "…or type what you need", text: $text, axis: .vertical)
                     .lineLimit(1...4)
                     .foregroundStyle(DS.Colors.text)
-                    .padding(DS.Spacing.md)
+                    .padding(.horizontal, DS.Spacing.md)
+                    .padding(.vertical, DS.Spacing.sm)
                     .background(DS.Colors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).stroke(DS.Colors.border, lineWidth: 0.5))
                     .accessibilityIdentifier("ask-emma-input")
+
                 Button { send() } label: {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundStyle(hasText ? DS.Colors.accent : DS.Colors.secondary)
+                        .foregroundStyle(canSend ? DS.Colors.accent : DS.Colors.secondary)
                 }
-                .disabled(!hasText)
+                .disabled(!canSend)
                 .accessibilityIdentifier("ask-emma-send")
             }
         }
         .padding(DS.Spacing.md)
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task { await handlePicked(item) }
+        }
     }
 
     private func send() {
         let message = text.trimmingCharacters(in: .whitespaces)
-        guard !message.isEmpty else { return }
+        let imageData = pendingImageData
+        let imageName = pendingImageName
+        let imageMime = pendingImageMime
+        guard !message.isEmpty || imageData != nil else { return }
         text = ""
-        Task { await chatService.sendToEmma(message) }
+        clearPendingImage()
+
+        Task {
+            if let data = imageData {
+                let name = imageName ?? "upload-\(Int(Date().timeIntervalSince1970)).jpg"
+                let mime = imageMime ?? "image/jpeg"
+                await chatService.sendToEmmaWithAttachment(
+                    text: message, data: data, fileName: name, contentType: mime
+                )
+            } else {
+                await chatService.sendToEmma(message)
+            }
+        }
         onSent?()
+    }
+
+    // MARK: - Attachment helpers
+
+    private func handlePicked(_ item: PhotosPickerItem) async {
+        guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+        let contentType = item.supportedContentTypes.first
+        let mime = contentType?.preferredMIMEType ?? "application/octet-stream"
+        let ext = contentType?.preferredFilenameExtension ?? "dat"
+        let name = "upload-\(Int(Date().timeIntervalSince1970)).\(ext)"
+
+        let isImage = mime.hasPrefix("image/")
+        if isImage {
+            await MainActor.run {
+                pendingImageData = data
+                pendingImageName = name
+                pendingImageMime = mime
+                photoItem = nil
+            }
+        } else {
+            await chatService.sendToEmmaWithAttachment(
+                text: "", data: data, fileName: name, contentType: mime
+            )
+            await MainActor.run { photoItem = nil }
+        }
+    }
+
+    private func pasteFromClipboard() {
+        guard let image = UIPasteboard.general.image,
+              let data = image.jpegData(compressionQuality: 0.85) else { return }
+        pendingImageData = data
+        pendingImageName = "paste-\(Int(Date().timeIntervalSince1970)).jpg"
+        pendingImageMime = "image/jpeg"
+    }
+
+    private func clearPendingImage() {
+        pendingImageData = nil
+        pendingImageName = nil
+        pendingImageMime = nil
+    }
+
+    private func pendingImagePreview(_ uiImage: UIImage) -> some View {
+        HStack(spacing: DS.Spacing.sm) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(pendingImageName ?? "Image")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.text)
+                    .lineLimit(1)
+                if let data = pendingImageData {
+                    Text(ChatComposerView.formatBytes(data.count))
+                        .font(.system(size: 11))
+                        .foregroundStyle(DS.Colors.secondary)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                clearPendingImage()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(DS.Colors.secondary)
+            }
+            .accessibilityIdentifier("ask-emma-remove-attachment")
+        }
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.sm)
+        .background(DS.Colors.background)
     }
 }

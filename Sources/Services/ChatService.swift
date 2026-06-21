@@ -136,6 +136,47 @@ final class ChatService: ObservableObject {
         }
     }
 
+    /// Send an attachment (with optional text) to the private Ask-Emma channel.
+    /// Uploads the file to Firebase Storage under the Emma channel path, then
+    /// posts a single message carrying both the attachment and the text.
+    func sendToEmmaWithAttachment(text: String, data: Data, fileName: String, contentType: String) async {
+        isUploading = true
+        defer { isUploading = false }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let messageText: String
+        if trimmed.isEmpty {
+            messageText = "@emma"
+        } else {
+            messageText = Presence.mentionsEmma(trimmed) ? trimmed : "@emma \(trimmed)"
+        }
+        do {
+            try await ensureEmmaChannel()
+            let attachment = try await storageService.upload(
+                data: data, fileName: fileName, contentType: contentType, channelId: emmaChannelId
+            )
+            try await db.collection("commander_channels").document(emmaChannelId)
+                .collection("messages").addDocument(data: [
+                    "type": Presence.mediaType(contentType).rawValue,
+                    "text": messageText,
+                    "mentionsEmma": true,
+                    "emmaStatus": "pending",
+                    "authorUid": user?.uid ?? "",
+                    "authorName": user?.displayName ?? user?.email ?? "",
+                    "authorEmail": user?.email ?? "",
+                    "createdAt": FieldValue.serverTimestamp(),
+                    "attachment": [
+                        "url": attachment.url,
+                        "name": attachment.name,
+                        "contentType": attachment.contentType,
+                        "size": attachment.size,
+                        "storage_path": attachment.storagePath,
+                    ],
+                ])
+        } catch {
+            // Best-effort; the input keeps the text on failure.
+        }
+    }
+
     private func ensureEmmaChannel() async throws {
         try await db.collection("commander_channels").document(emmaChannelId).setData([
             "name": "Ask Emma",

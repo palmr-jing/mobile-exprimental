@@ -1,20 +1,28 @@
 # Test Report
 
 ## Build Status
-- **Platform**: iOS (Simulator — iPhone 17 Pro, iOS 26.4)
+- **Platform**: iOS (Simulator — iPhone 17, iOS 26.4)
 - **Status**: BUILD SUCCEEDED
-- **Warnings**: 1 pre-existing warning (unused `try?` in ChatService.swift:274, unrelated)
 - **Date**: 2026-06-20
 
 ## How to Build
 ```bash
-xcodebuild -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodegen generate --spec project.yml
+xcodebuild build -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-## Tests
-No unit test target. The relative timestamp fix is a UI behavior change — verify manually by sending a message in Ask Emma and watching the timestamp transition from "now" to "1m" after 60 seconds.
+## Unit Tests
+- **Suite**: AccessTests — 8 tests PASSED
+- **Suite**: PresenceTests — 12 tests PASSED
+- **Total**: 20 tests, 0 failures
+
+## How to Run Tests
+```bash
+xcodebuild test -project MobileCommander.xcodeproj -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:MobileCommanderTests
+```
 
 ## What's Verified
-- All Swift files compile without errors
-- `TimelineView(.periodic(from: .now, by: 30))` compiles and is available on the project's deployment target
-- `relativeTime(_:)` signature change from `Date` to `Date?` has no callers outside MessageBubbleView
+- All Swift files compile without errors after adding attachment support to AskEmmaView
+- Existing unit tests (Access, Presence) pass — no regressions
+- `ChatComposerView.formatBytes` is accessible from AskEmmaView (same module)
+- PhotosPicker and UIPasteboard APIs are available on iOS 17.0 deployment target

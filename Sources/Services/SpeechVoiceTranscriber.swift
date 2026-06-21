@@ -31,6 +31,10 @@ final class SpeechVoiceTranscriber: VoiceTranscriber {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        request.taskHint = .dictation
+        if #available(iOS 16, *) {
+            request.addsPunctuation = true
+        }
         self.request = request
 
         let input = audioEngine.inputNode

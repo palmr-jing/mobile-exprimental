@@ -1,6 +1,7 @@
 import Foundation
 import Speech
 import AVFoundation
+import Accelerate
 import Combine
 
 @MainActor
@@ -15,7 +16,6 @@ class SpeechRecognitionService: ObservableObject {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
-    private var levelTimer: Timer?
     // Finalized speech segments accumulated across recognizer restarts, so a long
     // dictation survives pauses, on-device end-of-utterance segmentation, and the
     // SFSpeechRecognizer ~1-minute-per-request limit. Recording only ends when the
@@ -29,6 +29,7 @@ class SpeechRecognitionService: ObservableObject {
     // words from a long partial, so we commit at pauses instead of relying on it.
     private var commitTimer: Timer?
     var pauseCommitInterval: TimeInterval = 1.5
+    var contextualStrings: [String] = []
 
     var isAvailable: Bool {
         speechRecognizer?.isAvailable ?? false
@@ -86,7 +87,6 @@ class SpeechRecognitionService: ObservableObject {
             try startRecognition()
             isRecording = true
             errorMessage = nil
-            startLevelMonitoring()
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
             cleanup()
@@ -123,6 +123,14 @@ class SpeechRecognitionService: ObservableObject {
 
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             self?.recognitionRequest?.append(buffer)
+            if let data = buffer.floatChannelData?[0], buffer.frameLength > 0 {
+                var rms: Float = 0
+                vDSP_rmsqv(data, 1, &rms, vDSP_Length(buffer.frameLength))
+                let level = max(0, min(1, rms * 5))
+                Task { @MainActor [weak self] in
+                    self?.audioLevel = level
+                }
+            }
         }
 
         audioEngine.prepare()
@@ -138,8 +146,12 @@ class SpeechRecognitionService: ObservableObject {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        if supportsOnDevice {
-            request.requiresOnDeviceRecognition = true
+        request.taskHint = .dictation
+        if #available(iOS 16, *) {
+            request.addsPunctuation = true
+        }
+        if !contextualStrings.isEmpty {
+            request.contextualStrings = contextualStrings
         }
         recognitionRequest = request
 
@@ -224,26 +236,9 @@ class SpeechRecognitionService: ObservableObject {
         }
     }
 
-    private func startLevelMonitoring() {
-        levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self, self.isRecording else { return }
-                let inputNode = self.audioEngine.inputNode
-                let channelData = inputNode.outputFormat(forBus: 0).channelCount > 0
-                if channelData {
-                    // Simulate audio level from engine activity
-                    let level = self.audioEngine.isRunning ? Float.random(in: 0.1...0.8) : 0
-                    self.audioLevel = level
-                }
-            }
-        }
-    }
-
     private func cleanup() {
         commitTimer?.invalidate()
         commitTimer = nil
-        levelTimer?.invalidate()
-        levelTimer = nil
 
         audioEngine.inputNode.removeTap(onBus: 0)
         if audioEngine.isRunning {

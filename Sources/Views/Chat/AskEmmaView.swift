@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // Private, voice-first 1:1 with Emma. The whole conversation lives on THIS
 // screen — its own per-user channel (ChatService.emmaMessages), never posted to
@@ -126,6 +127,10 @@ struct AskEmmaView: View {
                 .padding(.vertical, DS.Spacing.md)
             }
             .defaultScrollAnchor(.bottom)
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
             .onChange(of: chatService.emmaMessages.count) { _, _ in
                 if thinking {
                     withAnimation { proxy.scrollTo("thinking", anchor: .bottom) }

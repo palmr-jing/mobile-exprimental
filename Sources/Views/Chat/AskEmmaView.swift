@@ -125,8 +125,11 @@ struct AskEmmaView: View {
                 }
                 .padding(.vertical, DS.Spacing.md)
             }
+            .defaultScrollAnchor(.bottom)
             .onChange(of: chatService.emmaMessages.count) { _, _ in
-                if let last = chatService.emmaMessages.last {
+                if thinking {
+                    withAnimation { proxy.scrollTo("thinking", anchor: .bottom) }
+                } else if let last = chatService.emmaMessages.last {
                     withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                 }
             }

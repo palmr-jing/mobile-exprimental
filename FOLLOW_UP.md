@@ -1,14 +1,37 @@
-# Follow-Up
+# Follow-Up — Task #760 (fix all-white/unreadable text)
 
-**What was done**: Fixed stale relative timestamps in chat messages. Wrapped the timestamp display in a `TimelineView` that re-evaluates every 30 seconds, and made `relativeTime()` handle nil dates (Firestore pending writes) by defaulting to "now".
+**What was done**: The app's design system is light-only (hard-coded cream/white
+backgrounds, near-black text tokens), but it never told iOS to opt out of dark mode.
+On a dark-mode device, every element using SwiftUI's default `.primary` color — most
+visibly the Ask Emma and Chat text inputs — rendered white on those light
+backgrounds, which is the unreadable "all white text" jing reported. I locked the
+app to light appearance so default colors resolve to the dark token everywhere, and
+gave the two chat input fields an explicit dark text color as a backstop.
 
 **What needs review**:
-- Open the Ask Emma tab, send a message, and wait 2+ minutes — verify the timestamp updates from "now" to "1m", "2m", etc.
-- Check that the team chat (ChatView) timestamps also update correctly since it shares `MessageBubbleView`.
-- Verify that messages older than 24 hours still show a short date (e.g., "6/19/26") instead of relative time.
+- Sign in on a device/simulator set to **dark mode** and walk every screen
+  (Dashboard, Chat, Ask Emma, Reports, Settings, Owner views). Confirm no white-on-
+  light text remains. I could only reach the login screen headless (Google auth).
+- Type into both chat composers (Chat tab + Ask Emma) in dark mode and confirm the
+  text you type is dark and readable.
+- Decide whether locking to light is the intended product direction. The whole color
+  palette is light-only, so a real dark theme is a separate, larger piece of work
+  (redefine all 11 tokens in `DS.Colors` as asset-catalog/dynamic colors and re-check
+  every `.white`-on-accent usage). If you want true dark-mode support instead of a
+  light lock, that's the path — flag it and I'll scope it.
 
 **Action items**:
-- None — changes are self-contained. Push to remote when ready for review.
+- Push this branch to remote (the worker does this automatically).
+- Human-only: sign in on a dark-mode device and eyeball the post-login screens as above.
+- Optional: bump `CURRENT_PROJECT_VERSION` in `project.yml` and run
+  `scripts/upload-testflight.sh` to get a build in front of jing for confirmation.
 
 **Files changed**:
-- `Sources/Views/Chat/MessageBubbleView.swift` — Wrapped timestamp in `TimelineView(.periodic(from: .now, by: 30))` for auto-refresh; changed `relativeTime(_:)` to accept `Date?` and return "now" for nil.
+- `Resources/Info.plist` — added `UIUserInterfaceStyle = Light` so UIKit surfaces
+  (alerts, photo picker, keyboard) and the whole app render light.
+- `Sources/App/MobileCommanderApp.swift` — added `.preferredColorScheme(.light)` on
+  the root content for the SwiftUI side (sheets, previews) with an explaining comment.
+- `Sources/Views/Chat/ChatComposerView.swift` — explicit `.foregroundStyle(DS.Colors.text)`
+  on the message `TextField` so typed text is dark independent of the global lock.
+- `Sources/Views/Chat/AskEmmaView.swift` — same explicit text color on the Ask Emma
+  `TextField`.

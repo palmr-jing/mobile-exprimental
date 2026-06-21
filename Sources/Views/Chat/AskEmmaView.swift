@@ -154,6 +154,7 @@ struct AskEmmaView: View {
             HStack(spacing: DS.Spacing.sm) {
                 TextField("…or type what you need", text: $text, axis: .vertical)
                     .lineLimit(1...4)
+                    .foregroundStyle(DS.Colors.text)
                     .padding(DS.Spacing.md)
                     .background(DS.Colors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))

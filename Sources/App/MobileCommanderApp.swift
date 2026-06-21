@@ -18,6 +18,11 @@ struct MobileCommanderApp: App {
                     LoginView()
                 }
             }
+            // The design system is light-only (hard-coded cream/white surfaces and
+            // dark text tokens). Lock the app to light appearance so SwiftUI's
+            // adaptive default colors don't resolve to white-on-light in dark mode.
+            // Paired with UIUserInterfaceStyle=Light in Info.plist for UIKit surfaces.
+            .preferredColorScheme(.light)
             .environmentObject(authService)
             .environmentObject(chatService)
             .environmentObject(notificationService)

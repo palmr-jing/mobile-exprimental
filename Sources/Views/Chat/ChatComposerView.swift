@@ -71,6 +71,7 @@ struct ChatComposerView: View {
 
                 TextField(chatService.isUploading ? "Uploading…" : "Message", text: $input, axis: .vertical)
                     .lineLimit(1...4)
+                    .foregroundStyle(DS.Colors.text)
                     .padding(.horizontal, DS.Spacing.md)
                     .padding(.vertical, DS.Spacing.sm)
                     .background(DS.Colors.background)

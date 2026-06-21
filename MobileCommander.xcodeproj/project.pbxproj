@@ -28,6 +28,7 @@
 		42E88099A35F6A74C17543A0 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 5878561A43406C06A26413C2 /* FirebaseStorage */; };
 		43A1406DF5DF27E2B7008303 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 7B6F4A6D359B044ED82C055A /* FirebaseAuth */; };
 		478CB0FCB2E4A8A8F73EFB80 /* DeveloperTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2D099B5A5F0E142DA7E3EA /* DeveloperTabView.swift */; };
+		479C3D1C385DAC5E2310A135 /* SpeechRecognitionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */; };
 		490D582889EA0138F34E4F65 /* AllowedUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8982BA295B91E50C0E4F341C /* AllowedUser.swift */; };
 		55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */; };
 		648FF4F950395D8709CEBCF3 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB11B856542D6EB45A86C10 /* DashboardView.swift */; };
@@ -109,6 +110,7 @@
 		3F5BA382DB636BDDEFC46235 /* MicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicButton.swift; sourceTree = "<group>"; };
 		429C44E0037C948917C776C1 /* OwnerRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerRequestView.swift; sourceTree = "<group>"; };
 		466B5533CDA618DAE87541EF /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channel.swift; sourceTree = "<group>"; };
+		47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionServiceTests.swift; sourceTree = "<group>"; };
 		4AA482E94E6FADF69052A2CB /* AppNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
 		4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		4ED5C958A5C01CB45929F160 /* ChatUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUITests.swift; sourceTree = "<group>"; };
@@ -245,6 +247,7 @@
 			children = (
 				C2EEA4D4B1516D417164E908 /* AccessTests.swift */,
 				CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */,
+				47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */,
 			);
 			name = Unit;
 			path = Tests/Unit;
@@ -562,6 +565,7 @@
 			files = (
 				FC6D7DEBCAFD222E20926F17 /* AccessTests.swift in Sources */,
 				55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */,
+				479C3D1C385DAC5E2310A135 /* SpeechRecognitionServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

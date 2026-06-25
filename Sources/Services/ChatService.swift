@@ -18,6 +18,28 @@ final class ChatService: ObservableObject {
     @Published var activeChannelId: String = generalId
     @Published var isUploading = false
 
+    // Reply-to draft for the composer. Carries the parent's id/preview/author plus
+    // a client-only `isBot` flag used to decide @emma auto-tagging; only the first
+    // four fields are persisted (see ReplyContext). Cleared on send, cancel, and
+    // channel switch. Mirrors the web TeamChat replyTo state (#811).
+    @Published var replyDraft: ReplyDraft?
+    // Bumped whenever a reply starts, so the composer can grab focus.
+    @Published var focusComposerToken = 0
+
+    // The composer-side reply draft. `isBot` is the only field beyond the
+    // persisted ReplyContext and never reaches Firestore.
+    struct ReplyDraft: Equatable {
+        var id: String
+        var text: String
+        var authorName: String
+        var authorUid: String
+        var isBot: Bool
+
+        var context: ReplyContext {
+            ReplyContext(id: id, text: text, authorName: authorName, authorUid: authorUid)
+        }
+    }
+
     // The private 1:1 Ask-Emma conversation, kept separate from team chat:
     // its own per-user channel + message stream so it never touches the shared
     // active channel and is only ever seen by this user.
@@ -97,6 +119,7 @@ final class ChatService: ObservableObject {
         emmaMessageListener = nil
         rosterTimer?.invalidate(); rosterTimer = nil
         allowedUsers = []; presenceDocs = []; channels = []; messages = []; roster = []; emmaMessages = []
+        replyDraft = nil
         user = nil
     }
 
@@ -190,7 +213,35 @@ final class ChatService: ObservableObject {
 
     func setActiveChannel(_ id: String) {
         activeChannelId = id
+        // A reply only makes sense within the channel it was started in; drop it
+        // on switch so it never lands in the wrong thread (web parity).
+        replyDraft = nil
         subscribeMessages()
+    }
+
+    // ── Reply-to-message ────────────────────────────────────────────────────────
+
+    /// Begin replying to `message`: build the quoted preview, remember whether the
+    /// parent was Emma-authored (for @emma auto-tagging), and ask the composer to
+    /// focus. Mirrors the web startReply().
+    func startReply(to message: ChannelMessage) {
+        guard !message.emmaThinking else { return }
+        let isBot = message.isBot || message.authorUid == "emma-bot"
+        let preview = Presence.replyPreview(
+            type: message.type, text: message.text, attachmentName: message.attachment?.name
+        )
+        replyDraft = ReplyDraft(
+            id: message.id,
+            text: preview,
+            authorName: message.authorName.isEmpty ? message.authorEmail : message.authorName,
+            authorUid: message.authorUid,
+            isBot: isBot
+        )
+        focusComposerToken &+= 1
+    }
+
+    func cancelReply() {
+        replyDraft = nil
     }
 
     private func subscribeMessages() {
@@ -216,14 +267,34 @@ final class ChatService: ObservableObject {
     // ── Sending ───────────────────────────────────────────────────────────────
 
     func sendText(_ raw: String) async {
-        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+
+        // Capture and clear the reply up front so a quick second send doesn't reuse
+        // it; restore it if the write fails.
+        let reply = replyDraft
+        replyDraft = nil
+
+        // Auto-tag @emma when replying to an Emma message so the assistant fires;
+        // never for replies to a human.
+        text = Presence.replyAutoTag(text, replyingToBot: reply?.isBot ?? false)
+
         var payload: [String: Any] = ["type": "text", "text": text]
 
         // Flag @emma so the worker-side assistant picks it up.
         if Presence.mentionsEmma(text) {
             payload["mentionsEmma"] = true
             payload["emmaStatus"] = "pending"
+        }
+        // Persist the quoted parent in the exact web shape so threads stay
+        // consistent across web and iOS.
+        if let reply {
+            payload["replyTo"] = [
+                "id": reply.id,
+                "text": reply.text,
+                "authorName": reply.authorName,
+                "authorUid": reply.authorUid,
+            ]
         }
         // Resolve @person mentions and notify them.
         let mentioned = Presence.parseMentions(text, roster: roster, selfEmail: user?.email)
@@ -233,7 +304,9 @@ final class ChatService: ObservableObject {
             try await postMessage(payload)
             await notifyMentions(mentioned, text: text)
         } catch {
-            // Best-effort; the composer keeps the text on failure (handled by caller).
+            // Best-effort; the composer keeps the text on failure (handled by
+            // caller) and we restore the reply so it isn't silently lost.
+            replyDraft = reply
         }
     }
 
@@ -377,6 +450,15 @@ final class ChatService: ObservableObject {
                 storagePath: a["storage_path"] as? String ?? ""
             )
         }
+        var replyTo: ReplyContext?
+        if let r = d["replyTo"] as? [String: Any], let id = r["id"] as? String {
+            replyTo = ReplyContext(
+                id: id,
+                text: r["text"] as? String ?? "",
+                authorName: r["authorName"] as? String ?? "",
+                authorUid: r["authorUid"] as? String ?? ""
+            )
+        }
         return ChannelMessage(
             id: doc.documentID,
             type: MessageType(rawValue: d["type"] as? String ?? "text") ?? .text,
@@ -390,7 +472,8 @@ final class ChatService: ObservableObject {
             mentionsEmma: d["mentionsEmma"] as? Bool ?? false,
             emmaStatus: d["emmaStatus"] as? String,
             isBot: d["isBot"] as? Bool ?? false,
-            emmaThinking: d["emmaThinking"] as? Bool ?? false
+            emmaThinking: d["emmaThinking"] as? Bool ?? false,
+            replyTo: replyTo
         )
     }
 }

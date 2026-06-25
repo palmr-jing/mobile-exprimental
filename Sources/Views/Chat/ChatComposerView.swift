@@ -48,6 +48,19 @@ struct ChatComposerView: View {
                 pendingImagePreview(uiImage)
             }
 
+            if let err = chatService.uploadError {
+                HStack(spacing: DS.Spacing.xs) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    Text(err).lineLimit(2)
+                }
+                .font(.system(size: 12))
+                .foregroundStyle(.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.bottom, DS.Spacing.xs)
+                .accessibilityIdentifier("chat-upload-error")
+            }
+
             HStack(alignment: .bottom, spacing: DS.Spacing.xs) {
                 PhotosPicker(selection: $photoItem, matching: .any(of: [.images, .videos])) {
                     Image(systemName: "paperclip")
@@ -204,7 +217,13 @@ struct ChatComposerView: View {
     }
 
     private func handlePicked(_ item: PhotosPickerItem) async {
-        guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+        guard let data = try? await item.loadTransferable(type: Data.self) else {
+            await MainActor.run {
+                chatService.uploadError = "Couldn't read that photo. Try a different one."
+                photoItem = nil
+            }
+            return
+        }
         let contentType = item.supportedContentTypes.first
         let mime = contentType?.preferredMIMEType ?? "application/octet-stream"
         let ext = contentType?.preferredFilenameExtension ?? "dat"

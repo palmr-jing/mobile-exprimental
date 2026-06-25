@@ -17,6 +17,10 @@ final class ChatService: ObservableObject {
     @Published var roster: [RosterMember] = []
     @Published var activeChannelId: String = generalId
     @Published var isUploading = false
+    // Last attachment-upload failure, surfaced in the composer. Cleared when a new
+    // upload starts. Without this, a failed putData/postMessage was swallowed and
+    // the picked image just vanished with no message and no clue why.
+    @Published var uploadError: String?
 
     // Reply-to draft for the composer. Carries the parent's id/preview/author plus
     // a client-only `isBot` flag used to decide @emma auto-tagging; only the first
@@ -164,6 +168,7 @@ final class ChatService: ObservableObject {
     /// posts a single message carrying both the attachment and the text.
     func sendToEmmaWithAttachment(text: String, data: Data, fileName: String, contentType: String) async {
         isUploading = true
+        uploadError = nil
         defer { isUploading = false }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let messageText: String
@@ -196,7 +201,8 @@ final class ChatService: ObservableObject {
                     ],
                 ])
         } catch {
-            // Best-effort; the input keeps the text on failure.
+            uploadError = "Couldn't send attachment: \(error.localizedDescription)"
+            print("ChatService.sendToEmmaWithAttachment failed:", error)
         }
     }
 
@@ -312,6 +318,7 @@ final class ChatService: ObservableObject {
 
     func attach(data: Data, fileName: String, contentType: String) async {
         isUploading = true
+        uploadError = nil
         defer { isUploading = false }
         let channelId = effectiveChannelId
         do {
@@ -330,7 +337,8 @@ final class ChatService: ObservableObject {
                 ],
             ])
         } catch {
-            // Upload failures are surfaced via isUploading clearing; no crash.
+            uploadError = "Couldn't upload image: \(error.localizedDescription)"
+            print("ChatService.attach failed:", error)
         }
     }
 

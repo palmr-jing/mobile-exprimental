@@ -30,6 +30,16 @@ struct Attachment: Equatable {
     var storagePath: String
 }
 
+// The quoted parent a reply points at. Mirrors the web TeamChat `replyTo` object
+// persisted on the message document: exactly these four fields (the client-only
+// `isBot` flag used to decide @emma auto-tagging is NOT part of the wire shape).
+struct ReplyContext: Equatable {
+    var id: String
+    var text: String
+    var authorName: String
+    var authorUid: String
+}
+
 // A single message in a channel. Distinct from the per-task ChatMessage (which
 // lives in commander_tasks/{id}/chat) — this mirrors
 // commander_channels/{id}/messages/{id}.
@@ -47,4 +57,5 @@ struct ChannelMessage: Identifiable, Equatable {
     var emmaStatus: String?
     var isBot: Bool
     var emmaThinking: Bool
+    var replyTo: ReplyContext?
 }

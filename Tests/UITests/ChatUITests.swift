@@ -49,4 +49,27 @@ final class ChatUITests: XCTestCase {
         // Emma is always in the roster, so the dropdown should offer her.
         XCTAssertTrue(app.staticTexts["@emma"].waitForExistence(timeout: 5))
     }
+
+    func testReplyBarAppearsAndCancels() {
+        let app = launchChat()
+        let field = app.textFields["chat-composer-input"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+        field.typeText("reply target")
+        app.buttons["chat-send"].tap()
+
+        // Long-press the bubble to open the native context menu, then tap Reply.
+        let bubble = app.staticTexts["reply target"]
+        XCTAssertTrue(bubble.waitForExistence(timeout: 10))
+        bubble.press(forDuration: 1.1)
+        let replyItem = app.buttons["Reply"]
+        XCTAssertTrue(replyItem.waitForExistence(timeout: 5))
+        replyItem.tap()
+
+        // The reply bar (with its cancel control) should now be staged.
+        let cancel = app.buttons["chat-cancel-reply"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        cancel.tap()
+        XCTAssertFalse(cancel.waitForExistence(timeout: 2))
+    }
 }

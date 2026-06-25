@@ -156,6 +156,33 @@ enum Presence {
         !regexMatches(#"(^|\s)@emma\b"#, in: text ?? "", group: 0).isEmpty
     }
 
+    // ── Reply-to-message (parity with web TeamChat #811) ──────────────────────
+
+    // The quoted-preview text stored on a reply: the parent's text truncated to
+    // 120 chars, or an emoji label for media. Mirrors the web startReply().
+    static func replyPreview(type: MessageType, text: String?, attachmentName: String?) -> String {
+        let body = text ?? ""
+        if !body.isEmpty {
+            return body.count > 120 ? String(body.prefix(120)) + "…" : body
+        }
+        switch type {
+        case .image: return "📷 Photo"
+        case .video: return "🎬 Video"
+        case .file:
+            let name = (attachmentName ?? "").isEmpty ? "File" : attachmentName!
+            return "📎 \(name)"
+        case .text: return ""
+        }
+    }
+
+    // When replying to an Emma-authored message, prepend "@emma" so the assistant
+    // listener fires — but only if the text doesn't already mention her, and never
+    // for replies to a human. Mirrors the web sendText() auto-tag.
+    static func replyAutoTag(_ text: String, replyingToBot: Bool) -> String {
+        guard replyingToBot, !mentionsEmma(text) else { return text }
+        return "@emma \(text)"
+    }
+
     // ── Regex helpers (case-insensitive, like the JS /.../i flags) ────────────
     private static func slice(_ text: String, upTo caret: Int?) -> String {
         guard let caret, caret >= 0, caret < text.count else { return text }

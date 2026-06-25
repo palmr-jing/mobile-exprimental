@@ -105,4 +105,29 @@ struct PresenceTests {
         #expect(Presence.mentionsEmma("email@emma.example") == false)
         #expect(Presence.mentionsEmma("emma is great") == false)
     }
+
+    // ── Reply-to-message (#811 parity) ────────────────────────────────────────
+
+    @Test func replyPreviewUsesTextTruncatedTo120() {
+        #expect(Presence.replyPreview(type: .text, text: "hello", attachmentName: nil) == "hello")
+        let long = String(repeating: "a", count: 200)
+        let preview = Presence.replyPreview(type: .text, text: long, attachmentName: nil)
+        #expect(preview == String(repeating: "a", count: 120) + "…")
+    }
+
+    @Test func replyPreviewLabelsMediaWhenNoText() {
+        #expect(Presence.replyPreview(type: .image, text: "", attachmentName: nil) == "📷 Photo")
+        #expect(Presence.replyPreview(type: .video, text: nil, attachmentName: nil) == "🎬 Video")
+        #expect(Presence.replyPreview(type: .file, text: "", attachmentName: "spec.pdf") == "📎 spec.pdf")
+        #expect(Presence.replyPreview(type: .file, text: "", attachmentName: nil) == "📎 File")
+    }
+
+    @Test func replyAutoTagPrependsEmmaOnlyForBotReplies() {
+        // Replying to Emma → @emma prepended.
+        #expect(Presence.replyAutoTag("thanks", replyingToBot: true) == "@emma thanks")
+        // Already mentions Emma → unchanged.
+        #expect(Presence.replyAutoTag("@emma thanks", replyingToBot: true) == "@emma thanks")
+        // Replying to a human → never tagged.
+        #expect(Presence.replyAutoTag("thanks", replyingToBot: false) == "thanks")
+    }
 }

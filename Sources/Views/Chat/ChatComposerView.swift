@@ -31,6 +31,10 @@ struct ChatComposerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if let reply = chatService.replyDraft {
+                replyBar(reply)
+            }
+
             if let query = mentionQuery, !mentionOptions.isEmpty, !query.isEmpty || input.hasSuffix("@") {
                 MentionAutocompleteView(options: mentionOptions) { member in
                     let result = Presence.applyMention(input, caret: nil, handle: Presence.mentionHandle(email: member.email))
@@ -97,6 +101,45 @@ struct ChatComposerView: View {
             guard let item else { return }
             Task { await handlePicked(item) }
         }
+        .onChange(of: chatService.focusComposerToken) { _, _ in
+            focused = true
+        }
+    }
+
+    // MARK: - Reply bar
+
+    // Shown above the composer while a reply is staged. Mirrors the web reply bar:
+    // "Replying to {name}" + the quoted preview + a cancel control.
+    private func replyBar(_ reply: ChatService.ReplyDraft) -> some View {
+        HStack(spacing: DS.Spacing.sm) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Replying to \(reply.authorName)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(DS.Colors.accent)
+                    .lineLimit(1)
+                Text(reply.text.isEmpty ? "…" : reply.text)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DS.Colors.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, DS.Spacing.sm)
+            .overlay(alignment: .leading) {
+                Rectangle().fill(DS.Colors.accent.opacity(0.5)).frame(width: 2)
+            }
+
+            Button {
+                chatService.cancelReply()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(DS.Colors.secondary)
+            }
+            .accessibilityIdentifier("chat-cancel-reply")
+        }
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.sm)
+        .background(DS.Colors.background.opacity(0.5))
     }
 
     // MARK: - Pending image preview

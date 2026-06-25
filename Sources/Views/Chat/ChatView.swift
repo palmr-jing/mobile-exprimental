@@ -7,6 +7,8 @@ struct ChatView: View {
     @EnvironmentObject var chatService: ChatService
     @EnvironmentObject var notificationService: NotificationService
     @State private var showNewChannel = false
+    // The message currently ringed after a tap on its quote.
+    @State private var highlightedId: String?
 
     var body: some View {
         NavigationStack {
@@ -100,7 +102,10 @@ struct ChatView: View {
                         MessageBubbleView(
                             message: message,
                             isMine: message.authorEmail.lowercased() == chatService.myEmail,
-                            myHandle: chatService.myHandle
+                            myHandle: chatService.myHandle,
+                            onReply: { chatService.startReply(to: $0) },
+                            onScrollToParent: { scrollToParent($0, proxy: proxy) },
+                            isHighlighted: message.id == highlightedId
                         )
                         .id(message.id)
                     }
@@ -116,6 +121,17 @@ struct ChatView: View {
                     withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                 }
             }
+        }
+    }
+
+    // Tapping a reply's quote scrolls to the parent and briefly rings it. If the
+    // parent isn't in the loaded thread the scroll is a no-op (web parity).
+    private func scrollToParent(_ id: String, proxy: ScrollViewProxy) {
+        guard chatService.messages.contains(where: { $0.id == id }) else { return }
+        withAnimation { proxy.scrollTo(id, anchor: .center) }
+        highlightedId = id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if highlightedId == id { highlightedId = nil }
         }
     }
 }

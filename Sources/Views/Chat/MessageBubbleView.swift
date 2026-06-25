@@ -8,13 +8,26 @@ struct MessageBubbleView: View {
     let message: ChannelMessage
     let isMine: Bool
     let myHandle: String
+    // Optional reply hooks — supplied by the team Chat view. Reply on the private
+    // Ask-Emma thread leaves these nil so the affordances simply don't appear.
+    var onReply: ((ChannelMessage) -> Void)? = nil
+    var onScrollToParent: ((String) -> Void)? = nil
+    // Briefly ringed when another message's quote scrolls to this one.
+    var isHighlighted: Bool = false
+
+    // How far the bubble has been dragged in a swipe-to-reply gesture.
+    @State private var dragOffset: CGFloat = 0
 
     private var isBot: Bool { message.isBot || message.authorUid == "emma-bot" }
+    private var canReply: Bool { onReply != nil && !message.emmaThinking }
+    // Swipe past this many points (rightward) commits the reply.
+    private let replyTriggerDistance: CGFloat = 60
 
     var body: some View {
         HStack {
             if isMine { Spacer(minLength: 40) }
             VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                if let reply = message.replyTo { quotedParent(reply) }
                 header
                 attachmentView
                 contentView
@@ -23,10 +36,70 @@ struct MessageBubbleView: View {
             .padding(.vertical, DS.Spacing.sm)
             .background(bubbleColor)
             .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).stroke(borderColor, lineWidth: 0.5))
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.md)
+                    .stroke(DS.Colors.accent, lineWidth: isHighlighted ? 2 : 0)
+            )
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
             .frame(maxWidth: 300, alignment: .leading)
             if !isMine { Spacer(minLength: 40) }
         }
+        .offset(x: dragOffset)
+        .animation(.interactiveSpring(), value: dragOffset)
+        .contentShape(Rectangle())
+        // Masked off when replies aren't available (e.g. Ask Emma) so it never
+        // competes with the scroll view there.
+        .gesture(swipeToReply, including: canReply ? .all : .subviews)
+        .contextMenu { if canReply {
+            Button {
+                onReply?(message)
+            } label: {
+                Label("Reply", systemImage: "arrowshape.turn.up.left")
+            }
+        } }
+    }
+
+    // Swipe right to reply — the iOS-native affordance. Bounded so it follows the
+    // finger a little, then snaps back; only a rightward drag past the threshold
+    // commits, so it never fights the vertical scroll.
+    private var swipeToReply: some Gesture {
+        DragGesture(minimumDistance: 20)
+            .onChanged { value in
+                guard canReply, value.translation.width > 0,
+                      abs(value.translation.height) < abs(value.translation.width) else { return }
+                dragOffset = min(value.translation.width, replyTriggerDistance + 12)
+            }
+            .onEnded { value in
+                let committed = canReply && value.translation.width >= replyTriggerDistance
+                    && abs(value.translation.height) < replyTriggerDistance
+                dragOffset = 0
+                if committed { onReply?(message) }
+            }
+    }
+
+    // The quoted parent shown inside a reply bubble; tap scrolls to the original.
+    private func quotedParent(_ reply: ReplyContext) -> some View {
+        Button {
+            onScrollToParent?(reply.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(reply.authorName)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(DS.Colors.accent)
+                    .lineLimit(1)
+                Text(reply.text.isEmpty ? "…" : reply.text)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DS.Colors.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, DS.Spacing.sm)
+            .overlay(alignment: .leading) {
+                Rectangle().fill(DS.Colors.accent.opacity(0.5)).frame(width: 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("chat-reply-quote")
     }
 
     private var header: some View {

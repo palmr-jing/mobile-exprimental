@@ -201,7 +201,7 @@ final class ChatService: ObservableObject {
                     ],
                 ])
         } catch {
-            uploadError = "Couldn't send attachment: \(error.localizedDescription)"
+            uploadError = "Couldn't send attachment: \(StorageService.describe(error))"
             print("ChatService.sendToEmmaWithAttachment failed:", error)
         }
     }
@@ -337,7 +337,7 @@ final class ChatService: ObservableObject {
                 ],
             ])
         } catch {
-            uploadError = "Couldn't upload image: \(error.localizedDescription)"
+            uploadError = "Couldn't upload image: \(StorageService.describe(error))"
             print("ChatService.attach failed:", error)
         }
     }

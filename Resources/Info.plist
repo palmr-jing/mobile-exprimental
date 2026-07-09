@@ -41,6 +41,8 @@
 	<string>Commander uses the microphone to transcribe what you say into chat messages.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Commander needs photo library access so you can attach images and video to chat messages.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Commander saves reels you edit to your photo library.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Commander transcribes your speech to text so you can dictate messages to Emma and your team.</string>
 	<key>UIApplicationSceneManifest</key>

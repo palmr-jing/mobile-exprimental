@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import AVFoundation
 import AVKit
+import Photos
 
 // Reel editor. Phase 1: filmstrip trim (a continuous strip of frames with a
 // draggable trim window). Phase 2: a tool bar — Trim · Text · Speed · Mute —
@@ -33,7 +34,8 @@ struct ReelEditorView: View {
     @State private var muted = false
 
     @State private var exporting = false
-    @State private var exported: ExportedFile?
+    @State private var exported: ExportedFile?     // drives the optional Share sheet
+    @State private var savedURL: URL?              // set when saved to Photos → confirm alert
     @State private var exportError: String?
     @State private var timeObserver: Any?
 
@@ -54,6 +56,10 @@ struct ReelEditorView: View {
         .task { await load() }
         .onDisappear { if let t = timeObserver { player?.removeTimeObserver(t) } }
         .sheet(item: $exported) { ShareSheet(items: [$0.url]) }
+        .alert("Saved to Photos", isPresented: Binding(get: { savedURL != nil }, set: { if !$0 { savedURL = nil } })) {
+            Button("Done") { dismiss() }
+            Button("Share") { if let u = savedURL { exported = ExportedFile(url: u) } }
+        } message: { Text("Your edited reel is in Photos.") }
         .alert("Export failed", isPresented: Binding(get: { exportError != nil }, set: { if !$0 { exportError = nil } })) {
             Button("OK", role: .cancel) { exportError = nil }
         } message: { Text(exportError ?? "") }
@@ -148,8 +154,8 @@ struct ReelEditorView: View {
             Spacer()
             Text(video.title).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
             Spacer()
-            Button { Task { await export() } } label: {
-                Text(exporting ? "Exporting…" : "Done").fontWeight(.semibold)
+            Button { Task { await finish() } } label: {
+                Text(exporting ? "Saving…" : "Save").fontWeight(.semibold)
             }
             .foregroundStyle(exporting || end - start < 0.5 ? .gray : .white)
             .disabled(exporting || end - start < 0.5)
@@ -228,79 +234,35 @@ struct ReelEditorView: View {
         thumbnails = imgs
     }
 
-    // Build a trimmed composition with optional speed, mute, and a burned-in
-    // text overlay, then export it.
-    private func export() async {
-        guard let asset, end > start else { return }
+    // Trim / speed / mute / text → an exported .mp4 (via ReelExport), then save it
+    // to the user's Photos with a clear result.
+    private func finish() async {
+        guard let url = await export() else { return }
+        if let err = await saveToPhotos(url) { exportError = err } else { savedURL = url }
+    }
+
+    private func export() async -> URL? {
+        guard let assetURL = asset?.url, end > start else { return nil }
         exporting = true
         defer { exporting = false }
-        let range = CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600),
-                                end: CMTime(seconds: end, preferredTimescale: 600))
-        let comp = AVMutableComposition()
-        guard let srcV = try? await asset.loadTracks(withMediaType: .video).first,
-              let dstV = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-            exportError = "No video track in this clip."; return
-        }
         do {
-            try dstV.insertTimeRange(range, of: srcV, at: .zero)
-            if !muted, let srcA = try? await asset.loadTracks(withMediaType: .audio).first,
-               let dstA = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
-                try dstA.insertTimeRange(range, of: srcA, at: .zero)
+            return try await ReelExport.export(assetURL: assetURL, options: .init(
+                start: start, end: end, speed: speed, muted: muted, text: overlayText, textPos: textPos))
+        } catch {
+            exportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return nil
+        }
+    }
+
+    private func saveToPhotos(_ url: URL) async -> String? {
+        await withCheckedContinuation { (cont: CheckedContinuation<String?, Never>) in
+            PHPhotoLibrary.shared().performChanges {
+                PHAssetCreationRequest.creationRequestForAssetFromVideo(atFileURL: url)
+            } completionHandler: { ok, error in
+                cont.resume(returning: ok ? nil : (error?.localizedDescription
+                    ?? "Couldn't save to Photos. Allow photo access in Settings and retry."))
             }
-        } catch { exportError = error.localizedDescription; return }
-
-        if speed != 1.0 {
-            let scaled = CMTime(seconds: (end - start) / speed, preferredTimescale: 600)
-            comp.scaleTimeRange(CMTimeRange(start: .zero, duration: comp.duration), toDuration: scaled)
         }
-
-        let natural = (try? await srcV.load(.naturalSize)) ?? CGSize(width: 720, height: 1280)
-        let transform = (try? await srcV.load(.preferredTransform)) ?? .identity
-        let rotated = abs(transform.b) == 1 && abs(transform.c) == 1
-        let renderSize = rotated ? CGSize(width: natural.height, height: natural.width) : natural
-
-        let vComp = AVMutableVideoComposition()
-        vComp.renderSize = renderSize
-        vComp.frameDuration = CMTime(value: 1, timescale: 30)
-        let instr = AVMutableVideoCompositionInstruction()
-        instr.timeRange = CMTimeRange(start: .zero, duration: comp.duration)
-        let li = AVMutableVideoCompositionLayerInstruction(assetTrack: dstV)
-        li.setTransform(srcV.preferredTransform, at: .zero)
-        instr.layerInstructions = [li]
-        vComp.instructions = [instr]
-
-        if !overlayText.isEmpty {
-            let parent = CALayer(); parent.frame = CGRect(origin: .zero, size: renderSize)
-            let videoLayer = CALayer(); videoLayer.frame = CGRect(origin: .zero, size: renderSize)
-            parent.addSublayer(videoLayer)
-            let tl = CATextLayer()
-            tl.string = overlayText
-            tl.font = UIFont.systemFont(ofSize: 1, weight: .semibold)
-            tl.fontSize = renderSize.height * 0.045
-            tl.foregroundColor = UIColor.white.cgColor
-            tl.backgroundColor = UIColor.black.withAlphaComponent(0.5).cgColor
-            tl.alignmentMode = .center
-            tl.contentsScale = 2
-            let tw = renderSize.width * 0.9, th = renderSize.height * 0.09
-            let cx = renderSize.width * textPos.x
-            let cy = renderSize.height * (1 - textPos.y)   // CALayer origin is bottom-left
-            tl.frame = CGRect(x: cx - tw / 2, y: cy - th / 2, width: tw, height: th)
-            parent.addSublayer(tl)
-            vComp.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parent)
-        }
-
-        guard let session = AVAssetExportSession(asset: comp, presetName: AVAssetExportPresetHighestQuality) else {
-            exportError = "Couldn't create an export session."; return
-        }
-        session.videoComposition = vComp
-        let out = FileManager.default.temporaryDirectory.appendingPathComponent("edit-\(UUID().uuidString).mp4")
-        session.outputURL = out
-        session.outputFileType = .mp4
-        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            session.exportAsynchronously { cont.resume() }
-        }
-        if session.status == .completed { exported = ExportedFile(url: out) }
-        else { exportError = session.error?.localizedDescription ?? "Export didn't complete." }
     }
 }
 

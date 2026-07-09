@@ -17,6 +17,8 @@ final class PushService: NSObject {
 
     // Request notification authorization and register for remote notifications.
     func register(uid: String) {
+        // Never prompt for push under the UITest harness.
+        if TestConfig.isUITest { return }
         self.uid = uid
         // If a token already arrived before we knew the uid, flush it now.
         if let token = pendingToken { writeToken(token, uid: uid) }

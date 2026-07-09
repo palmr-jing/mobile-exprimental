@@ -15,6 +15,10 @@ enum TestConfig {
     static var fakeUserEmail: String? { value(for: "-FAKE_USER_EMAIL") }
     static var fakeUserIsAdmin: Bool { value(for: "-FAKE_USER_ADMIN") == "1" }
 
+    /// Drive the Videos tab from deterministic mock fixtures so the tap→play
+    /// flow is UITestable without Firebase. Inert in production.
+    static var isMockVideos: Bool { args.contains("-MOCK_VIDEOS") }
+
     /// Inject a canned transcript instead of running SFSpeechRecognizer.
     static var useFakeVoice: Bool { args.contains("-FAKE_VOICE") }
     static var fakeVoiceTranscript: String { value(for: "-FAKE_VOICE_TRANSCRIPT") ?? "test dictation" }

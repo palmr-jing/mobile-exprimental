@@ -60,4 +60,15 @@ struct VideoTests {
         #expect(AssignedVideo.filter([older, newer], kind: .reel).map(\.id) == ["a"])
         #expect(AssignedVideo.filter([older, newer], kind: nil).map(\.id) == ["b", "a"])
     }
+
+    @Test func rotatedPutsTappedClipFirst() {
+        func mk(_ id: String) -> AssignedVideo {
+            AssignedVideo(id: id, kind: .reel, title: id, videoURL: nil, storagePath: "p",
+                          thumbnailURL: nil, durationSeconds: nil, project: nil, sourceURL: nil, createdAt: nil)
+        }
+        let vids = ["a", "b", "c", "d"].map(mk)
+        // Tapping the 3rd clip opens the feed on it, with the rest reachable.
+        #expect(AssignedVideo.rotated(vids, first: vids[2]).map(\.id) == ["c", "d", "a", "b"])
+        #expect(AssignedVideo.rotated(vids, first: vids[0]).map(\.id) == ["a", "b", "c", "d"])
+    }
 }

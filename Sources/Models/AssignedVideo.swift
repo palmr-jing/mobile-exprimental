@@ -60,4 +60,12 @@ struct AssignedVideo: Identifiable, Equatable {
     static func filter(_ videos: [AssignedVideo], kind: VideoKind?) -> [AssignedVideo] {
         sortedNewestFirst(kind == nil ? videos : videos.filter { $0.kind == kind })
     }
+
+    // Rotate so `first` leads, preserving order and keeping every clip reachable
+    // by paging. The full-screen feed opens at index 0, which a ScrollView shows
+    // reliably — so the tapped clip is always the one that plays.
+    static func rotated(_ videos: [AssignedVideo], first: AssignedVideo) -> [AssignedVideo] {
+        guard let i = videos.firstIndex(of: first) else { return videos }
+        return Array(videos[i...]) + Array(videos[..<i])
+    }
 }

@@ -74,7 +74,7 @@ struct VideoFeedView: View {
                     Text(d).font(.caption.weight(.medium)).opacity(0.9)
                 }
             }
-            Text(video.title).font(.headline)
+            Text(video.title).font(.headline).accessibilityIdentifier("reel-title")
             Button { editing = video } label: {
                 Label("Edit", systemImage: "scissors").font(.subheadline.weight(.semibold))
             }

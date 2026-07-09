@@ -12,7 +12,9 @@ struct MobileCommanderApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if authService.isSignedIn {
+                if TestConfig.isMockVideos {
+                    VideosView()
+                } else if authService.isSignedIn {
                     RootTabView()
                 } else {
                     LoginView()
@@ -29,6 +31,7 @@ struct MobileCommanderApp: App {
             // When the signed-in user is known, start the live chat/presence
             // subscriptions and register for push. Tear them down on sign-out.
             .onChange(of: authService.currentUser) { _, account in
+                if TestConfig.isMockVideos { return }
                 if let account {
                     chatService.start(user: account)
                     notificationService.start(email: account.email)

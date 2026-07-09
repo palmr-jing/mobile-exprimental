@@ -15,7 +15,9 @@ struct VideosView: View {
         var kind: VideoKind? { self == .reels ? .reel : self == .recordings ? .recording : nil }
     }
 
-    private var shown: [AssignedVideo] { AssignedVideo.filter(service.videos, kind: filter.kind) }
+    private var source: [AssignedVideo] { TestConfig.isMockVideos ? Self.mock : service.videos }
+    private var isLoading: Bool { TestConfig.isMockVideos ? false : service.isLoading }
+    private var shown: [AssignedVideo] { AssignedVideo.filter(source, kind: filter.kind) }
 
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
 
@@ -28,9 +30,9 @@ struct VideosView: View {
                 .pickerStyle(.segmented).padding(12)
 
                 Group {
-                    if service.isLoading {
+                    if isLoading {
                         ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if let msg = service.errorMessage {
+                    } else if let msg = service.errorMessage, !TestConfig.isMockVideos {
                         empty("exclamationmark.triangle", "Couldn't load videos", msg)
                     } else if shown.isEmpty {
                         empty("film.stack", "No videos yet", "Reels released to you from the gym will appear here.")
@@ -50,12 +52,27 @@ struct VideosView: View {
         }
         .tint(DS.Colors.accent)
         .task(id: auth.currentUser?.email) {
-            if let email = auth.currentUser?.email { service.start(email: email) }
+            if !TestConfig.isMockVideos, let email = auth.currentUser?.email { service.start(email: email) }
         }
         .fullScreenCover(item: $feedStart) { start in
-            VideoFeedView(videos: shown, service: service, startAt: start)
+            // Rotate so the tapped clip is first — the feed opens at index 0,
+            // which reliably shows the clip you actually tapped.
+            VideoFeedView(videos: AssignedVideo.rotated(shown, first: start), service: service)
         }
     }
+
+    // Deterministic fixtures for the UITest/screenshot seam (inert in production).
+    static let mock: [AssignedVideo] = {
+        let titles = ["Muay Thai Kickboxing", "Brazilian Jiu Jitsu", "IMA MMA Class",
+                      "Sparring Night", "Open Mat Rolls", "Fighter Reel", "Warmup Drills"]
+        let durs = [1839, 181, 300, 95, 600, 240, 60]
+        return titles.indices.map { i in
+            AssignedVideo(id: "m\(i)", kind: i % 3 == 2 ? .recording : .reel, title: titles[i],
+                          videoURL: URL(string: "https://example.com/\(i).mp4"), storagePath: nil,
+                          thumbnailURL: nil, durationSeconds: durs[i], project: "mobile commander",
+                          sourceURL: nil, createdAt: Date(timeIntervalSince1970: Double(10_000 - i)))
+        }
+    }()
 
     private func empty(_ icon: String, _ title: String, _ subtitle: String) -> some View {
         VStack(spacing: 10) {

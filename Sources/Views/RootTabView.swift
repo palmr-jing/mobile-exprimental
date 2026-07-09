@@ -18,7 +18,7 @@ struct RootTabView: View {
                 .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right") }
                 .tag(1)
 
-            VideoFeedView()
+            VideosView()
                 .tabItem { Label("Videos", systemImage: "play.rectangle.on.rectangle") }
                 .tag(2)
         }

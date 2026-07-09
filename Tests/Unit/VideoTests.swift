@@ -51,10 +51,13 @@ struct VideoTests {
     @Test func sortsNewestFirst() {
         let older = AssignedVideo(id: "a", kind: .reel, title: "a", videoURL: nil,
                                   storagePath: "p", thumbnailURL: nil, durationSeconds: nil,
-                                  project: nil, createdAt: Date(timeIntervalSince1970: 100))
-        let newer = AssignedVideo(id: "b", kind: .reel, title: "b", videoURL: nil,
+                                  project: nil, sourceURL: nil, createdAt: Date(timeIntervalSince1970: 100))
+        let newer = AssignedVideo(id: "b", kind: .recording, title: "b", videoURL: nil,
                                   storagePath: "p", thumbnailURL: nil, durationSeconds: nil,
-                                  project: nil, createdAt: Date(timeIntervalSince1970: 200))
+                                  project: nil, sourceURL: nil, createdAt: Date(timeIntervalSince1970: 200))
         #expect(AssignedVideo.sortedNewestFirst([older, newer]).first?.id == "b")
+        // Kind filter narrows then sorts.
+        #expect(AssignedVideo.filter([older, newer], kind: .reel).map(\.id) == ["a"])
+        #expect(AssignedVideo.filter([older, newer], kind: nil).map(\.id) == ["b", "a"])
     }
 }

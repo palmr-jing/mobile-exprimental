@@ -1,145 +1,105 @@
 import SwiftUI
-import AVKit
+import AVFoundation
 
-// The Videos tab: reels released to the signed-in user from manage.everbot.org
-// (commander_videos docs whose `assigned_emails` contains the user's email).
+// Full-screen vertical paging feed (Instagram-Reels style). Each page is a
+// looping ReelPlayerView; only the visible one plays. Overlays: close, shared
+// mute, per-reel title/kind/duration, "Open in everbot", and Edit (trim).
 struct VideoFeedView: View {
-    @EnvironmentObject private var auth: AuthService
-    @StateObject private var service = VideoService()
-    @State private var playing: AssignedVideo?
-
-    var body: some View {
-        NavigationStack {
-            Group {
-                if service.isLoading {
-                    ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let msg = service.errorMessage {
-                    emptyState(icon: "exclamationmark.triangle",
-                               title: "Couldn't load videos", subtitle: msg)
-                } else if service.videos.isEmpty {
-                    emptyState(icon: "film.stack", title: "No videos yet",
-                               subtitle: "Reels released to you from the gym will appear here.")
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 14) {
-                            ForEach(service.videos) { video in
-                                VideoCard(video: video) { playing = video }
-                            }
-                        }
-                        .padding(16)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(DS.Colors.background)
-            .navigationTitle("Videos")
-        }
-        .tint(DS.Colors.accent)
-        .task(id: auth.currentUser?.email) {
-            if let email = auth.currentUser?.email { service.start(email: email) }
-        }
-        .sheet(item: $playing) { video in
-            VideoPlayerSheet(video: video, service: service)
-        }
-    }
-
-    private func emptyState(icon: String, title: String, subtitle: String) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: icon).font(.system(size: 40)).foregroundColor(DS.Colors.secondary)
-            Text(title).font(.headline).foregroundColor(DS.Colors.text)
-            Text(subtitle).font(.subheadline).foregroundColor(DS.Colors.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityIdentifier("videos-empty")
-    }
-}
-
-// One reel card: thumbnail + play glyph + title/date.
-private struct VideoCard: View {
-    let video: AssignedVideo
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 0) {
-                ZStack {
-                    Rectangle().fill(Color.black)
-                    if let thumb = video.thumbnailURL {
-                        AsyncImage(url: thumb) { img in
-                            img.resizable().aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Image(systemName: "play.circle")
-                                .font(.system(size: 34)).foregroundColor(.white.opacity(0.5))
-                        }
-                    }
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 44)).foregroundColor(.white.opacity(0.9))
-                    if let d = video.durationLabel {
-                        VStack { Spacer(); HStack { Spacer()
-                            Text(d)
-                                .font(.caption2.weight(.semibold)).foregroundColor(.white)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.black.opacity(0.6)).clipShape(Capsule())
-                                .padding(8)
-                        } }
-                    }
-                }
-                .frame(height: 200).clipped()
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(video.title)
-                        .font(.subheadline.weight(.semibold)).foregroundColor(DS.Colors.text)
-                        .lineLimit(1)
-                    if let created = video.createdAt {
-                        Text(created, style: .date)
-                            .font(.caption).foregroundColor(DS.Colors.secondary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-            }
-            .background(DS.Colors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(DS.Colors.border, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("video-card")
-    }
-}
-
-// Inline player sheet. Resolves the playback URL (direct or Storage-backed),
-// then hands it to AVKit — the same VideoPlayer used by chat video messages.
-private struct VideoPlayerSheet: View {
-    let video: AssignedVideo
+    let videos: [AssignedVideo]
     let service: VideoService
     @Environment(\.dismiss) private var dismiss
-    @State private var url: URL?
-    @State private var failed = false
+    @State private var currentID: String?
+    @State private var muted = false
+    @State private var editing: AssignedVideo?
+
+    init(videos: [AssignedVideo], service: VideoService, startAt: AssignedVideo? = nil) {
+        self.videos = videos
+        self.service = service
+        _currentID = State(initialValue: startAt?.id ?? videos.first?.id)
+    }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if let url {
-                    VideoPlayer(player: AVPlayer(url: url))
-                        .ignoresSafeArea(edges: .bottom)
-                        .accessibilityIdentifier("video-player")
-                } else if failed {
-                    Text("Couldn't load this video.").foregroundColor(DS.Colors.secondary)
-                } else {
-                    ProgressView()
+        ScrollView(.vertical) {
+            LazyVStack(spacing: 0) {
+                ForEach(videos) { video in
+                    ZStack(alignment: .bottomLeading) {
+                        ReelPlayerView(video: video, isActive: currentID == video.id,
+                                       muted: $muted, service: service)
+                        overlay(for: video)
+                    }
+                    .containerRelativeFrame([.horizontal, .vertical])
+                    .id(video.id)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(DS.Colors.background)
-            .navigationTitle(video.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
-            .task {
-                if let resolved = await service.playbackURL(for: video) { url = resolved }
-                else { failed = true }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollPosition(id: $currentID)
+        .ignoresSafeArea()
+        .background(.black)
+        .overlay(alignment: .top) { topBar }
+        .task { activateAudioSession() }
+        .fullScreenCover(item: $editing) { v in
+            ReelEditorView(video: v, service: service)
+        }
+    }
+
+    private var topBar: some View {
+        HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.down")
+                    .font(.title3.weight(.semibold)).foregroundColor(.white)
+                    .padding(10).background(.black.opacity(0.35), in: Circle())
+            }
+            .accessibilityIdentifier("reel-close")
+            Spacer()
+            Button { muted.toggle() } label: {
+                Image(systemName: muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.title3).foregroundColor(.white)
+                    .padding(10).background(.black.opacity(0.35), in: Circle())
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    private func overlay(for video: AssignedVideo) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(video.kind == .reel ? "REEL" : "RECORDING")
+                    .font(.caption2.weight(.bold))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(.white.opacity(0.2), in: Capsule())
+                if let d = video.durationLabel {
+                    Text(d).font(.caption.weight(.medium)).opacity(0.9)
+                }
+            }
+            Text(video.title).font(.headline)
+            HStack(spacing: 16) {
+                Button { editing = video } label: {
+                    Label("Edit", systemImage: "scissors").font(.subheadline.weight(.semibold))
+                }
+                .accessibilityIdentifier("reel-edit")
+                if let src = video.sourceURL {
+                    Link(destination: src) {
+                        Label("Open in everbot", systemImage: "arrow.up.right.square")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                }
+            }
+        }
+        .foregroundColor(.white)
+        .padding(16)
+        .padding(.bottom, 24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .top, endPoint: .bottom)
+        )
+    }
+
+    // Play audio even with the ringer silenced.
+    private func activateAudioSession() {
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+        try? AVAudioSession.sharedInstance().setActive(true)
     }
 }

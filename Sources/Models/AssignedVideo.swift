@@ -18,6 +18,7 @@ struct AssignedVideo: Identifiable, Equatable {
     let thumbnailURL: URL?
     let durationSeconds: Int?
     let project: String?
+    let sourceURL: URL?       // deep link back into manage.everbot.org
     let createdAt: Date?
 
     // "1:05"-style label, or nil when unknown.
@@ -45,6 +46,7 @@ struct AssignedVideo: Identifiable, Equatable {
             thumbnailURL: (data["thumbnail_url"] as? String).flatMap(URL.init(string:)),
             durationSeconds: data["duration_seconds"] as? Int,
             project: data["project"] as? String,
+            sourceURL: (data["source_url"] as? String).flatMap(URL.init(string:)),
             createdAt: (data["created_at"] as? Timestamp)?.dateValue()
         )
     }
@@ -52,5 +54,10 @@ struct AssignedVideo: Identifiable, Equatable {
     // Newest-first. Pure so it is unit-testable.
     static func sortedNewestFirst(_ videos: [AssignedVideo]) -> [AssignedVideo] {
         videos.sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+    }
+
+    // Optionally narrow to one kind, then sort newest-first. Pure/unit-testable.
+    static func filter(_ videos: [AssignedVideo], kind: VideoKind?) -> [AssignedVideo] {
+        sortedNewestFirst(kind == nil ? videos : videos.filter { $0.kind == kind })
     }
 }

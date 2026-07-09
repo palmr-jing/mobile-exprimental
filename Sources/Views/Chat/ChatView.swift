@@ -98,6 +98,16 @@ struct ChatView: View {
                             .foregroundStyle(DS.Colors.secondary)
                             .padding(.top, 40)
                     }
+                    // Sentinel at the top of the thread: as it scrolls into view the
+                    // user has reached the earliest loaded message, so page in an
+                    // older batch. The service guards against repeat/stale loads.
+                    if chatService.hasEarlierMessages {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, DS.Spacing.sm)
+                            .onAppear { chatService.loadEarlierMessages() }
+                            .accessibilityIdentifier("chat-load-earlier")
+                    }
                     ForEach(chatService.messages) { message in
                         MessageBubbleView(
                             message: message,
@@ -112,14 +122,19 @@ struct ChatView: View {
                 }
                 .padding(DS.Spacing.md)
             }
+            // Open pinned to the latest message instead of the earliest, and stay
+            // anchored to the bottom as the thread grows (iOS 17+).
+            .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
             .onTapGesture {
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
             }
-            .onChange(of: chatService.messages.count) { _, _ in
-                if let last = chatService.messages.last {
-                    withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                }
+            // Follow only genuinely new messages to the bottom. Keying on the last
+            // id (not the count) means paging older messages in at the top doesn't
+            // yank the reader back down.
+            .onChange(of: chatService.messages.last?.id) { _, newLast in
+                guard let newLast else { return }
+                withAnimation { proxy.scrollTo(newLast, anchor: .bottom) }
             }
         }
     }

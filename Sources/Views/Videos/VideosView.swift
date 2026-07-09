@@ -17,7 +17,7 @@ struct VideosView: View {
 
     private var shown: [AssignedVideo] { AssignedVideo.filter(service.videos, kind: filter.kind) }
 
-    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 10)]
+    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
 
     var body: some View {
         NavigationStack {
@@ -25,8 +25,7 @@ struct VideosView: View {
                 Picker("Filter", selection: $filter) {
                     ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
                 }
-                .pickerStyle(.segmented)
-                .padding(12)
+                .pickerStyle(.segmented).padding(12)
 
                 Group {
                     if service.isLoading {
@@ -37,10 +36,8 @@ struct VideosView: View {
                         empty("film.stack", "No videos yet", "Reels released to you from the gym will appear here.")
                     } else {
                         ScrollView {
-                            LazyVGrid(columns: columns, spacing: 10) {
-                                ForEach(shown) { v in
-                                    Thumb(video: v) { feedStart = v }
-                                }
+                            LazyVGrid(columns: columns, spacing: 16) {
+                                ForEach(shown) { v in Thumb(video: v) { feedStart = v } }
                             }
                             .padding(12)
                         }
@@ -72,7 +69,10 @@ struct VideosView: View {
     }
 }
 
-// One grid cell: portrait thumbnail + play glyph + duration + title.
+// One grid cell: portrait thumbnail + play glyph + duration + title. The
+// thumbnail uses a clear aspect-ratio spacer with an overlay so every cell has a
+// determinate height — without it, an image-fill reports no size and cells
+// overlap in the LazyVGrid.
 private struct Thumb: View {
     let video: AssignedVideo
     let onTap: () -> Void
@@ -80,24 +80,29 @@ private struct Thumb: View {
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 6) {
-                ZStack {
-                    Rectangle().fill(Color.black)
-                    if let t = video.thumbnailURL {
-                        AsyncImage(url: t) { img in img.resizable().aspectRatio(contentMode: .fill) }
-                        placeholder: { Color.black }
+                Color.clear
+                    .aspectRatio(9.0 / 16.0, contentMode: .fit)
+                    .overlay {
+                        ZStack {
+                            Color.black
+                            if let t = video.thumbnailURL {
+                                AsyncImage(url: t) { img in
+                                    img.resizable().scaledToFill()
+                                } placeholder: { Color.black }
+                            }
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 34)).foregroundColor(.white.opacity(0.9))
+                            if let d = video.durationLabel {
+                                VStack { Spacer(); HStack { Spacer()
+                                    Text(d).font(.caption2.weight(.semibold)).foregroundColor(.white)
+                                        .padding(.horizontal, 5).padding(.vertical, 2)
+                                        .background(.black.opacity(0.6), in: Capsule()).padding(6)
+                                } }
+                            }
+                        }
                     }
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 34)).foregroundColor(.white.opacity(0.9))
-                    if let d = video.durationLabel {
-                        VStack { Spacer(); HStack { Spacer()
-                            Text(d).font(.caption2.weight(.semibold)).foregroundColor(.white)
-                                .padding(.horizontal, 5).padding(.vertical, 2)
-                                .background(.black.opacity(0.6), in: Capsule()).padding(6)
-                        } }
-                    }
-                }
-                .aspectRatio(9.0/16.0, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
                 Text(video.title).font(.footnote.weight(.medium))
                     .foregroundColor(DS.Colors.text).lineLimit(1)
             }

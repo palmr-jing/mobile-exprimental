@@ -3,7 +3,7 @@ import AVFoundation
 
 // Full-screen vertical paging feed (Instagram-Reels style). Each page is a
 // looping ReelPlayerView; only the visible one plays. Overlays: close, shared
-// mute, per-reel title/kind/duration, "Open in everbot", and Edit (trim).
+// mute, per-reel title/kind/duration, and Edit (trim).
 struct VideoFeedView: View {
     let videos: [AssignedVideo]
     let service: VideoService
@@ -75,18 +75,10 @@ struct VideoFeedView: View {
                 }
             }
             Text(video.title).font(.headline)
-            HStack(spacing: 16) {
-                Button { editing = video } label: {
-                    Label("Edit", systemImage: "scissors").font(.subheadline.weight(.semibold))
-                }
-                .accessibilityIdentifier("reel-edit")
-                if let src = video.sourceURL {
-                    Link(destination: src) {
-                        Label("Open in everbot", systemImage: "arrow.up.right.square")
-                            .font(.subheadline.weight(.semibold))
-                    }
-                }
+            Button { editing = video } label: {
+                Label("Edit", systemImage: "scissors").font(.subheadline.weight(.semibold))
             }
+            .accessibilityIdentifier("reel-edit")
         }
         .foregroundColor(.white)
         .padding(16)

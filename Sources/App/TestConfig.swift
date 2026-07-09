@@ -19,10 +19,13 @@ enum TestConfig {
     static var useFakeVoice: Bool { args.contains("-FAKE_VOICE") }
     static var fakeVoiceTranscript: String { value(for: "-FAKE_VOICE_TRANSCRIPT") ?? "test dictation" }
 
-    /// Emulator hosts (default to localhost when running under -UITEST).
-    static var firestoreHost: String { env["FIRESTORE_EMULATOR_HOST"] ?? "localhost:8080" }
-    static var authHost: String { env["FIREBASE_AUTH_EMULATOR_HOST"] ?? "localhost:9099" }
-    static var storageHost: String { env["FIREBASE_STORAGE_EMULATOR_HOST"] ?? "localhost:9199" }
+    /// Emulator hosts (default to 127.0.0.1 when running under -UITEST). Must be
+    /// IPv4, not "localhost": the simulator resolves "localhost" to IPv6 ::1 while
+    /// the emulator listens on IPv4 127.0.0.1, so "localhost" leaves Firestore
+    /// silently offline (queries return an empty cache with no error).
+    static var firestoreHost: String { env["FIRESTORE_EMULATOR_HOST"] ?? "127.0.0.1:8080" }
+    static var authHost: String { env["FIREBASE_AUTH_EMULATOR_HOST"] ?? "127.0.0.1:9099" }
+    static var storageHost: String { env["FIREBASE_STORAGE_EMULATOR_HOST"] ?? "127.0.0.1:9199" }
 
     /// Read the value that follows a `-KEY value` launch argument pair.
     private static func value(for key: String) -> String? {

@@ -1,0 +1,56 @@
+import Foundation
+import FirebaseFirestore
+
+// A video released to the signed-in user from manage.everbot.org's Reels tab.
+// The producer writes a `commander_videos` doc (see everbot-manage
+// Reels.jsx `releasableFrom`); this is the iOS reader's view of that shape.
+enum VideoKind: String {
+    case reel
+    case recording
+}
+
+struct AssignedVideo: Identifiable, Equatable {
+    let id: String
+    let kind: VideoKind
+    let title: String
+    let videoURL: URL?        // direct https playback URL (preferred)
+    let storagePath: String?  // Firebase Storage path, resolved lazily when no videoURL
+    let thumbnailURL: URL?
+    let durationSeconds: Int?
+    let project: String?
+    let createdAt: Date?
+
+    // "1:05"-style label, or nil when unknown.
+    var durationLabel: String? {
+        guard let s = durationSeconds, s > 0 else { return nil }
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+
+    // Pure parser so the Firestore shape is unit-testable without a live snapshot.
+    // Returns nil when the doc has no playable source. Field names match exactly
+    // what the Reels "Release to app" action writes.
+    static func from(id: String, data: [String: Any]) -> AssignedVideo? {
+        let kind = VideoKind(rawValue: (data["kind"] as? String ?? "reel").lowercased()) ?? .reel
+        let videoURL = (data["video_url"] as? String).flatMap(URL.init(string:))
+        let storagePath = data["storage_path"] as? String
+        // Nothing to play without at least one source.
+        guard videoURL != nil || (storagePath?.isEmpty == false) else { return nil }
+
+        return AssignedVideo(
+            id: id,
+            kind: kind,
+            title: (data["title"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Reel",
+            videoURL: videoURL,
+            storagePath: storagePath,
+            thumbnailURL: (data["thumbnail_url"] as? String).flatMap(URL.init(string:)),
+            durationSeconds: data["duration_seconds"] as? Int,
+            project: data["project"] as? String,
+            createdAt: (data["created_at"] as? Timestamp)?.dateValue()
+        )
+    }
+
+    // Newest-first. Pure so it is unit-testable.
+    static func sortedNewestFirst(_ videos: [AssignedVideo]) -> [AssignedVideo] {
+        videos.sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+    }
+}

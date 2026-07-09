@@ -1,13 +1,11 @@
 import SwiftUI
 
-// The whole signed-in app: two chat surfaces and nothing else.
+// The whole signed-in app:
 //   1. Ask Emma — voice-first AI: say what you need, Emma files the work.
 //   2. Chat     — team chat with people + @emma.
-// Replaces the old Developer/Owner multi-tab modes; the other screens
-// (dashboard, tasks, reports, settings, owner home/request/status) are no
-// longer routed.
+//   3. Videos   — reels released to the user from manage.everbot.org.
 struct RootTabView: View {
-    // 0 = Ask Emma, 1 = Chat
+    // 0 = Ask Emma, 1 = Chat, 2 = Videos
     @State private var selection = 0
 
     var body: some View {
@@ -19,6 +17,10 @@ struct RootTabView: View {
             ChatView()
                 .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right") }
                 .tag(1)
+
+            VideoFeedView()
+                .tabItem { Label("Videos", systemImage: "play.rectangle.on.rectangle") }
+                .tag(2)
         }
         .tint(DS.Colors.accent)
     }

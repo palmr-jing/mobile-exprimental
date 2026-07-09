@@ -12,7 +12,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DEST="${DEST:-platform=iOS Simulator,name=iPhone 17 Pro}"
-PROJECT_ID="${PROJECT_ID:-demo-commander}"
+# Must match the app's Firebase project (GoogleService-Info.plist). The app is
+# hardwired to fir-web-codelab-8ace9, so the emulator + seed must run under the
+# same id — otherwise the app's Firestore streams hit a project the emulator was
+# not started for and every Firestore-backed UITest fails with a stream error.
+PROJECT_ID="${PROJECT_ID:-fir-web-codelab-8ace9}"
 
 echo "▸ Generating Xcode project…"
 xcodegen generate >/dev/null

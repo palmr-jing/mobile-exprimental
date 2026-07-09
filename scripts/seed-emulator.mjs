@@ -52,6 +52,23 @@ async function seed() {
     task: 'Seeded task', status: 'running', created_at: FieldValue.serverTimestamp(),
   });
 
+  // A reel "released" to the test user — the exact shape manage.everbot.org's
+  // Reels "Release to app" action writes, so the Videos tab has something to show.
+  await db.collection('commander_videos').doc('reel_seed_1').set({
+    kind: 'reel',
+    video_url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    storage_path: null,
+    title: 'MMA Night — Fighter Reel',
+    thumbnail_url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg',
+    duration_seconds: 65,
+    project: 'mobile commander',
+    source_url: 'https://manage.everbot.org/',
+    assigned_emails: ['test@palmr.ai'],
+    released_by: 'seed@palmr.ai',
+    created_at: FieldValue.serverTimestamp(),
+    updated_at: FieldValue.serverTimestamp(),
+  });
+
   console.log(`Seeded emulator project ${PROJECT_ID}.`);
 }
 

@@ -1,52 +1,50 @@
-# Follow-Up — Task #835: reply-to-message + auto-tag @emma (iOS Chat)
+# Follow-Up — Task #947: open chat at the latest message + page older ones in
 
-**What was done**: Added reply-to-message to the team Chat view on iOS, matching the
-web TeamChat feature from commander #811. You can now reply to any message (long-press
-menu or swipe right), see the quoted parent inside reply bubbles, tap a quote to jump to
-the original, and a reply bar above the composer shows what you're replying to. Replying
-to an Emma message auto-prepends `@emma` so the assistant fires; replying to a teammate
-does not. The persisted `replyTo` shape matches the web exactly, so threads stay in sync
-across web and iOS.
+**What was done**: The team Chat thread now opens pinned to the most recent message
+instead of the oldest, loads only the newest page up front, and pages older messages
+in when you scroll to the top. Already-loaded messages stay resident for the session
+(the window only grows, never shrinks), and Firestore's on-disk cache serves them again
+on relaunch. Previously the thread subscribed to the entire channel history unbounded
+and relied on a flaky scroll-to-bottom.
 
 **What needs review**:
-- Reply to an Emma (BOT) message and send — confirm the text goes out with `@emma`
-  prepended and Emma actually responds. Then reply to a human message and confirm `@emma`
-  is NOT added.
-- Confirm the persisted Firestore field is `replyTo: { id, text, authorName, authorUid }`
-  (4 fields, no `isBot`) and that a reply created on iOS renders correctly in the web app,
-  and vice-versa.
-- Tap a quoted parent inside a reply bubble — it should scroll to and briefly ring the
-  original message. If the parent is too old to be loaded, nothing should happen (no crash).
-- Switch channels while a reply is staged — the reply bar should clear (the draft must not
-  leak into another channel).
-- Swipe-to-reply: confirm a right-swipe on a bubble starts a reply and that it doesn't
-  interfere with normal vertical scrolling. Confirm swipe/long-press do nothing in Ask Emma
-  (reply is Chat-only by design).
-- The reply preview truncates long text at 120 chars and shows 📷/🎬/📎 labels for media.
+- Open a channel with more than ~30 messages and confirm it lands on the newest message
+  (bottom), not the oldest — no visible scroll animation from the top.
+- Scroll to the very top and confirm a spinner appears briefly and an older batch loads,
+  and that the view does NOT jump to the bottom when those older messages appear. Repeat
+  to page back further; confirm the spinner stops once you reach the first message.
+- Send a new message while scrolled to the bottom — confirm it appears and the view
+  follows it down. This is the one case where auto-scroll-to-bottom is intended.
+- Switch channels back and forth: confirm each channel opens at its own latest page and
+  that a channel you'd already scrolled back in reopens at that same depth (per-channel
+  window is cached for the session).
+- Confirm the paging window and scroll behavior work identically in Ask Emma vs team Chat
+  (Ask Emma uses its own listener and is unchanged — verify it still opens at the latest).
+- Verify behavior with an empty channel ("No messages yet…") and with exactly one page of
+  messages (no spinner should show, since there's nothing earlier).
 
 **Action items**:
-- Push the `task/835-...` branch to remote (the worker pushes automatically after the task).
-- Run the UI test under the emulator to exercise the end-to-end path:
-  `scripts/run-tests.sh` (it runs `testReplyBarAppearsAndCancels`).
-- Optional: consider also carrying `replyTo` on attachment sends. Right now (matching web)
-  replies attach to the text message only; an image-only reply won't carry the quote.
+- Push the `task/947-...` branch to remote (the worker pushes automatically after the task).
+- Run the app on a simulator/device against a real (or emulator-seeded) channel that has
+  more than 30 messages to eyeball the scroll-anchor and load-earlier behavior — the unit
+  tests cover the paging math but not the SwiftUI scroll behavior, which needs a human eye.
+- Optional: if channels commonly have thousands of messages, consider a "jump to latest"
+  button when the user has paged far back, and/or capping how far back paging can go.
 
 **Files changed**:
-- `Sources/Models/Channel.swift` — added `ReplyContext` struct (the 4-field persisted shape)
-  and a `replyTo: ReplyContext?` field on `ChannelMessage`.
-- `Sources/Logic/Presence.swift` — added pure helpers `replyPreview(type:text:attachmentName:)`
-  and `replyAutoTag(_:replyingToBot:)`, both unit-tested.
-- `Sources/Services/ChatService.swift` — added `replyDraft` state + `ReplyDraft` type, a
-  `focusComposerToken`, `startReply(to:)`/`cancelReply()`; `sendText` now auto-tags, writes
-  the `replyTo` map, and clears/restores the draft; `parseMessage` reads `replyTo`; draft is
-  cleared on channel switch and sign-out.
-- `Sources/Views/Chat/MessageBubbleView.swift` — quoted-parent block (tap to scroll),
-  long-press context menu + swipe-to-reply gesture, and a highlight ring. Reply hooks are
-  optional so Ask Emma is unaffected.
-- `Sources/Views/Chat/ChatView.swift` — wires reply + scroll-to-parent through the existing
-  `ScrollViewReader`, with a brief highlight on the target message.
-- `Sources/Views/Chat/ChatComposerView.swift` — reply bar above the composer ("Replying to
-  {name}" + preview + cancel), and auto-focus when a reply starts.
-- `Tests/Unit/PresenceTests.swift` — 3 new tests for the reply helpers.
-- `Tests/UITests/ChatUITests.swift` — new `testReplyBarAppearsAndCancels`.
+- `Sources/Logic/ChatPagination.swift` — NEW. Pure, Firebase-free paging helpers:
+  `pageSize`/`initialLimit`, `nextLimit(_:)`, `hasEarlier(receivedCount:requestedLimit:)`,
+  and `orderedAscending(fromDescending:)` (reverse a newest-first snapshot to oldest-first,
+  de-duped by id). Unit-tested.
+- `Sources/Services/ChatService.swift` — the message listener now orders by `createdAt`
+  DESCENDING with a bounded `limit` (reversed for display) instead of reading all messages
+  ascending. Added `hasEarlierMessages`/`isLoadingEarlier` published state, a per-channel
+  window cache (`channelLimits`), and `loadEarlierMessages()` which grows the window by a
+  page and re-subscribes. Stale-snapshot and channel-switch state are reset so windows and
+  affordances don't leak across channels.
+- `Sources/Views/Chat/ChatView.swift` — added `.defaultScrollAnchor(.bottom)` so the thread
+  opens at the latest message; a top spinner sentinel that calls `loadEarlierMessages()` as
+  it scrolls into view; and changed the follow-to-bottom trigger from `messages.count` to
+  `messages.last?.id` so paging older messages in no longer yanks the reader to the bottom.
+- `Tests/Unit/ChatPaginationTests.swift` — NEW. 5 tests over the paging helpers.
 - `TEST_REPORT.md`, `DEPLOY_STATUS.md` — updated for this task.

@@ -17,6 +17,11 @@ final class ChatService: ObservableObject {
     @Published var roster: [RosterMember] = []
     @Published var activeChannelId: String = generalId
     @Published var isUploading = false
+    // Paging state for the message thread. `hasEarlierMessages` gates the
+    // scroll-up "load earlier" affordance; `isLoadingEarlier` prevents it from
+    // firing repeatedly while a wider snapshot is in flight.
+    @Published var hasEarlierMessages = false
+    @Published var isLoadingEarlier = false
     // Last attachment-upload failure, surfaced in the composer. Cleared when a new
     // upload starts. Without this, a failed putData/postMessage was swallowed and
     // the picked image just vanished with no message and no clue why.
@@ -59,6 +64,11 @@ final class ChatService: ObservableObject {
     private var messageListener: ListenerRegistration?
     private var emmaMessageListener: ListenerRegistration?
     private var rosterTimer: Timer?
+
+    // The current size of the live message window, cached per channel so returning
+    // to a channel restores however far back the user had already scrolled this
+    // session (older pages don't collapse back to one page).
+    private var channelLimits: [String: Int] = [:]
 
     var myEmail: String { (user?.email ?? "").lowercased() }
     var myHandle: String { Presence.mentionHandle(email: user?.email) }
@@ -123,6 +133,7 @@ final class ChatService: ObservableObject {
         emmaMessageListener = nil
         rosterTimer?.invalidate(); rosterTimer = nil
         allowedUsers = []; presenceDocs = []; channels = []; messages = []; roster = []; emmaMessages = []
+        hasEarlierMessages = false; isLoadingEarlier = false; channelLimits = [:]
         replyDraft = nil
         user = nil
     }
@@ -222,6 +233,11 @@ final class ChatService: ObservableObject {
         // A reply only makes sense within the channel it was started in; drop it
         // on switch so it never lands in the wrong thread (web parity).
         replyDraft = nil
+        // Clear stale paging state so the new channel opens at its latest page
+        // rather than flashing the previous channel's "load earlier" affordance.
+        messages = []
+        hasEarlierMessages = false
+        isLoadingEarlier = false
         subscribeMessages()
     }
 
@@ -253,12 +269,42 @@ final class ChatService: ObservableObject {
     private func subscribeMessages() {
         messageListener?.remove()
         let channelId = effectiveChannelId
+        let limit = channelLimits[channelId] ?? ChatPagination.initialLimit
+        channelLimits[channelId] = limit
+        // Newest-first with a bounded window so the thread opens at the latest
+        // message instead of reading the whole history. We reverse to oldest-first
+        // for display. Growing `limit` (see loadEarlierMessages) pages older
+        // messages in without dropping the ones already loaded.
         messageListener = db.collection("commander_channels").document(channelId)
-            .collection("messages").order(by: "createdAt")
+            .collection("messages")
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
             .addSnapshotListener { [weak self] snap, _ in
                 guard let docs = snap?.documents else { return }
-                Task { @MainActor in self?.messages = docs.map { Self.parseMessage($0) } }
+                Task { @MainActor in
+                    guard let self else { return }
+                    // Ignore a stale snapshot for a channel we've since left.
+                    guard channelId == self.effectiveChannelId else { return }
+                    let descending = docs.map { Self.parseMessage($0) }
+                    self.messages = ChatPagination.orderedAscending(fromDescending: descending)
+                    self.hasEarlierMessages = ChatPagination.hasEarlier(
+                        receivedCount: docs.count, requestedLimit: limit
+                    )
+                    self.isLoadingEarlier = false
+                }
             }
+    }
+
+    /// Widen the live window by one page to reveal older messages. Called when the
+    /// user scrolls to the top of the thread. No-op while a load is in flight or
+    /// once we've reached the start of history.
+    func loadEarlierMessages() {
+        guard hasEarlierMessages, !isLoadingEarlier else { return }
+        isLoadingEarlier = true
+        let channelId = effectiveChannelId
+        let current = channelLimits[channelId] ?? ChatPagination.initialLimit
+        channelLimits[channelId] = ChatPagination.nextLimit(current)
+        subscribeMessages()
     }
 
     private func rebuildRoster() {

@@ -672,7 +672,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260710.1;
+				CURRENT_PROJECT_VERSION = 20260710.2;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -849,7 +849,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260710.1;
+				CURRENT_PROJECT_VERSION = 20260710.2;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

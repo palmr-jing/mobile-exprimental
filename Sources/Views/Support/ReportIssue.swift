@@ -46,7 +46,9 @@ final class ReportIssuePresenter: ObservableObject {
     // File the ticket: create the task (attachments_pending while the screenshot
     // uploads), push the PNG to Storage, then attach it — the exact shape the web
     // TaskForm writes and the worker's downloadAttachments expects.
-    func submit(description: String, tab: String, screenshot: UIImage?) async throws {
+    // Returns the ticket's num_id so the UI can show "Filed #<n>".
+    @discardableResult
+    func submit(description: String, tab: String, screenshot: UIImage?) async throws -> Int {
         let nextId = try await nextNumId()
         let png = screenshot?.pngData()
 
@@ -68,7 +70,7 @@ final class ReportIssuePresenter: ObservableObject {
         if png != nil { data["attachments_pending"] = true }
 
         let ref = try await db.collection("commander_tasks").addDocument(data: data)
-        guard let png else { return }
+        guard let png else { return nextId }
 
         do {
             let path = "task-attachments/\(nextId)/screenshot.png"
@@ -97,6 +99,7 @@ final class ReportIssuePresenter: ObservableObject {
             ])
             throw error
         }
+        return nextId
     }
 
     // Fresh max(num_id)+1 (matches the web) rather than trusting an in-memory list.
@@ -151,6 +154,7 @@ struct ReportIssueView: View {
     @State private var submitting = false
     @State private var errorMessage: String?
     @State private var done = false
+    @State private var filedNumId: Int?
 
     private var canSubmit: Bool {
         !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !submitting
@@ -197,7 +201,11 @@ struct ReportIssueView: View {
             .alert("Thanks — reported", isPresented: $done) {
                 Button("Done") { dismiss() }
             } message: {
-                Text("Filed a ticket to the mobile commander project with your screenshot.")
+                if let filedNumId {
+                    Text("Filed ticket #\(filedNumId) to the mobile commander project with your screenshot.")
+                } else {
+                    Text("Filed a ticket to the mobile commander project with your screenshot.")
+                }
             }
         }
     }
@@ -210,7 +218,7 @@ struct ReportIssueView: View {
         let text = description
         Task {
             do {
-                try await reporter.submit(description: text, tab: tab, screenshot: shot)
+                filedNumId = try await reporter.submit(description: text, tab: tab, screenshot: shot)
                 done = true
             } catch {
                 errorMessage = "Couldn't file the report: \(error.localizedDescription)"

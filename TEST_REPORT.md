@@ -1,44 +1,44 @@
-# Test Report — Task #835 (reply-to-message parity)
+# Test Report — Task #970: Add access to Dan sandbox
 
-## Build Status
-- **Platform**: iOS Simulator — iPhone 17 Pro (iOS 26.x)
-- **Status**: BUILD SUCCEEDED (`xcodebuild build-for-testing`, both app and test targets)
+## What was tested
 
-## Tests
+### 1. Allowlist-merge unit tests (new)
+`scripts/grant-project-access.test.mjs` — 12 tests over the pure `planGrant`
+merge logic (no Firestore, no network):
 
-### Unit Tests (`Tests/Unit/`)
-- **AccessTests.swift** — access-control boundaries (unchanged).
-- **PresenceTests.swift** — roster/mention logic, plus 3 NEW cases for the reply feature:
-  - `replyPreviewUsesTextTruncatedTo120` — text preview truncates at 120 chars with an ellipsis.
-  - `replyPreviewLabelsMediaWhenNoText` — image/video/file get emoji labels (📷/🎬/📎).
-  - `replyAutoTagPrependsEmmaOnlyForBotReplies` — `@emma` is prepended only when replying to an Emma message and not already mentioned; never for human replies.
-- **SpeechRecognitionServiceTests.swift** — speech config (unchanged).
+- doc-id / display-name derivation
+- absent doc → creates a scoped doc
+- scoped user → project appended, sorted, de-duped
+- already-has-project → skip (idempotent)
+- admin and unrestricted users (`projects: null`, `['*']`) are **left untouched** —
+  a scoped grant must never narrow existing access
+- the caller's `projects` array is not mutated
+- malformed `projects` and missing args throw instead of corrupting data
 
-### UI Tests (`Tests/UITests/`)
-- **ChatUITests.swift** — composer/mention/voice, plus 1 NEW case:
-  - `testReplyBarAppearsAndCancels` — sends a message, long-presses it, taps **Reply** from the context menu, asserts the reply bar appears, then cancels it.
-- **SignInUITests.swift** — sign-in flow (unchanged).
-
-## How to Run
-```bash
-# Unit tests only (hermetic, no emulator):
-SKIP_EMULATOR=1 scripts/run-tests.sh
-
-# Or directly:
-xcodebuild test -scheme MobileCommander \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:MobileCommanderTests
-
-# UI tests run under the Firebase emulator:
-scripts/run-tests.sh
+Run:
 ```
+npm run test:scripts      # node --test scripts/*.test.mjs
+```
+Status: **12 passed, 0 failed.**
 
-## Current Status
-- **Unit tests**: 29 tests across 3 suites — ALL PASS (incl. the 3 new reply tests).
-- **Build-for-testing**: PASS for both `MobileCommanderTests` and `MobileCommanderUITests` (UI test compiles and links).
-- **UI test execution**: not run here — it needs the Firebase Local Emulator Suite seeded
-  via `scripts/seed-emulator.mjs`. The test compiles; run it with `scripts/run-tests.sh`.
+### 2. End-to-end against the Firebase Firestore emulator
+Drove the real CLI (`scripts/grant-project-access.mjs`) against a live emulator
+via `firebase-tools emulators:exec`:
 
-## Notes
-- The `FirebaseFirestore … Could not reach Cloud Firestore backend` lines during the unit run
-  are expected: unit tests are hermetic and don't connect to an emulator. They don't affect results.
+- Seeded `dan@palmr.ai` with `projects: ['palmr-ios']`.
+- Run 1 → `["palmr-ios","sandbox"]` — sandbox added, existing project kept.
+- Run 2 → no-op ("already has sandbox"), still `["palmr-ios","sandbox"]`.
+
+Status: **PASS** — sandbox granted, prior access preserved, idempotent, no dupes.
+
+### 3. Syntax / smoke checks
+- `node --check` on both edited scripts — clean.
+- CLI with no args prints usage and exits 1 (the Firebase Admin SDK is imported
+  lazily, so that path needs no credentials or network).
+
+## Not run
+- Xcode unit/UI tests: this task touches only Node ops scripts (`scripts/*.mjs`)
+  and `package.json`. No Swift source changed, so the iOS test suite is unaffected
+  and was not rebuilt.
+- Production write: requires Firebase Admin credentials for the live project
+  `fir-web-codelab-8ace9` (see FOLLOW_UP.md). Verified against the emulator instead.

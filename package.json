@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "scripts/run-tests.sh",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "emulators": "firebase emulators:start --only auth,firestore,storage --project demo-commander"
   },
   "devDependencies": {

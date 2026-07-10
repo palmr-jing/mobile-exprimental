@@ -35,6 +35,33 @@ final class VideosUITests: XCTestCase {
         }
     }
 
+    // Reproduces the reported bug: open a reel, close it, then open a DIFFERENT
+    // reel. The second open must present the reel you tapped — not silently fail.
+    func testOpenCloseThenOpenAnother() {
+        let app = launchMockVideos()
+        func open(_ name: String) {
+            let card = app.staticTexts[name]
+            XCTAssertTrue(card.waitForExistence(timeout: 20), "grid missing \(name)")
+            card.tap()
+            let title = app.staticTexts["reel-title"].firstMatch
+            XCTAssertTrue(title.waitForExistence(timeout: 10), "feed didn't open for \(name)")
+            XCTAssertEqual(title.label, name, "opened a different reel than \(name)")
+        }
+        func close() {
+            app.buttons["reel-close"].tap()
+            // The cover must fully tear down — a lingering player/overlay is the
+            // signature of an orphaned presentation that would eat grid taps.
+            XCTAssertTrue(app.staticTexts["reel-title"].firstMatch.waitForNonExistence(timeout: 10),
+                          "feed overlay didn't dismiss")
+        }
+        // BJJ first (the reported order), close, then Muay Thai must still open.
+        open("Brazilian Jiu Jitsu"); close()
+        open("Muay Thai Kickboxing"); close()
+        // And once more, reversed, to be sure it isn't order-specific.
+        open("Muay Thai Kickboxing"); close()
+        open("Brazilian Jiu Jitsu"); close()
+    }
+
     // The "Send to chat" affordance opens a share sheet with a destination picker
     // and a Send button — the reel can be posted into chat from the feed.
     func testShareReelToChatOpensSheet() {

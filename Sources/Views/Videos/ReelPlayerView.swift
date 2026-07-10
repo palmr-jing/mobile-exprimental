@@ -1,10 +1,17 @@
 import SwiftUI
-import AVKit
+import UIKit
+import AVFoundation
 
 // One full-screen page in the vertical Videos feed: a looping AVPlayer that
 // only plays while it is the active page, with tap-to-pause and a shared mute
 // toggle. Playback is driven explicitly (default controls hidden) so paging
 // between reels feels like Instagram/TikTok.
+//
+// The video is rendered with a raw AVPlayerLayer (PlayerLayerView), NOT SwiftUI's
+// VideoPlayer. VideoPlayer wraps a modal AVPlayerViewController, and inside a
+// fullScreenCover its teardown could orphan a UIKit presentation controller that
+// then swallowed touches on the grid — so after opening+closing one reel, the
+// next tap did nothing. A layer has no view-controller lifecycle to leak.
 struct ReelPlayerView: View {
     let video: AssignedVideo
     let isActive: Bool
@@ -20,7 +27,7 @@ struct ReelPlayerView: View {
         ZStack {
             Color.black
             if let player {
-                VideoPlayer(player: player)
+                PlayerLayerView(player: player)
                     .allowsHitTesting(false)
                     .accessibilityIdentifier("reel-player")
             } else if failed {
@@ -79,5 +86,28 @@ struct ReelPlayerView: View {
         if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }
         loopObserver = nil
         player = nil
+    }
+}
+
+// Renders an AVPlayer through an AVPlayerLayer — a plain layer-backed UIView with
+// no AVPlayerViewController, so nothing in the UIKit presentation stack can be
+// orphaned when the enclosing fullScreenCover dismisses.
+private struct PlayerLayerView: UIViewRepresentable {
+    let player: AVPlayer
+
+    func makeUIView(context: Context) -> PlayerView {
+        let v = PlayerView()
+        v.playerLayer.videoGravity = .resizeAspectFill
+        v.playerLayer.player = player
+        return v
+    }
+
+    func updateUIView(_ uiView: PlayerView, context: Context) {
+        if uiView.playerLayer.player !== player { uiView.playerLayer.player = player }
+    }
+
+    final class PlayerView: UIView {
+        override static var layerClass: AnyClass { AVPlayerLayer.self }
+        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
     }
 }

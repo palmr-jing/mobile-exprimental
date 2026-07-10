@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // The Videos tab: reels + recordings released to the signed-in user from
 // manage.everbot.org (commander_videos, scoped by email). A Reels/Recordings/All
@@ -67,10 +68,15 @@ struct VideosView: View {
         let titles = ["Muay Thai Kickboxing", "Brazilian Jiu Jitsu", "IMA MMA Class",
                       "Sparring Night", "Open Mat Rolls", "Fighter Reel", "Warmup Drills"]
         let durs = [1839, 181, 300, 95, 600, 240, 60]
+        // A deliberately LANDSCAPE bundled thumbnail (320×180, wider than the
+        // portrait cell) so the grid-overlap UITest keeps reproducing the iPad bug
+        // where scaledToFill overflowed the cell and inflated its tap frame. A
+        // bundled file loads offline in tests; real reels' thumbnails are landscape.
+        let landscape = Bundle.main.url(forResource: "test-landscape", withExtension: "png")
         return titles.indices.map { i in
             AssignedVideo(id: "m\(i)", kind: i % 3 == 2 ? .recording : .reel, title: titles[i],
                           videoURL: URL(string: "https://example.com/\(i).mp4"), storagePath: nil,
-                          thumbnailURL: nil, durationSeconds: durs[i], project: "mobile commander",
+                          thumbnailURL: landscape, durationSeconds: durs[i], project: "mobile commander",
                           sourceURL: nil, createdAt: Date(timeIntervalSince1970: Double(10_000 - i)))
         }
     }()
@@ -98,34 +104,48 @@ private struct Thumb: View {
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 6) {
-                Color.clear
+                Color.black
                     .aspectRatio(9.0 / 16.0, contentMode: .fit)
                     .overlay {
-                        ZStack {
-                            Color.black
-                            if let t = video.thumbnailURL {
+                        // A landscape thumbnail scaled to fill is far WIDER than the
+                        // portrait cell. `.clipShape` only masks it visually — the
+                        // image still defines the cell's layout + hit frame, so cells
+                        // ballooned to ~600pt and overlapped on iPad (a tap on one
+                        // reel landed on the neighbour buried under it). `.clipped()`
+                        // below clips layout AND hit-testing to the cell.
+                        if let t = video.thumbnailURL {
+                            // AsyncImage can't render file:// URLs; load those (the
+                            // test/mock fixtures) synchronously via UIImage.
+                            if t.isFileURL, let ui = UIImage(contentsOfFile: t.path) {
+                                Image(uiImage: ui).resizable().scaledToFill()
+                            } else {
                                 AsyncImage(url: t) { img in
                                     img.resizable().scaledToFill()
                                 } placeholder: { Color.black }
                             }
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 34)).foregroundColor(.white.opacity(0.9))
-                            if let d = video.durationLabel {
-                                VStack { Spacer(); HStack { Spacer()
-                                    Text(d).font(.caption2.weight(.semibold)).foregroundColor(.white)
-                                        .padding(.horizontal, 5).padding(.vertical, 2)
-                                        .background(.black.opacity(0.6), in: Capsule()).padding(6)
-                                } }
-                            }
                         }
                     }
+                    .overlay {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 34)).foregroundColor(.white.opacity(0.9))
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        if let d = video.durationLabel {
+                            Text(d).font(.caption2.weight(.semibold)).foregroundColor(.white)
+                                .padding(.horizontal, 5).padding(.vertical, 2)
+                                .background(.black.opacity(0.6), in: Capsule()).padding(6)
+                        }
+                    }
+                    .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 Text(video.title).font(.footnote.weight(.medium))
                     .foregroundColor(DS.Colors.text).lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .accessibilityIdentifier("video-card")
     }
 }

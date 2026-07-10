@@ -18,6 +18,7 @@
 		1CAF88F53D8E141A28DE0857 /* OwnerTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB5399961D1B4BB73889D26 /* OwnerTabView.swift */; };
 		1E54B0C78BED35091B856A97 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A58536617D0385FF7734F176 /* AuthService.swift */; };
 		1EC4433454BFBD929049B1E2 /* AskEmmaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D44F76C5A2172EDD778D55F /* AskEmmaView.swift */; };
+		24BEAFEBD25C33E1E22E6E65 /* test-landscape.png in Resources */ = {isa = PBXBuildFile; fileRef = 01CCCAA881AD0F6A7ACBDA8F /* test-landscape.png */; };
 		2D7797AE2372091D94CD291D /* MessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B63D362C774253E6EA77BE /* MessageBubbleView.swift */; };
 		2E4A9B3A0875BB52D76782B9 /* MobileCommanderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A960B6DBF40C36DF2CD5AC /* MobileCommanderApp.swift */; };
 		30B6BF012D8D0EB6C9EDA113 /* Worker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62CE21C127D8B0CBA0629C76 /* Worker.swift */; };
@@ -105,6 +106,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		01CCCAA881AD0F6A7ACBDA8F /* test-landscape.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "test-landscape.png"; sourceTree = "<group>"; };
 		01F71C261EE85889C087FD94 /* OwnerHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerHomeView.swift; sourceTree = "<group>"; };
 		04F5C36771C11A3914D8E066 /* PresenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceModels.swift; sourceTree = "<group>"; };
 		08270619DFD37905061EE766 /* MobileCommander.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MobileCommander.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -215,6 +217,7 @@
 			children = (
 				0A7809AA71F47C8B7C15CC08 /* Assets.xcassets */,
 				DA0A87C3BCF9883A3F744F1A /* GoogleService-Info.plist */,
+				01CCCAA881AD0F6A7ACBDA8F /* test-landscape.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -532,6 +535,7 @@
 			files = (
 				92E7E5426B90EC57DAE44185 /* Assets.xcassets in Resources */,
 				FE0130D64E517F2B2734E9EB /* GoogleService-Info.plist in Resources */,
+				24BEAFEBD25C33E1E22E6E65 /* test-landscape.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -652,7 +656,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260709.11;
+				CURRENT_PROJECT_VERSION = 20260709.12;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -829,7 +833,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260709.11;
+				CURRENT_PROJECT_VERSION = 20260709.12;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -62,6 +62,38 @@ final class VideosUITests: XCTestCase {
         for name in sequence { open(name); close() }
     }
 
+    // Geometry invariant (not timing) so it runs identically on iPhone and iPad:
+    // every thumbnail must be hittable and no two may overlap. This is the class of
+    // bug that made "clicking Muay Thai directly does nothing" on iPad: landscape
+    // thumbnails scaled-to-fill inflated each cell's frame to ~600pt so cells
+    // overlapped and a tap on one reel landed on the neighbour buried under it.
+    // (Reproduced deterministically with the real remote thumbnails: 600pt overlap
+    // → 190pt after the clip/width-cap fix in Thumb.)
+    func testGridCellsDoNotOverlapAndAreHittable() {
+        let app = launchMockVideos()
+        XCTAssertTrue(app.staticTexts["Muay Thai Kickboxing"].waitForExistence(timeout: 20))
+        let cards = app.buttons.matching(identifier: "video-card").allElementsBoundByIndex
+        XCTAssertGreaterThanOrEqual(cards.count, 3, "grid didn't render its cells")
+        let frames = cards.map { $0.frame }
+        let window = app.windows.firstMatch.frame
+        for (i, f) in frames.enumerated() {
+            XCTAssertFalse(f.isEmpty, "card \(i) has an empty frame")
+            // Only on-screen cards are hittable; ones below the fold (iPhone's
+            // narrow 2-col grid) need scrolling, so don't assert hittability there.
+            if window.contains(CGPoint(x: f.midX, y: f.midY)) {
+                XCTAssertTrue(cards[i].isHittable, "on-screen card \(i) isn't hittable")
+            }
+        }
+        // Non-overlap is the real invariant and holds even for off-screen cards.
+        for i in frames.indices {
+            for j in frames.indices where j > i {
+                let overlap = frames[i].intersection(frames[j])
+                XCTAssertTrue(overlap.isNull || overlap.width < 1 || overlap.height < 1,
+                              "cards \(i) and \(j) overlap: \(frames[i]) ∩ \(frames[j]) = \(overlap)")
+            }
+        }
+    }
+
     // The "Send to chat" affordance opens a share sheet with a destination picker
     // and a Send button — the reel can be posted into chat from the feed.
     func testShareReelToChatOpensSheet() {

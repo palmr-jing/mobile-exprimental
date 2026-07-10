@@ -71,4 +71,17 @@ struct VideoTests {
         #expect(AssignedVideo.rotated(vids, first: vids[2]).map(\.id) == ["c", "d", "a", "b"])
         #expect(AssignedVideo.rotated(vids, first: vids[0]).map(\.id) == ["a", "b", "c", "d"])
     }
+
+    @Test func rotatedMatchesByIdEvenWhenOtherFieldsDiffer() {
+        func mk(_ id: String, title: String) -> AssignedVideo {
+            AssignedVideo(id: id, kind: .reel, title: title, videoURL: nil, storagePath: "p",
+                          thumbnailURL: nil, durationSeconds: nil, project: nil, sourceURL: nil, createdAt: nil)
+        }
+        let list = [mk("a", title: "A"), mk("b", title: "B")]
+        // The tapped value is a *stale copy* of b (same id, different title/date) —
+        // must still rotate to b. Full-equality matching would miss it. (This is
+        // the real bug: Muay Thai wouldn't open because its fields differed.)
+        let staleB = mk("b", title: "different")
+        #expect(AssignedVideo.rotated(list, first: staleB).map(\.id) == ["b", "a"])
+    }
 }

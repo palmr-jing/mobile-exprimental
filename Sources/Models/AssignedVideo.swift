@@ -65,7 +65,10 @@ struct AssignedVideo: Identifiable, Equatable {
     // by paging. The full-screen feed opens at index 0, which a ScrollView shows
     // reliably — so the tapped clip is always the one that plays.
     static func rotated(_ videos: [AssignedVideo], first: AssignedVideo) -> [AssignedVideo] {
-        guard let i = videos.firstIndex(of: first) else { return videos }
+        // Match by id, not full equality — the tapped value can differ slightly
+        // from the freshly-loaded list (e.g. Timestamp→Date precision), and a
+        // full-equality lookup would miss it and fail to rotate.
+        guard let i = videos.firstIndex(where: { $0.id == first.id }) else { return videos }
         return Array(videos[i...]) + Array(videos[..<i])
     }
 }

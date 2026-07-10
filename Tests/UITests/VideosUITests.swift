@@ -19,15 +19,19 @@ final class VideosUITests: XCTestCase {
         XCTAssertTrue(app.buttons["video-card"].firstMatch.exists)
     }
 
-    func testTappingAReelOpensThatReel() {
+    func testTappingEachReelOpensThatReel() {
         let app = launchMockVideos()
-        // Tap a reel that is NOT first in the grid.
-        let bjj = app.staticTexts["Brazilian Jiu Jitsu"]
-        XCTAssertTrue(bjj.waitForExistence(timeout: 20))
-        bjj.tap()
-        // The full-screen feed must open on the reel we tapped, not another.
-        let title = app.staticTexts["reel-title"].firstMatch
-        XCTAssertTrue(title.waitForExistence(timeout: 10))
-        XCTAssertEqual(title.label, "Brazilian Jiu Jitsu", "Tapping a reel opened a different one")
+        // Open several reels — including the first (Muay Thai) and a middle one
+        // (BJJ) — and confirm each opens the reel that was tapped, not another.
+        for name in ["Muay Thai Kickboxing", "Brazilian Jiu Jitsu", "Open Mat Rolls"] {
+            let card = app.staticTexts[name]
+            XCTAssertTrue(card.waitForExistence(timeout: 20), "grid missing \(name)")
+            card.tap()
+            let title = app.staticTexts["reel-title"].firstMatch
+            XCTAssertTrue(title.waitForExistence(timeout: 10), "feed didn't open for \(name)")
+            XCTAssertEqual(title.label, name, "Tapping \(name) opened a different reel")
+            app.buttons["reel-close"].tap()
+            XCTAssertTrue(card.waitForExistence(timeout: 10), "didn't return to grid after \(name)")
+        }
     }
 }

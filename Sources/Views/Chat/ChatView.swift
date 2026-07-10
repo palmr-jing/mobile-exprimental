@@ -26,6 +26,9 @@ struct ChatView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     NotificationBell()
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    ReportIssueButton(tab: "Chat")
+                }
             }
             .sheet(isPresented: $showNewChannel) {
                 NewChannelSheet(roster: chatService.roster) { name, members in

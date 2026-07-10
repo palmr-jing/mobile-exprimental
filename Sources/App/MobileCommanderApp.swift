@@ -8,6 +8,7 @@ struct MobileCommanderApp: App {
     @StateObject private var presenceService = PresenceService()
     @StateObject private var notificationService = NotificationService()
     @StateObject private var videoFeed = VideoFeedPresenter()
+    @StateObject private var issueReporter = ReportIssuePresenter()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -37,6 +38,13 @@ struct MobileCommanderApp: App {
                 }
             }
             .environmentObject(videoFeed)
+            .environmentObject(issueReporter)
+            // Report-issue sheet, shared by every tab (the button lives in each
+            // tab's toolbar and sets the draft, which is captured pre-sheet).
+            .sheet(item: $issueReporter.draft) { draft in
+                ReportIssueView(draft: draft)
+                    .environmentObject(issueReporter)
+            }
             // The design system is light-only (hard-coded cream/white surfaces and
             // dark text tokens). Lock the app to light appearance so SwiftUI's
             // adaptive default colors don't resolve to white-on-light in dark mode.

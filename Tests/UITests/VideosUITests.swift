@@ -94,6 +94,25 @@ final class VideosUITests: XCTestCase {
         }
     }
 
+    // The per-tab "Report an issue" button opens a sheet with the description
+    // field + a captured screenshot; Report stays disabled until text is entered.
+    func testReportIssueSheetOpens() {
+        let app = launchMockVideos()
+        XCTAssertTrue(app.staticTexts["Muay Thai Kickboxing"].waitForExistence(timeout: 20))
+        app.buttons["report-issue"].firstMatch.tap()
+
+        XCTAssertTrue(app.buttons["report-submit"].waitForExistence(timeout: 10), "report sheet didn't open")
+        XCTAssertFalse(app.buttons["report-submit"].isEnabled, "Report should be disabled with no description")
+
+        let field = app.textFields["report-description"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no description field")
+        field.tap(); field.typeText("The grid overlaps")
+        XCTAssertTrue(app.buttons["report-submit"].isEnabled, "Report should enable once described")
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts["Muay Thai Kickboxing"].waitForExistence(timeout: 10))
+    }
+
     // The "Send to chat" affordance opens a share sheet with a destination picker
     // and a Send button — the reel can be posted into chat from the feed.
     func testShareReelToChatOpensSheet() {

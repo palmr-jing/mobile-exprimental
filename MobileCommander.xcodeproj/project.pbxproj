@@ -26,6 +26,7 @@
 		34CEEF85C905BD9D3811CD14 /* ChatComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD3CE5B31526DB84EA2B548 /* ChatComposerView.swift */; };
 		35D5E43F1DA53EBECC6A84E5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = AB23456EB3674E91E5161D12 /* FirebaseFirestore */; };
 		36FE93B2ABAEC286E43B3681 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 43FE8E00FC6D343BA25B5A66 /* GoogleSignIn */; };
+		3D3E34AFB011C7BA980687D2 /* ReportIssueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8A747BF3C6371A04CFCD83B /* ReportIssueTests.swift */; };
 		3F39F5EBF1759B2D1D74C1DF /* VoiceInputButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33564207E7BD5526689ADD0 /* VoiceInputButton.swift */; };
 		3FB85740FDF0FC17744833D0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA9CFBB8A92904A0D4ECD5 /* NotificationService.swift */; };
 		42E88099A35F6A74C17543A0 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 5878561A43406C06A26413C2 /* FirebaseStorage */; };
@@ -42,6 +43,7 @@
 		6A2CA38420C310E87557F56E /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24300106A0235189A0CC811B /* TaskDetailView.swift */; };
 		6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838DD355391ACBF64F0A85D /* SettingsView.swift */; };
 		6C3AE16C094D5C84D6857E0D /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = C838B1AA4508B05B974B7C30 /* UserAccount.swift */; };
+		6D48FFCD30912CE834750FA2 /* ReportIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = E66CB120444E68577FA9B72E /* ReportIssue.swift */; };
 		72271861525F951AD3D8C20F /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E9A1252569E280218AE528A /* ReportsView.swift */; };
 		78C2BC4D0CFCEC5C8D85F09E /* VideoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C174C727A828D616491518C1 /* VideoService.swift */; };
 		7E5CD74CBE0AD9B172CD5FD2 /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71341C368CEADCCFE3A2310 /* SpeechRecognitionService.swift */; };
@@ -174,8 +176,10 @@
 		C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceTests.swift; sourceTree = "<group>"; };
 		CEDCD4D7F25722D64FA527B0 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		D8A747BF3C6371A04CFCD83B /* ReportIssueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportIssueTests.swift; sourceTree = "<group>"; };
 		D978EE162A42A4F0B2A5EB93 /* ChatPaginationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPaginationTests.swift; sourceTree = "<group>"; };
 		DA0A87C3BCF9883A3F744F1A /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		E66CB120444E68577FA9B72E /* ReportIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportIssue.swift; sourceTree = "<group>"; };
 		E71341C368CEADCCFE3A2310 /* SpeechRecognitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionService.swift; sourceTree = "<group>"; };
 		E98349D61D0B8C8F760113B0 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
 		EAD75F006B9819FDCB8065D7 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
@@ -282,6 +286,7 @@
 				1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */,
 				CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */,
 				2A42923151A08F0B0630276E /* ReelExportTests.swift */,
+				D8A747BF3C6371A04CFCD83B /* ReportIssueTests.swift */,
 				47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */,
 				1FAF186111B6A31409657C63 /* VideoTests.swift */,
 			);
@@ -297,6 +302,14 @@
 				63BE85515FF2875CD683C1B8 /* MobileCommanderUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		73A17D29696E4F5349E45979 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				E66CB120444E68577FA9B72E /* ReportIssue.swift */,
+			);
+			path = Support;
 			sourceTree = "<group>";
 		};
 		7503FC2177954D49E8911AC0 /* Sources */ = {
@@ -408,6 +421,7 @@
 				1847F402583CAE8F4FE2564C /* Developer */,
 				02574DA049E27D36569B5502 /* Owner */,
 				DBA611D11FBD4AE0D8A1D972 /* Shared */,
+				73A17D29696E4F5349E45979 /* Support */,
 				A9356B6C951B8ACE867C9CE7 /* Videos */,
 			);
 			path = Views;
@@ -596,6 +610,7 @@
 				10757CE95A58C7C35FDA6122 /* ReelEditorView.swift in Sources */,
 				D0BE51B3B8534633781ECC45 /* ReelExport.swift in Sources */,
 				DE0AFC288E9246EF3552E999 /* ReelPlayerView.swift in Sources */,
+				6D48FFCD30912CE834750FA2 /* ReportIssue.swift in Sources */,
 				72271861525F951AD3D8C20F /* ReportsView.swift in Sources */,
 				F9287FCD5AE0101B70AC6399 /* RootTabView.swift in Sources */,
 				6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */,
@@ -628,6 +643,7 @@
 				AF6E814BFC9F507EAB5E4E81 /* ChatShareTests.swift in Sources */,
 				55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */,
 				EC61E796C0648251EB205BEF /* ReelExportTests.swift in Sources */,
+				3D3E34AFB011C7BA980687D2 /* ReportIssueTests.swift in Sources */,
 				479C3D1C385DAC5E2310A135 /* SpeechRecognitionServiceTests.swift in Sources */,
 				AC2D84777B6497814F7E5242 /* VideoTests.swift in Sources */,
 			);
@@ -656,7 +672,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260709.12;
+				CURRENT_PROJECT_VERSION = 20260710.1;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -833,7 +849,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260709.12;
+				CURRENT_PROJECT_VERSION = 20260710.1;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

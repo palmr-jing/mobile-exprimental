@@ -56,6 +56,9 @@ struct VideosView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DS.Colors.background)
             .navigationTitle("Videos")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { ReportIssueButton(tab: "Videos") }
+            }
         }
         .tint(DS.Colors.accent)
         .task(id: auth.currentUser?.email) {

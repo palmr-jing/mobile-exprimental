@@ -61,6 +61,9 @@ struct AskEmmaView: View {
             .toolbar {
                 if isTab {
                     ToolbarItem(placement: .topBarTrailing) {
+                        ReportIssueButton(tab: "Ask Emma")
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button(role: .destructive) { authService.signOut() } label: {
                                 Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")

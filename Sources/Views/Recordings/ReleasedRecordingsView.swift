@@ -90,14 +90,26 @@ struct ReleasedRecordingsView: View {
 // this single card (they're already one doc).
 private struct RecordingCard: View {
     let recording: ReleasedRecording
+    @EnvironmentObject private var chatService: ChatService
+    @State private var sharing = false
 
     var body: some View {
         CommanderCard {
             VStack(alignment: .leading, spacing: DS.Spacing.md) {
-                Text(recording.className)
-                    .font(DS.Typography.headline)
-                    .foregroundStyle(DS.Colors.text)
-                    .accessibilityIdentifier("recording-title")
+                HStack(alignment: .firstTextBaseline) {
+                    Text(recording.className)
+                        .font(DS.Typography.headline)
+                        .foregroundStyle(DS.Colors.text)
+                        .accessibilityIdentifier("recording-title")
+                    Spacer()
+                    Button { sharing = true } label: {
+                        Label("Send to chat", systemImage: "paperplane.fill")
+                            .labelStyle(.iconOnly)
+                            .font(.subheadline)
+                            .foregroundStyle(DS.Colors.accent)
+                    }
+                    .accessibilityIdentifier("recording-share")
+                }
 
                 VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     if let when = recording.startsAtLabel {
@@ -117,14 +129,33 @@ private struct RecordingCard: View {
                         .font(DS.Typography.caption)
                         .foregroundStyle(DS.Colors.secondary)
                 } else {
-                    ForEach(recording.videos) { angle in
-                        AnglePlayer(angle: angle)
+                    // All angles in a single row — three compact tiles side by side.
+                    HStack(alignment: .top, spacing: DS.Spacing.sm) {
+                        ForEach(recording.videos) { angle in
+                            AnglePlayer(angle: angle)
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .accessibilityIdentifier("recording-card")
+        // NOTE: no .accessibilityIdentifier here — a container-level identifier
+        // propagates down and clobbers the child buttons' own identifiers
+        // (recording-share / angle-play), making them untappable in UITests.
+        .sheet(isPresented: $sharing) {
+            ShareToChatSheet(
+                title: recording.className,
+                subtitle: "\(recording.videos.count) camera angles",
+                icon: "video.badge.checkmark",
+                chatService: chatService,
+                send: { channelId, caption, mentionEmma in
+                    await chatService.sendRecording(recording, toChannel: channelId,
+                                                    caption: caption, mentionEmma: mentionEmma)
+                }
+            )
+            .presentationDetents([.medium, .large])
+        }
     }
 }
 
@@ -137,10 +168,11 @@ private struct AnglePlayer: View {
     @State private var player: AVPlayer?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(angle.displayName)
-                .font(DS.Typography.subheading)
-                .foregroundStyle(DS.Colors.text)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(DS.Colors.secondary)
+                .lineLimit(1)
 
             ZStack {
                 RoundedRectangle(cornerRadius: DS.Radius.sm).fill(Color.black)
@@ -150,15 +182,13 @@ private struct AnglePlayer: View {
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                         .accessibilityIdentifier("angle-player")
                 } else if angle.downloadURL == nil {
-                    VStack(spacing: DS.Spacing.xs) {
-                        Image(systemName: "video.slash").font(.title2)
-                        Text("Unavailable").font(DS.Typography.caption)
-                    }
-                    .foregroundStyle(.white.opacity(0.8))
+                    Image(systemName: "video.slash")
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.8))
                 } else {
                     Button(action: play) {
                         Image(systemName: "play.circle.fill")
-                            .font(.system(size: 44))
+                            .font(.system(size: 26))
                             .foregroundStyle(.white.opacity(0.9))
                     }
                     .buttonStyle(.plain)

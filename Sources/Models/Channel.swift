@@ -44,6 +44,23 @@ struct ReplyContext: Equatable {
     var authorUid: String
 }
 
+// A class recording shared into chat as ONE bundle: the class name plus every
+// camera angle's playable URL/poster. Held on the message so the chat card can
+// render all angles and @emma can fetch any of them. Mirrors the `recording`
+// object on the message document.
+struct RecordingBundle: Equatable {
+    var className: String
+    var angles: [Angle]
+
+    struct Angle: Identifiable, Equatable {
+        var camera: String
+        var url: String
+        var storagePath: String?
+        var thumbnailUrl: String?
+        var id: String { camera }
+    }
+}
+
 // A single message in a channel. Distinct from the per-task ChatMessage (which
 // lives in commander_tasks/{id}/chat) — this mirrors
 // commander_channels/{id}/messages/{id}.
@@ -56,6 +73,7 @@ struct ChannelMessage: Identifiable, Equatable {
     var authorEmail: String
     var createdAt: Date?
     var attachment: Attachment?
+    var recording: RecordingBundle? = nil
     var mentions: [String]
     var mentionsEmma: Bool
     var emmaStatus: String?

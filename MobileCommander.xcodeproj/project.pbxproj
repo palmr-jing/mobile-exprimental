@@ -71,11 +71,13 @@
 		AC338A155DA6CD06577564C0 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AF5412817C64A3A082A72D /* AvatarView.swift */; };
 		AF6E814BFC9F507EAB5E4E81 /* ChatShareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */; };
 		BC7B9953744ED97CE82C0C7A /* ModeSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */; };
+		BCFE13C94DC340540746131C /* ShareToChatSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8205E8D431A5BE893022FC /* ShareToChatSheet.swift */; };
 		C2B3D80FCF26ACD2E0BFEF4C /* SignInUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F5C3C386D05351E9EF308A /* SignInUITests.swift */; };
 		C768436FF97FFD66D70777BD /* Access.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF5DA4D48024E07C8D6E1122 /* Access.swift */; };
 		CBC33E2B9264E411D535BFB0 /* ReleasedRecordingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBF5882B4260E18B5768302 /* ReleasedRecordingsView.swift */; };
 		CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE92C9AA042B981A92E1F41A /* LoginView.swift */; };
 		D0BE51B3B8534633781ECC45 /* ReelExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C8ABBE399379829A118AC2 /* ReelExport.swift */; };
+		D984E06D95219B4866A33FF6 /* ReleasedUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721E8B9F997811D0DB56B7FE /* ReleasedUITests.swift */; };
 		DB4363148D3900EEFAA0DB0C /* ProjectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ACBA1195835D92F2EB091A5 /* ProjectDetailView.swift */; };
 		DE0AFC288E9246EF3552E999 /* ReelPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1495690D41AED3DE18CFB6BB /* ReelPlayerView.swift */; };
 		E1806821C268311FAFF3124C /* ChatUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED5C958A5C01CB45929F160 /* ChatUITests.swift */; };
@@ -155,6 +157,7 @@
 		70C8ABBE399379829A118AC2 /* ReelExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelExport.swift; sourceTree = "<group>"; };
 		70C9190DD3288483A1C8431B /* MentionAutocompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionAutocompleteView.swift; sourceTree = "<group>"; };
 		71B63D362C774253E6EA77BE /* MessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleView.swift; sourceTree = "<group>"; };
+		721E8B9F997811D0DB56B7FE /* ReleasedUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleasedUITests.swift; sourceTree = "<group>"; };
 		7ACBA1195835D92F2EB091A5 /* ProjectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDetailView.swift; sourceTree = "<group>"; };
 		7D360CC57BCCE6F73C6611B6 /* TestConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestConfig.swift; sourceTree = "<group>"; };
 		7E2D099B5A5F0E142DA7E3EA /* DeveloperTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperTabView.swift; sourceTree = "<group>"; };
@@ -174,6 +177,7 @@
 		B01CAC1AC0DCFE51B50D66E5 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		B19949C9D327B6062BBEEDF0 /* Presence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presence.swift; sourceTree = "<group>"; };
 		B33564207E7BD5526689ADD0 /* VoiceInputButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputButton.swift; sourceTree = "<group>"; };
+		BA8205E8D431A5BE893022FC /* ShareToChatSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareToChatSheet.swift; sourceTree = "<group>"; };
 		BB596265733DE9F91A8E46AE /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
 		BE92C9AA042B981A92E1F41A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		BF5DA4D48024E07C8D6E1122 /* Access.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Access.swift; sourceTree = "<group>"; };
@@ -265,6 +269,7 @@
 			isa = PBXGroup;
 			children = (
 				4ED5C958A5C01CB45929F160 /* ChatUITests.swift */,
+				721E8B9F997811D0DB56B7FE /* ReleasedUITests.swift */,
 				A4F5C3C386D05351E9EF308A /* SignInUITests.swift */,
 				939D91E5408BE60D0DD07C0F /* VideosUITests.swift */,
 			);
@@ -282,6 +287,7 @@
 				71B63D362C774253E6EA77BE /* MessageBubbleView.swift */,
 				3F5BA382DB636BDDEFC46235 /* MicButton.swift */,
 				5E10E706E56CF2DCEAA20C1A /* NewChannelSheet.swift */,
+				BA8205E8D431A5BE893022FC /* ShareToChatSheet.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -581,6 +587,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E1806821C268311FAFF3124C /* ChatUITests.swift in Sources */,
+				D984E06D95219B4866A33FF6 /* ReleasedUITests.swift in Sources */,
 				C2B3D80FCF26ACD2E0BFEF4C /* SignInUITests.swift in Sources */,
 				9ABBF7D5D8C07B543B85EF43 /* VideosUITests.swift in Sources */,
 			);
@@ -637,6 +644,7 @@
 				72271861525F951AD3D8C20F /* ReportsView.swift in Sources */,
 				F9287FCD5AE0101B70AC6399 /* RootTabView.swift in Sources */,
 				6AB5AF09F880BCC9343D7CE4 /* SettingsView.swift in Sources */,
+				BCFE13C94DC340540746131C /* ShareToChatSheet.swift in Sources */,
 				7E5CD74CBE0AD9B172CD5FD2 /* SpeechRecognitionService.swift in Sources */,
 				E311EE63FFA165E548EDBBEC /* SpeechService.swift in Sources */,
 				98FAD93EA42D780ACC35C84F /* SpeechVoiceTranscriber.swift in Sources */,
@@ -696,7 +704,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260710.3;
+				CURRENT_PROJECT_VERSION = 20260710.4;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -873,7 +881,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260710.3;
+				CURRENT_PROJECT_VERSION = 20260710.4;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

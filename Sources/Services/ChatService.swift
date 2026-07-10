@@ -281,6 +281,79 @@ final class ChatService: ObservableObject {
         }
     }
 
+    // ── Share a released class recording (all camera angles) into chat ──────────
+
+    /// Payload for sharing a whole class recording as ONE message. Holds every
+    /// angle's URL under `recording.angles` (so @emma can fetch any of them) and
+    /// mirrors the front angle into `attachment` so single-attachment renderers
+    /// still show a playable video. Pure → unit-testable.
+    nonisolated static func recordingMessagePayload(recording: ReleasedRecording, caption: String, mentionEmma: Bool,
+                                                    authorUid: String, authorName: String, authorEmail: String) -> [String: Any] {
+        let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text: String
+        if mentionEmma {
+            text = Presence.mentionsEmma(trimmed) ? trimmed : (trimmed.isEmpty ? "@emma" : "@emma \(trimmed)")
+        } else {
+            text = trimmed.isEmpty ? recording.className : trimmed
+        }
+        let angles: [[String: Any]] = recording.videos.map { a in
+            [
+                "camera": a.camera,
+                "url": a.downloadURL?.absoluteString ?? "",
+                "storage_path": a.storagePath ?? "",
+                "thumbnail_url": a.thumbnailURL?.absoluteString ?? "",
+            ]
+        }
+        let primary = recording.videos.first(where: { $0.downloadURL != nil }) ?? recording.videos.first
+        var payload: [String: Any] = [
+            "type": MessageType.video.rawValue,
+            "text": text,
+            "authorUid": authorUid,
+            "authorName": authorName,
+            "authorEmail": authorEmail,
+            "attachment": [
+                "url": primary?.downloadURL?.absoluteString ?? "",
+                "name": recording.className,
+                "contentType": "video/mp4",
+                "size": 0,
+                "storage_path": primary?.storagePath ?? "",
+                "thumbnail_url": primary?.thumbnailURL?.absoluteString ?? "",
+            ],
+            "recording": [
+                "class": recording.className,
+                "recording_id": recording.id,
+                "angles": angles,
+                "source": "released_recordings",
+            ],
+        ]
+        if mentionEmma {
+            payload["mentionsEmma"] = true
+            payload["emmaStatus"] = "pending"
+        }
+        return payload
+    }
+
+    /// Post a class recording (all its camera angles) into a chat channel.
+    func sendRecording(_ recording: ReleasedRecording, toChannel channelId: String, caption: String, mentionEmma: Bool) async {
+        guard let user else { return }
+        let toEmma = channelId.hasPrefix("emma-")
+        var payload = Self.recordingMessagePayload(
+            recording: recording, caption: caption, mentionEmma: mentionEmma || toEmma,
+            authorUid: user.uid, authorName: user.displayName.isEmpty ? user.email : user.displayName,
+            authorEmail: user.email
+        )
+        payload["createdAt"] = FieldValue.serverTimestamp()
+        do {
+            if toEmma { try await ensureEmmaChannel() }
+            try await db.collection("commander_channels").document(channelId)
+                .collection("messages").addDocument(data: payload)
+            try? await db.collection("commander_channels").document(channelId)
+                .setData(["lastMessageAt": FieldValue.serverTimestamp()], merge: true)
+        } catch {
+            uploadError = "Couldn't share to chat: \(error.localizedDescription)"
+        }
+    }
+
     private func ensureEmmaChannel() async throws {
         try await db.collection("commander_channels").document(emmaChannelId).setData([
             "name": "Ask Emma",
@@ -578,6 +651,21 @@ final class ChatService: ObservableObject {
                 authorUid: r["authorUid"] as? String ?? ""
             )
         }
+        var recording: RecordingBundle?
+        if let rec = d["recording"] as? [String: Any] {
+            let angles = (rec["angles"] as? [[String: Any]] ?? []).compactMap { a -> RecordingBundle.Angle? in
+                guard let url = a["url"] as? String, !url.isEmpty else { return nil }
+                return RecordingBundle.Angle(
+                    camera: a["camera"] as? String ?? "",
+                    url: url,
+                    storagePath: a["storage_path"] as? String,
+                    thumbnailUrl: (a["thumbnail_url"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+                )
+            }
+            if !angles.isEmpty {
+                recording = RecordingBundle(className: rec["class"] as? String ?? "Class recording", angles: angles)
+            }
+        }
         return ChannelMessage(
             id: doc.documentID,
             type: MessageType(rawValue: d["type"] as? String ?? "text") ?? .text,
@@ -587,6 +675,7 @@ final class ChatService: ObservableObject {
             authorEmail: d["authorEmail"] as? String ?? "",
             createdAt: (d["createdAt"] as? Timestamp)?.dateValue(),
             attachment: attachment,
+            recording: recording,
             mentions: d["mentions"] as? [String] ?? [],
             mentionsEmma: d["mentionsEmma"] as? Bool ?? false,
             emmaStatus: d["emmaStatus"] as? String,

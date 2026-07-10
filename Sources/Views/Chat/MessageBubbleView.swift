@@ -129,7 +129,9 @@ struct MessageBubbleView: View {
     }
 
     @ViewBuilder private var attachmentView: some View {
-        if let attachment = message.attachment, let url = URL(string: attachment.url) {
+        if let recording = message.recording {
+            recordingBundleView(recording)
+        } else if let attachment = message.attachment, let url = URL(string: attachment.url) {
             switch message.type {
             case .image:
                 AsyncImage(url: url) { image in
@@ -173,6 +175,53 @@ struct MessageBubbleView: View {
             case .text:
                 EmptyView()
             }
+        }
+    }
+
+    // A shared class recording: one card, every camera angle as a thumbnail/play
+    // tile. Tap an angle to play it full-screen. The message holds all angle URLs,
+    // so @emma can fetch any of them.
+    @ViewBuilder private func recordingBundleView(_ recording: RecordingBundle) -> some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            Label("\(recording.angles.count) camera angles", systemImage: "video.badge.checkmark")
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: DS.Spacing.sm) {
+                    ForEach(recording.angles) { angle in
+                        if let url = URL(string: angle.url) {
+                            Button { playingURL = IdentifiableURL(url: url) } label: {
+                                ZStack {
+                                    if let t = angle.thumbnailUrl.flatMap({ URL(string: $0) }) {
+                                        AsyncImage(url: t) { $0.resizable().scaledToFill() } placeholder: { Color.black }
+                                    } else {
+                                        Color.black
+                                    }
+                                    VStack(spacing: 2) {
+                                        Image(systemName: "play.circle.fill")
+                                            .font(.system(size: 30)).foregroundStyle(.white.opacity(0.95))
+                                        Text(cameraLabel(angle.camera))
+                                            .font(.caption2.weight(.medium)).foregroundStyle(.white)
+                                    }
+                                }
+                                .frame(width: 128, height: 72)
+                                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("chat-recording-angle")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func cameraLabel(_ camera: String) -> String {
+        switch camera.lowercased() {
+        case "front": return "Front"
+        case "front-right": return "Front-right"
+        case "realsense": return "RealSense"
+        default: return camera.isEmpty ? "Angle" : camera.replacingOccurrences(of: "-", with: " ").capitalized
         }
     }
 

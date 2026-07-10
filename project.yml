@@ -30,7 +30,7 @@ targets:
         INFOPLIST_FILE: Resources/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: ai.palmr.emma
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "20260710.3"
+        CURRENT_PROJECT_VERSION: "20260710.4"
         SWIFT_VERSION: "5.9"
         DEVELOPMENT_TEAM: "9SCSBH976W"
         CODE_SIGN_ENTITLEMENTS: Resources/MobileCommander.entitlements

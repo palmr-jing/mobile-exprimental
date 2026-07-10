@@ -23,6 +23,9 @@ struct ReleasedRecording: Identifiable, Equatable {
         let camera: String        // raw: 'front' | 'front-right' | 'realsense'
         let storagePath: String?
         let downloadURL: URL?
+        // Poster frame. Absent in the data today (the release pipeline doesn't
+        // write one yet); parsed here so it renders automatically once it does.
+        var thumbnailURL: URL? = nil
 
         // Stable within a doc: the producer emits one entry per camera.
         var id: String { camera }
@@ -62,7 +65,8 @@ struct ReleasedRecording: Identifiable, Equatable {
             Angle(
                 camera: (v["camera"] as? String) ?? "",
                 storagePath: v["storage_path"] as? String,
-                downloadURL: (v["download_url"] as? String).flatMap(URL.init(string:))
+                downloadURL: (v["download_url"] as? String).flatMap(URL.init(string:)),
+                thumbnailURL: (v["thumbnail_url"] as? String).flatMap(URL.init(string:))
             )
         }
         let className = (data["class"] as? String).flatMap { $0.isEmpty ? nil : $0 }

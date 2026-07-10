@@ -50,8 +50,14 @@ struct VideoFeedView: View {
             ReelEditorView(video: v, service: service)
         }
         .sheet(item: $sharing) { v in
-            ShareToChatSheet(video: v, chatService: chatService)
-                .presentationDetents([.medium, .large])
+            ShareToChatSheet(
+                title: v.title, subtitle: v.durationLabel, icon: "film",
+                chatService: chatService,
+                send: { channelId, caption, mentionEmma in
+                    await chatService.sendReel(v, toChannel: channelId, caption: caption, mentionEmma: mentionEmma)
+                }
+            )
+            .presentationDetents([.medium, .large])
         }
     }
 
@@ -110,86 +116,5 @@ struct VideoFeedView: View {
     private func activateAudioSession() {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
         try? AVAudioSession.sharedInstance().setActive(true)
-    }
-}
-
-// Share a reel/recording into chat: pick a destination (Ask Emma or a team
-// channel), optionally add a caption/@emma, and post a video message that holds
-// the playable URL + poster as metadata (see ChatService.reelMessagePayload) so
-// Emma can fetch the clip straight from the message.
-private struct ShareToChatSheet: View {
-    let video: AssignedVideo
-    @ObservedObject var chatService: ChatService
-    @Environment(\.dismiss) private var dismiss
-    @State private var caption = ""
-    @State private var target: Target = .emma
-    @State private var mentionEmma = true
-    @State private var sending = false
-
-    // Ask Emma (the private 1:1) or a named team channel.
-    enum Target: Hashable { case emma, channel(String) }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Send to") {
-                    Picker("Destination", selection: $target) {
-                        Label("Ask Emma", systemImage: "sparkles").tag(Target.emma)
-                        ForEach(chatService.visibleChannels) { ch in
-                            Label("#\(ch.name)", systemImage: "number").tag(Target.channel(ch.id))
-                        }
-                    }
-                    .accessibilityIdentifier("share-destination")
-                }
-                Section("Message") {
-                    TextField("Add a caption…", text: $caption, axis: .vertical)
-                        .lineLimit(1...4)
-                    if case .channel = target {
-                        Toggle("Mention @emma", isOn: $mentionEmma)
-                    }
-                }
-                Section("Sharing") {
-                    HStack(spacing: 12) {
-                        Image(systemName: "film").foregroundStyle(.secondary)
-                        VStack(alignment: .leading) {
-                            Text(video.title).font(.subheadline.weight(.medium)).lineLimit(1)
-                            if let d = video.durationLabel {
-                                Text(d).font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Share to chat")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Send") { send() }
-                        .disabled(sending)
-                        .accessibilityIdentifier("share-send")
-                }
-            }
-        }
-    }
-
-    private func send() {
-        sending = true
-        let channelId: String
-        let emma: Bool
-        switch target {
-        case .emma:
-            channelId = chatService.emmaChannelId; emma = true
-        case .channel(let id):
-            channelId = id; emma = mentionEmma
-        }
-        let clip = video
-        let text = caption
-        Task {
-            await chatService.sendReel(clip, toChannel: channelId, caption: text, mentionEmma: emma)
-            dismiss()
-        }
     }
 }

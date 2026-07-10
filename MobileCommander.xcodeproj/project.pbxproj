@@ -64,6 +64,7 @@
 		A8A9205635E65FA97651054C /* PresenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45E3CF0A7E56DC2F0EA1883 /* PresenceService.swift */; };
 		AC2D84777B6497814F7E5242 /* VideoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FAF186111B6A31409657C63 /* VideoTests.swift */; };
 		AC338A155DA6CD06577564C0 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AF5412817C64A3A082A72D /* AvatarView.swift */; };
+		AF6E814BFC9F507EAB5E4E81 /* ChatShareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */; };
 		BC7B9953744ED97CE82C0C7A /* ModeSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */; };
 		C2B3D80FCF26ACD2E0BFEF4C /* SignInUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F5C3C386D05351E9EF308A /* SignInUITests.swift */; };
 		C768436FF97FFD66D70777BD /* Access.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF5DA4D48024E07C8D6E1122 /* Access.swift */; };
@@ -114,6 +115,7 @@
 		0FD25D1286ED63727B1D6D1A /* WorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersView.swift; sourceTree = "<group>"; };
 		1495690D41AED3DE18CFB6BB /* ReelPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelPlayerView.swift; sourceTree = "<group>"; };
 		15AA9CFBB8A92904A0D4ECD5 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatShareTests.swift; sourceTree = "<group>"; };
 		1E9A1252569E280218AE528A /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
 		1FAF186111B6A31409657C63 /* VideoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoTests.swift; sourceTree = "<group>"; };
 		24300106A0235189A0CC811B /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
@@ -274,6 +276,7 @@
 			children = (
 				C2EEA4D4B1516D417164E908 /* AccessTests.swift */,
 				D978EE162A42A4F0B2A5EB93 /* ChatPaginationTests.swift */,
+				1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */,
 				CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */,
 				2A42923151A08F0B0630276E /* ReelExportTests.swift */,
 				47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */,
@@ -618,6 +621,7 @@
 			files = (
 				FC6D7DEBCAFD222E20926F17 /* AccessTests.swift in Sources */,
 				F6907302C350BADEA264CD61 /* ChatPaginationTests.swift in Sources */,
+				AF6E814BFC9F507EAB5E4E81 /* ChatShareTests.swift in Sources */,
 				55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */,
 				EC61E796C0648251EB205BEF /* ReelExportTests.swift in Sources */,
 				479C3D1C385DAC5E2310A135 /* SpeechRecognitionServiceTests.swift in Sources */,
@@ -648,7 +652,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260709.8;
+				CURRENT_PROJECT_VERSION = 20260709.9;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -825,7 +829,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260709.8;
+				CURRENT_PROJECT_VERSION = 20260709.9;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

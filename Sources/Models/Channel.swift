@@ -28,6 +28,10 @@ struct Attachment: Equatable {
     var contentType: String
     var size: Int
     var storagePath: String
+    // Poster frame for video attachments (e.g. a reel shared from the Videos
+    // tab). Present on the wire as `thumbnail_url`; nil for plain uploads. When
+    // set, chat renders a still + play glyph instead of an inline player.
+    var thumbnailUrl: String?
 }
 
 // The quoted parent a reply points at. Mirrors the web TeamChat `replyTo` object

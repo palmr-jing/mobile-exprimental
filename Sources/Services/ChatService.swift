@@ -217,6 +217,70 @@ final class ChatService: ObservableObject {
         }
     }
 
+    // ── Share a released reel/recording into chat ───────────────────────────────
+
+    /// Build the message payload for sharing a `commander_videos` clip into chat.
+    /// Pure (no timestamp/Firestore) so the wire shape is unit-testable: it must
+    /// carry the playable URL under `attachment.url` and a poster under
+    /// `thumbnail_url`, so the message alone lets @emma (or the web client) fetch
+    /// the video without re-querying commander_videos.
+    nonisolated static func reelMessagePayload(video: AssignedVideo, caption: String, mentionEmma: Bool,
+                                               authorUid: String, authorName: String, authorEmail: String) -> [String: Any] {
+        let trimmed = caption.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text: String
+        if mentionEmma {
+            text = Presence.mentionsEmma(trimmed) ? trimmed : (trimmed.isEmpty ? "@emma" : "@emma \(trimmed)")
+        } else {
+            text = trimmed.isEmpty ? video.title : trimmed
+        }
+        var payload: [String: Any] = [
+            "type": MessageType.video.rawValue,
+            "text": text,
+            "authorUid": authorUid,
+            "authorName": authorName,
+            "authorEmail": authorEmail,
+            "attachment": [
+                "url": video.videoURL?.absoluteString ?? "",
+                "name": video.title,
+                "contentType": "video/mp4",
+                "size": 0,
+                "storage_path": video.storagePath ?? "",
+                "thumbnail_url": video.thumbnailURL?.absoluteString ?? "",
+                // Provenance so Emma/the web client can trace it back to the release.
+                "source": "commander_videos",
+                "video_id": video.id,
+            ],
+        ]
+        if mentionEmma {
+            payload["mentionsEmma"] = true
+            payload["emmaStatus"] = "pending"
+        }
+        return payload
+    }
+
+    /// Post a released clip into a chat channel as a video message. Sending to the
+    /// private Ask-Emma channel (or toggling @emma on a team channel) tags Emma so
+    /// she can pull the video straight from `attachment.url`.
+    func sendReel(_ video: AssignedVideo, toChannel channelId: String, caption: String, mentionEmma: Bool) async {
+        guard let user else { return }
+        let toEmma = channelId.hasPrefix("emma-")
+        var payload = Self.reelMessagePayload(
+            video: video, caption: caption, mentionEmma: mentionEmma || toEmma,
+            authorUid: user.uid, authorName: user.displayName.isEmpty ? user.email : user.displayName,
+            authorEmail: user.email
+        )
+        payload["createdAt"] = FieldValue.serverTimestamp()
+        do {
+            if toEmma { try await ensureEmmaChannel() }
+            try await db.collection("commander_channels").document(channelId)
+                .collection("messages").addDocument(data: payload)
+            try? await db.collection("commander_channels").document(channelId)
+                .setData(["lastMessageAt": FieldValue.serverTimestamp()], merge: true)
+        } catch {
+            uploadError = "Couldn't share to chat: \(error.localizedDescription)"
+        }
+    }
+
     private func ensureEmmaChannel() async throws {
         try await db.collection("commander_channels").document(emmaChannelId).setData([
             "name": "Ask Emma",
@@ -501,7 +565,8 @@ final class ChatService: ObservableObject {
                 name: a["name"] as? String ?? "",
                 contentType: a["contentType"] as? String ?? "application/octet-stream",
                 size: a["size"] as? Int ?? 0,
-                storagePath: a["storage_path"] as? String ?? ""
+                storagePath: a["storage_path"] as? String ?? "",
+                thumbnailUrl: (a["thumbnail_url"] as? String).flatMap { $0.isEmpty ? nil : $0 }
             )
         }
         var replyTo: ReplyContext?

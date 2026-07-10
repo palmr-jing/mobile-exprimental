@@ -34,4 +34,24 @@ final class VideosUITests: XCTestCase {
             XCTAssertTrue(card.waitForExistence(timeout: 10), "didn't return to grid after \(name)")
         }
     }
+
+    // The "Send to chat" affordance opens a share sheet with a destination picker
+    // and a Send button — the reel can be posted into chat from the feed.
+    func testShareReelToChatOpensSheet() {
+        let app = launchMockVideos()
+        let card = app.staticTexts["Muay Thai Kickboxing"]
+        XCTAssertTrue(card.waitForExistence(timeout: 20))
+        card.tap()
+
+        // The paging feed renders several pages' overlays, so match the first.
+        let share = app.buttons["reel-share"].firstMatch
+        XCTAssertTrue(share.waitForExistence(timeout: 10), "no Send-to-chat button on the feed")
+        share.tap()
+
+        XCTAssertTrue(app.staticTexts["Share to chat"].waitForExistence(timeout: 10), "share sheet didn't open")
+        XCTAssertTrue(app.buttons["share-send"].exists, "share sheet missing Send")
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts["reel-title"].waitForExistence(timeout: 10), "didn't return to the feed")
+    }
 }

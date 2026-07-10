@@ -17,6 +17,8 @@ struct MessageBubbleView: View {
 
     // How far the bubble has been dragged in a swipe-to-reply gesture.
     @State private var dragOffset: CGFloat = 0
+    // A shared reel/recording opens full-screen on tap rather than autoplaying inline.
+    @State private var playingURL: IdentifiableURL?
 
     private var isBot: Bool { message.isBot || message.authorUid == "emma-bot" }
     private var canReply: Bool { onReply != nil && !message.emmaThinking }
@@ -57,6 +59,9 @@ struct MessageBubbleView: View {
                 Label("Reply", systemImage: "arrowshape.turn.up.left")
             }
         } }
+        .fullScreenCover(item: $playingURL) { item in
+            VideoPlayerSheet(url: item.url)
+        }
     }
 
     // Swipe right to reply — the iOS-native affordance. Bounded so it follows the
@@ -135,9 +140,30 @@ struct MessageBubbleView: View {
                 .frame(maxHeight: 200)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
             case .video:
-                VideoPlayer(player: AVPlayer(url: url))
-                    .frame(height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                if let thumb = attachment.thumbnailUrl.flatMap({ URL(string: $0) }) {
+                    // A reel/recording shared from the Videos tab: show its poster
+                    // + a play glyph; tap opens it full-screen. Avoids N autoplaying
+                    // players in the thread and keeps the video URL as metadata.
+                    Button { playingURL = IdentifiableURL(url: url) } label: {
+                        ZStack {
+                            AsyncImage(url: thumb) { img in
+                                img.resizable().scaledToFill()
+                            } placeholder: { Color.black }
+                            .frame(width: 180, height: 240)
+                            .clipped()
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 44)).foregroundStyle(.white.opacity(0.95))
+                        }
+                        .frame(width: 180, height: 240)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("chat-video-thumb")
+                } else {
+                    VideoPlayer(player: AVPlayer(url: url))
+                        .frame(height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                }
             case .file:
                 Link(destination: url) {
                     Label(attachment.name.isEmpty ? "File" : attachment.name, systemImage: "doc")
@@ -225,5 +251,31 @@ struct MessageBubbleView: View {
         if diff < 86400 { return "\(Int(diff / 3600))h" }
         let f = DateFormatter(); f.dateStyle = .short
         return f.string(from: date)
+    }
+}
+
+// Wraps a URL so it can drive `.fullScreenCover(item:)`.
+struct IdentifiableURL: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
+}
+
+// Full-screen player for a tapped chat video, with a close button.
+private struct VideoPlayerSheet: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VideoPlayer(player: AVPlayer(url: url))
+            .ignoresSafeArea()
+            .background(.black)
+            .overlay(alignment: .topLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.title3.weight(.semibold)).foregroundColor(.white)
+                        .padding(10).background(.black.opacity(0.4), in: Circle())
+                }
+                .padding(16)
+            }
     }
 }

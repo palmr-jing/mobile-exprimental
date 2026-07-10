@@ -177,6 +177,17 @@ private struct AnglePlayer: View {
             ZStack {
                 RoundedRectangle(cornerRadius: DS.Radius.sm).fill(Color.black)
 
+                // Poster behind the play glyph (nil until the release pipeline
+                // writes thumbnail_url). scaledToFill is clipped below so it can't
+                // inflate the tile's frame and overlap its neighbours in the row.
+                if player == nil, let t = angle.thumbnailURL {
+                    AsyncImage(url: t) { img in
+                        img.resizable().scaledToFill()
+                    } placeholder: { Color.black }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+                }
+
                 if let player {
                     VideoPlayer(player: player)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
@@ -190,11 +201,13 @@ private struct AnglePlayer: View {
                         Image(systemName: "play.circle.fill")
                             .font(.system(size: 26))
                             .foregroundStyle(.white.opacity(0.9))
+                            .shadow(radius: 3)
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("angle-play")
                 }
             }
+            .clipped()
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
         }
     }

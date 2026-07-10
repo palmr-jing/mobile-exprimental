@@ -54,12 +54,12 @@ final class VideosUITests: XCTestCase {
             XCTAssertTrue(app.staticTexts["reel-title"].firstMatch.waitForNonExistence(timeout: 10),
                           "feed overlay didn't dismiss")
         }
-        // BJJ first (the reported order), close, then Muay Thai must still open.
-        open("Brazilian Jiu Jitsu"); close()
-        open("Muay Thai Kickboxing"); close()
-        // And once more, reversed, to be sure it isn't order-specific.
-        open("Muay Thai Kickboxing"); close()
-        open("Brazilian Jiu Jitsu"); close()
+        // Hammer several open/close cycles alternating reels — the reported bug is
+        // that after the first open+close, opening ANY other reel does nothing.
+        let sequence = ["Brazilian Jiu Jitsu", "Muay Thai Kickboxing",
+                        "Muay Thai Kickboxing", "Brazilian Jiu Jitsu",
+                        "Open Mat Rolls", "Muay Thai Kickboxing"]
+        for name in sequence { open(name); close() }
     }
 
     // The "Send to chat" affordance opens a share sheet with a destination picker

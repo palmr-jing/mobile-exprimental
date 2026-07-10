@@ -7,19 +7,36 @@ struct MobileCommanderApp: App {
     @StateObject private var chatService = ChatService()
     @StateObject private var presenceService = PresenceService()
     @StateObject private var notificationService = NotificationService()
+    @StateObject private var videoFeed = VideoFeedPresenter()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             Group {
                 if TestConfig.isMockVideos {
-                    VideosView()
+                    // Root the Videos tab inside a TabView exactly as production
+                    // does (RootTabView) — fullScreenCover re-presentation behaves
+                    // differently inside a TabView tab, so the bare view would hide
+                    // the very bug we test for.
+                    MockVideosRoot()
                 } else if authService.isSignedIn {
                     RootTabView()
                 } else {
                     LoginView()
                 }
             }
+            // The full-screen video feed lives here, ABOVE the TabView, so it
+            // covers the whole screen while being a plain state overlay (no modal
+            // fullScreenCover to get stuck on iPad after an open+close).
+            .overlay {
+                if let service = videoFeed.service, !videoFeed.videos.isEmpty {
+                    VideoFeedView(videos: videoFeed.videos, service: service,
+                                  onClose: { videoFeed.dismiss() })
+                        .transition(.move(edge: .bottom))
+                        .zIndex(1)
+                }
+            }
+            .environmentObject(videoFeed)
             // The design system is light-only (hard-coded cream/white surfaces and
             // dark text tokens). Lock the app to light appearance so SwiftUI's
             // adaptive default colors don't resolve to white-on-light in dark mode.
@@ -47,5 +64,19 @@ struct MobileCommanderApp: App {
                 presenceService.scenePhaseChanged(phase)
             }
         }
+    }
+}
+
+// Mock harness that mirrors RootTabView's TabView so UITests exercise the Videos
+// tab in the same presentation context as production (Videos is tab 2).
+private struct MockVideosRoot: View {
+    @State private var selection = 2
+    var body: some View {
+        TabView(selection: $selection) {
+            Color.black.tabItem { Label("Ask Emma", systemImage: "sparkles") }.tag(0)
+            Color.black.tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right") }.tag(1)
+            VideosView().tabItem { Label("Videos", systemImage: "play.rectangle.on.rectangle") }.tag(2)
+        }
+        .tint(DS.Colors.accent)
     }
 }

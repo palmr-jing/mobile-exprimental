@@ -7,16 +7,21 @@ import AVFoundation
 struct VideoFeedView: View {
     let videos: [AssignedVideo]
     let service: VideoService
-    @Environment(\.dismiss) private var dismiss
+    // Closing is owned by the parent (it clears the state that shows this feed),
+    // NOT by @Environment(\.dismiss) — the feed is a plain overlay, not a modal
+    // cover, so there is no presentation to dismiss.
+    let onClose: () -> Void
     @EnvironmentObject private var chatService: ChatService
     @State private var currentID: String?
     @State private var muted = false
     @State private var editing: AssignedVideo?
     @State private var sharing: AssignedVideo?
 
-    init(videos: [AssignedVideo], service: VideoService, startAt: AssignedVideo? = nil) {
+    init(videos: [AssignedVideo], service: VideoService, startAt: AssignedVideo? = nil,
+         onClose: @escaping () -> Void) {
         self.videos = videos
         self.service = service
+        self.onClose = onClose
         _currentID = State(initialValue: startAt?.id ?? videos.first?.id)
     }
 
@@ -52,7 +57,7 @@ struct VideoFeedView: View {
 
     private var topBar: some View {
         HStack {
-            Button { dismiss() } label: {
+            Button { onClose() } label: {
                 Image(systemName: "chevron.down")
                     .font(.title3.weight(.semibold)).foregroundColor(.white)
                     .padding(10).background(.black.opacity(0.35), in: Circle())

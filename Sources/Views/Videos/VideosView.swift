@@ -5,9 +5,11 @@ import SwiftUI
 // filter over a thumbnail grid; tapping a clip opens the full-screen paging feed.
 struct VideosView: View {
     @EnvironmentObject private var auth: AuthService
+    // The full-screen feed is presented at the app root (above the TabView) so it
+    // covers everything, without a modal fullScreenCover (which got stuck on iPad).
+    @EnvironmentObject private var feed: VideoFeedPresenter
     @StateObject private var service = VideoService()
     @State private var filter: Filter = .all
-    @State private var feedStart: AssignedVideo?
 
     enum Filter: String, CaseIterable, Identifiable {
         case all = "All", reels = "Reels", recordings = "Recordings"
@@ -39,7 +41,11 @@ struct VideosView: View {
                     } else {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 16) {
-                                ForEach(shown) { v in Thumb(video: v) { feedStart = v } }
+                                ForEach(shown) { v in
+                                    Thumb(video: v) {
+                                        feed.present(AssignedVideo.rotated(shown, first: v), service: service)
+                                    }
+                                }
                             }
                             .padding(12)
                         }
@@ -53,11 +59,6 @@ struct VideosView: View {
         .tint(DS.Colors.accent)
         .task(id: auth.currentUser?.email) {
             if !TestConfig.isMockVideos, let email = auth.currentUser?.email { service.start(email: email) }
-        }
-        .fullScreenCover(item: $feedStart) { start in
-            // Rotate so the tapped clip is first — the feed opens at index 0,
-            // which reliably shows the clip you actually tapped.
-            VideoFeedView(videos: AssignedVideo.rotated(shown, first: start), service: service)
         }
     }
 
@@ -126,5 +127,32 @@ private struct Thumb: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("video-card")
+    }
+}
+
+// Drives the full-screen video feed from the app root, above the TabView, so it
+// covers the whole screen WITHOUT a modal fullScreenCover — which on iPad could
+// refuse to re-present after one open+close, leaving grid taps dead. Presenting
+// is a plain state change: nothing can get stuck.
+@MainActor
+final class VideoFeedPresenter: ObservableObject {
+    @Published private(set) var videos: [AssignedVideo] = []
+    @Published private(set) var service: VideoService?
+
+    var isPresenting: Bool { service != nil && !videos.isEmpty }
+
+    func present(_ videos: [AssignedVideo], service: VideoService) {
+        guard !videos.isEmpty else { return }
+        withAnimation(.snappy(duration: 0.28)) {
+            self.videos = videos
+            self.service = service
+        }
+    }
+
+    func dismiss() {
+        withAnimation(.snappy(duration: 0.28)) {
+            videos = []
+            service = nil
+        }
     }
 }

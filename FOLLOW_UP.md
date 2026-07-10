@@ -1,52 +1,50 @@
-# Follow-Up — Task #835: reply-to-message + auto-tag @emma (iOS Chat)
+# Follow-up — Task #971: read `released_recordings`, show class recordings inline
 
-**What was done**: Added reply-to-message to the team Chat view on iOS, matching the
-web TeamChat feature from commander #811. You can now reply to any message (long-press
-menu or swipe right), see the quoted parent inside reply bubbles, tap a quote to jump to
-the original, and a reply bar above the composer shows what you're replying to. Replying
-to an Emma message auto-prepends `@emma` so the assistant fires; replying to a teammate
-does not. The persisted `replyTo` shape matches the web exactly, so threads stay in sync
-across web and iOS.
+**What was done**: Added a new **Released** tab to the signed-in app that subscribes
+to the Firestore `released_recordings` collection with a live snapshot listener and
+lists one card per released class — newest-first — with its 3 grouped camera angles
+(Front / Front-right / RealSense) playable inline. New releases from
+manage.everbot.org appear without an app change, because the listener is live.
 
 **What needs review**:
-- Reply to an Emma (BOT) message and send — confirm the text goes out with `@emma`
-  prepended and Emma actually responds. Then reply to a human message and confirm `@emma`
-  is NOT added.
-- Confirm the persisted Firestore field is `replyTo: { id, text, authorName, authorUid }`
-  (4 fields, no `isBot`) and that a reply created on iOS renders correctly in the web app,
-  and vice-versa.
-- Tap a quoted parent inside a reply bubble — it should scroll to and briefly ring the
-  original message. If the parent is too old to be loaded, nothing should happen (no crash).
-- Switch channels while a reply is staged — the reply bar should clear (the draft must not
-  leak into another channel).
-- Swipe-to-reply: confirm a right-swipe on a bubble starts a reply and that it doesn't
-  interfere with normal vertical scrolling. Confirm swipe/long-press do nothing in Ask Emma
-  (reply is Chat-only by design).
-- The reply preview truncates long text at 120 chars and shows 📷/🎬/📎 labels for media.
+- Sign in with a real account and confirm the **Released** tab shows the live
+  "IMA Fit + Tiny Tigers" doc (jing's release) — I could not do a real Google
+  sign-in in the autonomous run, so the live read path is unverified end-to-end
+  (it mirrors the shipping `VideoService`/`FirestoreService` listener pattern).
+- Confirm inline playback of a real tokenized `download_url` on a device/simulator
+  while signed in. Firebase Storage download URLs are plain tokenized HTTPS and
+  play through `AVPlayer(url:)` with no extra entitlement, but I only exercised
+  playback against public sample MP4s via the `-MOCK_RELEASED` fixtures, not a
+  real Storage URL.
+- The Released listener reads the whole collection (no `.limit`). That's fine for
+  "one doc per class" today; if it grows large, add a `.limit(to:)` and/or paging.
+- Sort is client-side (`released_at`, falling back to `starts_at`). No composite
+  index needed. If you'd rather push the sort server-side, note that an
+  `.order(by:"released_at")` query would silently drop any doc missing that field.
 
 **Action items**:
-- Push the `task/835-...` branch to remote (the worker pushes automatically after the task).
-- Run the UI test under the emulator to exercise the end-to-end path:
-  `scripts/run-tests.sh` (it runs `testReplyBarAppearsAndCancels`).
-- Optional: consider also carrying `replyTo` on attachment sends. Right now (matching web)
-  replies attach to the text message only; an image-only reply won't carry the quote.
+- Push this branch (the worker pushes automatically after the task).
+- Verify the production `released_recordings` read rule (`allow read: if request.auth != null`)
+  is deployed in the commander repo — this app relies on it. The rule I added to
+  this repo's `firestore.rules` is emulator-only and is not deployed from here.
+- Release a second recording from manage.everbot.org and confirm it appears live
+  on the phone without reinstalling.
 
 **Files changed**:
-- `Sources/Models/Channel.swift` — added `ReplyContext` struct (the 4-field persisted shape)
-  and a `replyTo: ReplyContext?` field on `ChannelMessage`.
-- `Sources/Logic/Presence.swift` — added pure helpers `replyPreview(type:text:attachmentName:)`
-  and `replyAutoTag(_:replyingToBot:)`, both unit-tested.
-- `Sources/Services/ChatService.swift` — added `replyDraft` state + `ReplyDraft` type, a
-  `focusComposerToken`, `startReply(to:)`/`cancelReply()`; `sendText` now auto-tags, writes
-  the `replyTo` map, and clears/restores the draft; `parseMessage` reads `replyTo`; draft is
-  cleared on channel switch and sign-out.
-- `Sources/Views/Chat/MessageBubbleView.swift` — quoted-parent block (tap to scroll),
-  long-press context menu + swipe-to-reply gesture, and a highlight ring. Reply hooks are
-  optional so Ask Emma is unaffected.
-- `Sources/Views/Chat/ChatView.swift` — wires reply + scroll-to-parent through the existing
-  `ScrollViewReader`, with a brief highlight on the target message.
-- `Sources/Views/Chat/ChatComposerView.swift` — reply bar above the composer ("Replying to
-  {name}" + preview + cancel), and auto-focus when a reply starts.
-- `Tests/Unit/PresenceTests.swift` — 3 new tests for the reply helpers.
-- `Tests/UITests/ChatUITests.swift` — new `testReplyBarAppearsAndCancels`.
+- `Sources/Models/ReleasedRecording.swift` — NEW. Model (`ReleasedRecording` +
+  nested `Angle`), pure Firestore parser, camera-label mapping, date/device
+  labels, newest-first sort.
+- `Sources/Services/ReleasedRecordingsService.swift` — NEW. `@MainActor`
+  `ObservableObject` with a live `released_recordings` snapshot listener; client-side
+  sort; loading/error state. Mirrors `VideoService`.
+- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — NEW. The Released
+  screen: cards (title + date + device/room), lazy tap-to-play inline `AVKit`
+  `VideoPlayer` per angle, loading/error/empty states, `-MOCK_RELEASED` fixtures.
+- `Sources/Views/RootTabView.swift` — added the 4th "Released" tab (tag 3).
+- `Sources/App/MobileCommanderApp.swift` — added `MockReleasedRoot` so the tab can
+  be screenshotted from fixtures without a live sign-in.
+- `Sources/App/TestConfig.swift` — added the `isMockReleased` (`-MOCK_RELEASED`) seam.
+- `firestore.rules` — added a `released_recordings` read/write block (emulator
+  parity only; not deployed from this repo).
+- `Tests/Unit/ReleasedRecordingTests.swift` — NEW. 10 unit tests for the parser + sort.
 - `TEST_REPORT.md`, `DEPLOY_STATUS.md` — updated for this task.

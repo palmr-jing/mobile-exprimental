@@ -19,6 +19,10 @@ enum TestConfig {
     /// flow is UITestable without Firebase. Inert in production.
     static var isMockVideos: Bool { args.contains("-MOCK_VIDEOS") }
 
+    /// Drive the Released tab from deterministic mock fixtures so the released
+    /// recordings screen is screenshot-able without Firebase. Inert in production.
+    static var isMockReleased: Bool { args.contains("-MOCK_RELEASED") }
+
     /// Inject a canned transcript instead of running SFSpeechRecognizer.
     static var useFakeVoice: Bool { args.contains("-FAKE_VOICE") }
     static var fakeVoiceTranscript: String { value(for: "-FAKE_VOICE_TRANSCRIPT") ?? "test dictation" }

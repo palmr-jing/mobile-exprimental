@@ -14,7 +14,12 @@ struct MobileCommanderApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if TestConfig.isMockVideos {
+                if TestConfig.isMockReleased {
+                    // Root the Released tab inside a TabView (as production's
+                    // RootTabView does) so its fixtures can be screenshotted
+                    // without a live Firebase sign-in.
+                    MockReleasedRoot()
+                } else if TestConfig.isMockVideos {
                     // Root the Videos tab inside a TabView exactly as production
                     // does (RootTabView) — fullScreenCover re-presentation behaves
                     // differently inside a TabView tab, so the bare view would hide
@@ -72,6 +77,22 @@ struct MobileCommanderApp: App {
                 presenceService.scenePhaseChanged(phase)
             }
         }
+    }
+}
+
+// Mock harness that mirrors RootTabView's TabView so the Released tab (tab 3) can
+// be screenshotted from fixtures without a live Firebase sign-in.
+private struct MockReleasedRoot: View {
+    @State private var selection = 3
+    var body: some View {
+        TabView(selection: $selection) {
+            Color.black.tabItem { Label("Ask Emma", systemImage: "sparkles") }.tag(0)
+            Color.black.tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right") }.tag(1)
+            Color.black.tabItem { Label("Videos", systemImage: "play.rectangle.on.rectangle") }.tag(2)
+            ReleasedRecordingsView()
+                .tabItem { Label("Released", systemImage: "video.badge.checkmark") }.tag(3)
+        }
+        .tint(DS.Colors.accent)
     }
 }
 

@@ -1,50 +1,56 @@
-# Follow-up — Task #971: read `released_recordings`, show class recordings inline
+# Follow-up — Task #974: [iOS] No file upload on iOS app
 
-**What was done**: Added a new **Released** tab to the signed-in app that subscribes
-to the Firestore `released_recordings` collection with a live snapshot listener and
-lists one card per released class — newest-first — with its 3 grouped camera angles
-(Front / Front-right / RealSense) playable inline. New releases from
-manage.everbot.org appear without an app change, because the listener is live.
+**What was done**: The Chat paperclip upload was failing with `storage/unauthorized`.
+The cause was server-side: the production Firebase Storage ruleset for bucket
+`fir-web-codelab-8ace9.firebasestorage.app` had no rule for the `chat-uploads/`
+path the app writes to, so authenticated uploads were denied. I redeployed the
+Storage rules with the `chat-uploads` rule restored — and preserved every other
+path that was already live — so uploads are now authorized. This is a server-side
+fix; it's already deployed and takes effect on existing installs with no rebuild.
+
+**Why the earlier attempt didn't fix it**: commit `4858dc6` ("carry auth token on
+image upload") patched the client. But `storage/unauthorized` (not
+`unauthenticated`) means the token WAS attached and the security rules rejected the
+request — a rules problem, not a token problem. The token guard is still correct
+defense-in-depth, so I left it in place.
+
+**Heads-up — I briefly widened, then fixed, the blast radius during this task**:
+My first deploy used a minimal `chat-uploads`-only ruleset, which REPLACED the live
+ruleset and momentarily dropped five other production paths (`image_diffs`,
+`task-attachments`, `wallcam`, `wallcam_highlights`, `experimental_videos`). I
+caught this, rebuilt the ruleset as the prior one PLUS `chat-uploads`, and
+redeployed. The live ruleset now contains all six paths (verified). If anything
+that uses those paths hiccuped in the ~5 minute window around 2026-07-11 14:36–14:41Z,
+that was this task; it is resolved now.
 
 **What needs review**:
-- Sign in with a real account and confirm the **Released** tab shows the live
-  "IMA Fit + Tiny Tigers" doc (jing's release) — I could not do a real Google
-  sign-in in the autonomous run, so the live read path is unverified end-to-end
-  (it mirrors the shipping `VideoService`/`FirestoreService` listener pattern).
-- Confirm inline playback of a real tokenized `download_url` on a device/simulator
-  while signed in. Firebase Storage download URLs are plain tokenized HTTPS and
-  play through `AVPlayer(url:)` with no extra entitlement, but I only exercised
-  playback against public sample MP4s via the `-MOCK_RELEASED` fixtures, not a
-  real Storage URL.
-- The Released listener reads the whole collection (no `.limit`). That's fine for
-  "one doc per class" today; if it grows large, add a `.limit(to:)` and/or paging.
-- Sort is client-side (`released_at`, falling back to `starts_at`). No composite
-  index needed. If you'd rather push the sort server-side, note that an
-  `.order(by:"released_at")` query would silently drop any doc missing that field.
+- On a real signed-in device/TestFlight build, pick a photo in Chat and confirm it
+  uploads and renders (the one path I could not drive without an interactive Google
+  sign-in). The rule logic is verified via the Firebase Rules test API (authed write
+  to `chat-uploads/general/...` = ALLOW), but a real device round-trip is the last mile.
+- Confirm the five preserved paths (`image_diffs`, `task-attachments`, `wallcam`,
+  `wallcam_highlights`, `experimental_videos`) still behave as expected for whatever
+  backend/web clients use them — I mirrored them exactly from the pre-existing live
+  ruleset (`2b6c6691`, released 2026-07-10) but I don't own those features.
+- Decide where the source of truth for these Storage rules should live (see below).
 
-**Action items**:
+**Action items** (things only a human should decide/do):
+- **Reconcile rule ownership across repos.** These Storage rules are now vendored in
+  this iOS repo's `storage.rules` and were deployed from here. The other paths are
+  owned by the commander/backend repo. Two repos that can each deploy the same bucket's
+  rules will clobber each other. Pick one source of truth and keep the other in sync
+  (or split buckets). I added a comment at the top of `storage.rules` flagging this.
 - Push this branch (the worker pushes automatically after the task).
-- Verify the production `released_recordings` read rule (`allow read: if request.auth != null`)
-  is deployed in the commander repo — this app relies on it. The rule I added to
-  this repo's `firestore.rules` is emulator-only and is not deployed from here.
-- Release a second recording from manage.everbot.org and confirm it appears live
-  on the phone without reinstalling.
+- No `CURRENT_PROJECT_VERSION` bump and no TestFlight upload were done — none is needed
+  for a rules-only fix. Do a build only if you also change app code.
 
 **Files changed**:
-- `Sources/Models/ReleasedRecording.swift` — NEW. Model (`ReleasedRecording` +
-  nested `Angle`), pure Firestore parser, camera-label mapping, date/device
-  labels, newest-first sort.
-- `Sources/Services/ReleasedRecordingsService.swift` — NEW. `@MainActor`
-  `ObservableObject` with a live `released_recordings` snapshot listener; client-side
-  sort; loading/error state. Mirrors `VideoService`.
-- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — NEW. The Released
-  screen: cards (title + date + device/room), lazy tap-to-play inline `AVKit`
-  `VideoPlayer` per angle, loading/error/empty states, `-MOCK_RELEASED` fixtures.
-- `Sources/Views/RootTabView.swift` — added the 4th "Released" tab (tag 3).
-- `Sources/App/MobileCommanderApp.swift` — added `MockReleasedRoot` so the tab can
-  be screenshotted from fixtures without a live sign-in.
-- `Sources/App/TestConfig.swift` — added the `isMockReleased` (`-MOCK_RELEASED`) seam.
-- `firestore.rules` — added a `released_recordings` read/write block (emulator
-  parity only; not deployed from this repo).
-- `Tests/Unit/ReleasedRecordingTests.swift` — NEW. 10 unit tests for the parser + sort.
-- `TEST_REPORT.md`, `DEPLOY_STATUS.md` — updated for this task.
+- `storage.rules` — restored the `chat-uploads/{channelId}/{fileName=**}` authed
+  read/write rule and preserved the five other live paths; rewrote the header comment
+  to note it's the deployed production ruleset and flag the cross-repo ownership issue.
+  (Deployed to production via `firebase deploy --only storage`.)
+- `DEPLOY_STATUS.md`, `TEST_REPORT.md`, `FOLLOW_UP.md` — rewritten for task #974
+  (were left over from task #971).
+
+**Not changed**: no Swift. `Sources/Services/StorageService.swift` already had the
+token guard from `4858dc6`; it's correct and I left it.

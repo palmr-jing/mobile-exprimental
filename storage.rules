@@ -1,9 +1,42 @@
 rules_version = '2';
-// Storage rules for the emulator (and a proposed production baseline — the
-// commander repo currently ships NO storage rules; adding this there is a
-// flagged follow-up). Authenticated users may read/write chat attachments.
+// Storage rules for the fir-web-codelab-8ace9 bucket. Deployed to production via
+// `firebase deploy --only storage` and also used by the iOS test emulator.
+//
+// The iOS/web chat composer uploads attachments to chat-uploads/{channelId}/ with
+// the Storage SDK, so that path needs a rule. A prior production ruleset dropped
+// the chat-uploads block, so every upload hit the bucket default (deny) and failed
+// with storage/unauthorized — the "No file upload on iOS app" report (task #974).
+//
+// This file re-adds chat-uploads AND preserves every other path that was live in
+// the production ruleset before this change (image_diffs, task-attachments,
+// wallcam, wallcam_highlights, experimental_videos), because a rules deploy
+// REPLACES the whole ruleset. Those paths are owned by the commander/backend repo,
+// not this iOS app — if their rules change there, mirror the change here (or vice
+// versa) so a deploy from either repo doesn't clobber the other. Only chat-uploads
+// is exercised by this repo's emulator UI tests.
 service firebase.storage {
   match /b/{bucket}/o {
+
+    match /image_diffs/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    match /task-attachments/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /wallcam/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    match /wallcam_highlights/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    match /experimental_videos/{allPaths=**} {
+      allow read: if request.auth != null;
+    }
+
     match /chat-uploads/{channelId}/{fileName=**} {
       allow read, write: if request.auth != null;
     }

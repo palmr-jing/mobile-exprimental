@@ -1,38 +1,41 @@
-# Test Report — Task #971 (read `released_recordings`, show class recordings)
+# Test Report — Task #974 ([iOS] No file upload on iOS app)
 
-## Build Status
-- **Platform**: iOS Simulator — iPhone 17 Pro (iOS 26.x)
-- **Status**: BUILD SUCCEEDED (`xcodebuild build -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`)
+## The fix and how it was verified
+The bug was a missing **Firebase Storage security rule** for `chat-uploads/…` on
+the production bucket, so authenticated uploads were rejected with
+`storage/unauthorized`. The fix is a rules deploy (see `DEPLOY_STATUS.md`). No
+Swift source changed, so the primary verification is at the rules layer, not the
+app binary.
 
-## Tests
+### Rules verification (authoritative for this fix)
+Ran the Firebase Rules **test** API against the deployed `storage.rules` source,
+simulating the exact path the app writes (`chat-uploads/{channelId}/{ts}-{name}`):
 
-### Unit Tests (`Tests/Unit/`)
-- **ReleasedRecordingTests.swift** — NEW, 10 cases covering the `released_recordings` parser + sort:
-  - `parsesReleasedClassWithGroupedAngles` — decodes plan_id/class/device and keeps all 3 camera angles grouped under one doc.
-  - `mapsCameraLabels` — `front` / `front-right` / `realsense` → `Front` / `Front-right` / `RealSense`.
-  - `nullRoomBecomesNilAndIsOmittedFromLabel` / `roomWhenPresentJoinsDeviceLabel` — `room: null` handling and the "device · room" label.
-  - `angleCountFallsBackToVideoCount` / `angleCountDecodesFromDouble` — `angle_count` as missing / Double.
-  - `invalidDownloadURLBecomesNilAngle` — empty/invalid `download_url` decodes to a nil URL (rendered as an "Unavailable" tile, not a crash).
-  - `rejectsDocWithNoClassAndNoAngles` / `keepsDocWithAnglesButNoClassLabel` — empty-doc rejection vs. angle-only survival.
-  - `sortsNewestFirstByReleasedAtThenStartsAt` — newest-first by `released_at`, falling back to `starts_at` when `released_at` is missing.
-- Other suites (AccessTests, ChatPaginationTests, ChatShareTests, PresenceTests, VideoTests, ReelExportTests, ReportIssueTests, SpeechRecognitionServiceTests) — unchanged, still pass.
+- authed write → **ALLOW** (was previously denied — this is the fix)
+- anonymous write → **DENY**
+- authed read (image display) → **ALLOW**
+- authed write to an unrelated path → **DENY** (least privilege preserved)
 
-## How to Run
-```bash
-# Unit tests only (hermetic, no emulator):
-SKIP_EMULATOR=1 scripts/run-tests.sh
+Also confirmed via the Rules Releases API that the released ruleset is bound to
+`firebase.storage/fir-web-codelab-8ace9.firebasestorage.app` (the bucket the iOS
+app uses) and contains all six live paths: `image_diffs`, `task-attachments`,
+`wallcam`, `wallcam_highlights`, `experimental_videos`, `chat-uploads`.
 
-# Just the new suite:
-xcodebuild test -scheme MobileCommander \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:MobileCommanderTests/ReleasedRecordingTests
-```
-
-## Current Status
-- **Unit tests**: ALL PASS. The new `ReleasedRecordingTests` suite is 10/10 green; the full `MobileCommanderTests` target still passes.
-- **Simulator run**: launched on iPhone 17 Pro with `-MOCK_RELEASED`. The **Released** tab lists the card "IMA Fit + Tiny Tigers" (Jul 10, 2026, `everbot-lubancat-2`) with its 3 grouped angles (Front / Front-right / RealSense). Tapping a tile swaps it to an inline `VideoPlayer` — verified via Maestro tap + screenshot.
-- **Live Firestore**: NOT exercised here — that needs an interactive Google sign-in the autonomous run can't perform. The live listener path mirrors the existing, shipping `VideoService`/`FirestoreService` snapshot pattern.
+## iOS unit tests
+- **Suites** (`Tests/Unit/`): Access, ChatPagination, ChatShare, Presence, Video,
+  ReelExport, ReportIssue, SpeechRecognitionService, ReleasedRecording — unchanged
+  by this task (no Swift touched).
+- **How to run**:
+  ```bash
+  SKIP_EMULATOR=1 scripts/run-tests.sh    # unit only, hermetic
+  ```
+- **Status**: PASS — `Test run with 65 tests in 9 suites passed` (iPhone 17 Pro
+  simulator, `SKIP_EMULATOR=1 scripts/run-tests.sh`). Nothing regressed; this task
+  touched no Swift.
 
 ## Notes
-- The `FirebaseFirestore … Could not reach Cloud Firestore backend` lines during the unit run are expected: unit tests are hermetic and don't connect to a backend.
-- The `-MOCK_RELEASED` fixtures point at Google's public sample MP4s so the inline player has something to play in the simulator; production reads tokenized `download_url`s straight from Firestore.
+- There is no XCUITest that exercises a Storage upload (the emulator UI tests
+  don't cover the paperclip → putData path), so the emulator run does not
+  regression-test this fix. The Rules test API above is the direct check.
+- The shared `storage.rules` file now also feeds the test emulator; it compiled
+  cleanly (Firebase compiled it on deploy) and adds no path the UI tests depend on.

@@ -15,7 +15,7 @@
 //
 // Usage (production — needs Firebase Admin credentials for the target project):
 //   GOOGLE_APPLICATION_CREDENTIALS=~/keys/fir-web-codelab-8ace9.json \
-//     node scripts/grant-project-access.mjs dan@everbot.org dan
+//     node scripts/grant-project-access.mjs dan@palmr.ai dan
 //
 // Against the local emulator (no credentials needed):
 //   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=demo-commander \
@@ -92,7 +92,7 @@ async function main() {
   const [email, project] = process.argv.slice(2);
   if (!email || !project) {
     console.error('usage: node scripts/grant-project-access.mjs <email> <project>');
-    console.error('   e.g. node scripts/grant-project-access.mjs dan@everbot.org dan');
+    console.error('   e.g. node scripts/grant-project-access.mjs dan@palmr.ai dan');
     process.exit(1);
   }
   const name = process.env.NAME || nameFromEmail(email);

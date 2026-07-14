@@ -1,91 +1,80 @@
 # Follow-Up — Task #970: Add access to Dan sandbox
 
-**What was done**: Corrected the production email to `dan@palmr.ai` (the user
-confirmed it) in `scripts/grant-project-access.mjs` — both the usage example and the
-`--help` error line now read `dan@palmr.ai dan`. The emulator seed and unit tests
-already used `dan@palmr.ai`, so no change was needed there. The grant itself is
-unchanged: it writes Dan's `commander_allowed_users` allowlist doc scoped to the `dan`
-project (`https://manage.everbot.org/dan`). All 12 unit tests still pass.
+**What was done**: Built the `manage.everbot.org/dan` console *into* the Emma iOS
+app as a new, project-scoped **"Projects" tab**. The app already contained a full
+Swift port of the Commander console (`DashboardView` + tasks/workers/progress under
+`Sources/Views/Developer/`), but it was orphaned — `RootTabView` only wired Ask
+Emma / Chat / Videos, and the `Access` project-scoping was never called. This run
+wires that console in, gated and scoped by the signed-in user's allowlist grant, so
+Dan (granted `dan`) opens the app and sees the `dan` sandbox's dashboard. The grant
+script from the earlier passes is unchanged.
 
----
+## How it behaves
 
-## Answering the direct question: "Will this give access to the functionality of `https://manage.everbot.org/dan` on the Emma iOS app?"
+- **Gated tab.** A "Projects" tab appears only for users with console access —
+  admins, unrestricted users (`projects: null` / `["*"]`), or anyone granted at
+  least one project. A video-only recipient (`projects: []`) never sees the tab.
+  The decision is `Access.hasConsoleAccess(account)`.
+- **Scoped content.** Inside the console, the dashboard stats, the projects grid,
+  the recent-tasks list, and the "See All" task list are all filtered through
+  `Access.canAccessProject`, so a scoped user (Dan) sees only their granted
+  projects — not every project in `commander_tasks`. Admins/unrestricted see all.
+- **Read view.** The console surfaces the project dashboard, task lists, task
+  detail, workers, and progress — the read side of `manage.everbot.org/dan`. It is
+  deliberately not a write console (see "What needs review").
 
-Short answer: **it grants Dan the correct allowlist record, but it does not, by
-itself, put the web console's functionality into the Emma iOS app.** Two different
-things are being conflated. Details, because this matters:
+## What needs review
 
-1. **The Emma iOS app is a different, narrower client than the web console.**
-   `manage.everbot.org/dan` is the full commander web console for the `dan` project.
-   The Emma app is a separate mobile client on the same Firebase backend, and it only
-   surfaces: Ask Emma, Chat, the Videos tab, and a read-mostly dashboard
-   (tasks/projects/workers). Granting the `dan` project does not add the console's
-   features to the app — those screens don't exist in the app to unlock.
+- **Read-only was a deliberate scope choice.** `firestore.rules` gates task
+  create/update/delete on `canAccessProject(...)`, which reads
+  `commander_user_projects/{uid}` (uid-keyed) — a *different* collection from the
+  `commander_allowed_users/{email}` (email-keyed) doc that both this app reads for
+  scoping and the grant script writes. So a *write* console for Dan could be
+  rejected server-side until a `commander_user_projects/{his-uid}` entry exists. I
+  surfaced the console as read-only to avoid shipping buttons that fail. If Dan
+  needs to create/retry tasks from the app, add that uid-keyed doc (a commander-repo
+  step; the uid isn't known until he signs in once).
+- **Verify the tab renders for a real granted user.** The gating *logic* is unit
+  tested; confirm on device/emulator that signing in as `dan@palmr.ai` (after the
+  grant is written to production) shows the Projects tab with the `dan` dashboard,
+  and that a plain video user does not see the tab.
+- **`commander_workers` reads.** The vendored `firestore.rules` in this repo has no
+  `commander_workers` rule (default-deny in the emulator), so the Workers card may
+  be empty under the emulator. Production rules (the source of truth in the
+  commander repo) are expected to allow it; confirm there.
+- **Tab label / placement.** I named it "Projects" (icon `square.grid.2x2`) and
+  placed it between Chat and Videos. Change the copy/order if product prefers
+  "Console" or a different slot.
 
-2. **The app does not currently gate content by project scope.** The scoping logic
-   (`Access.canAccessProject` / `Access.accessibleProjects` in `Sources/Logic/Access.swift`)
-   is implemented and unit-tested, but a repo-wide search shows it is **not called by
-   any View or by `FirestoreService`.** `DashboardView` groups *all* tasks it loads;
-   `FirestoreService` does not filter by `account.projects`. So adding `['dan']` to
-   Dan's doc neither unlocks nor restricts any screen on the client side today.
+## Action items (require a human)
 
-3. **The Videos tab — where this was reported — is scoped by email, not by project.**
-   `VideoService.start(email:)` loads `commander_videos` where `assigned_emails`
-   contains Dan's address (`VideosView.swift:64-65`). Dan will only see reels or
-   recordings explicitly *released to his email* from `manage.everbot.org`. The
-   project grant does not change what appears on the Videos tab.
-
-4. **The one enforced backend boundary reads a different collection than this script
-   writes.** In `firestore.rules`, `canAccessProject()` (which gates
-   `commander_tasks` create/update/delete) reads
-   `commander_user_projects/{uid}` — keyed by Firebase **UID**. This script writes
-   `commander_allowed_users/{emailDocId}` — keyed by **email**. These are two separate
-   stores. So even the single rule that enforces project access is *not* fed by this
-   grant. Caveat: `firestore.rules` here is a vendored subset (its header points to
-   `~/repos/experimental/commander/firestore.rules` as the source of truth), so the
-   production rules may differ — but on the evidence in this repo, the grant and the
-   enforced boundary are wired to different collections.
-
-**Net**: the grant is the right, necessary bookkeeping — it lists Dan with the `dan`
-scope in the allowlist the app reads for identity and the web console reads for
-access. It is **not sufficient** to reproduce "the functionality of
-`manage.everbot.org/dan`" inside the Emma iOS app. Getting real backend enforcement
-for Dan likely also needs a `commander_user_projects/{his-uid}` entry, and that lives
-in the commander repo, not here.
-
----
-
-**What needs review** (before assuming Dan is fully set up):
-- Confirm, in the commander repo (`~/repos/experimental/commander`), which collection
-  production actually reads for access: `commander_allowed_users` (email-keyed, what
-  this script writes) or `commander_user_projects` (uid-keyed, what the vendored rules
-  read), or both. If the backend needs `commander_user_projects/{uid}`, that entry
-  still has to be created — this script does not create it, and a UID isn't known
-  until Dan has signed in at least once.
-- Confirm the project slug is exactly `dan` (last path segment of
-  `https://manage.everbot.org/dan`) and matches Commander's repo registry.
-- The "never narrow access" guard is intentional: if Dan is already an admin or
-  already unrestricted (`projects: null` / `['*']`), the script skips rather than
-  replacing his access with just `['dan']`.
-
-**Action items** (require a human with production access):
-- Run the grant against production (needs Firebase Admin creds for
-  `fir-web-codelab-8ace9`):
+- Run the grant against production so `dan@palmr.ai` gets the `dan` scope the app
+  reads (needs Firebase Admin creds for `fir-web-codelab-8ace9`):
   ```
   GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json \
     node scripts/grant-project-access.mjs dan@palmr.ai dan
   ```
-  It prints the before/after project list and is safe to re-run (idempotent).
+  It prints before/after and is idempotent.
+- Tell Dan to sign out/in on the Emma iOS app so `AuthService` re-reads his
+  allowlist doc; the Projects tab then appears with the `dan` sandbox.
 - Decide whether Dan also needs a `commander_user_projects/{uid}` entry for backend
-  enforcement (see "What needs review"). That is a commander-repo step, not this repo.
+  write enforcement (see "What needs review"). Commander-repo step, not this repo.
+- Add a UITest for tab visibility (fake admin → tab present; fake non-admin →
+  absent) once the Firebase Emulator Suite is available in CI.
 - Push the `task/970-...` branch (the worker pushes automatically after the task).
-- Tell Dan to sign out/in on the Emma iOS app so `AuthService` re-reads his allowlist
-  doc. (This refreshes his identity/display; per the notes above it does not, on its
-  own, add web-console features to the app.)
 
-**Files changed** (this run):
-- `scripts/grant-project-access.mjs` — production email corrected from
-  `dan@everbot.org` to `dan@palmr.ai` (usage comment + `--help` error line). No logic
-  change.
-- `FOLLOW_UP.md` — corrected the email note and added a direct, honest answer to
-  whether this grant delivers the web console's functionality on the iOS app.
+## Files changed (this run)
+
+- `Sources/Logic/Access.swift` — added `hasConsoleAccess(_:)`, the pure gating
+  predicate for the console tab.
+- `Sources/Views/ConsoleView.swift` — **new.** The "Projects" tab container; owns a
+  `FirestoreService` and hosts the scoped `DashboardView`.
+- `Sources/Views/RootTabView.swift` — added the gated "Projects" tab; reads
+  `authService` to decide visibility via `Access.hasConsoleAccess`.
+- `Sources/Views/Developer/DashboardView.swift` — scoped stats / projects / recent
+  tasks to the signed-in user's granted projects (`scopedTasks`).
+- `Sources/Views/Developer/TaskListView.swift` — scoped the task list the same way.
+- `Tests/Unit/AccessTests.swift` — 4 new tests for `hasConsoleAccess`.
+- `MobileCommander.xcodeproj/project.pbxproj` — regenerated via `xcodegen` to
+  include `ConsoleView.swift`.
+- `TEST_REPORT.md` — added the iOS build + unit-test results for this iteration.

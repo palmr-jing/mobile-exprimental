@@ -52,4 +52,26 @@ struct AccessTests {
         )
         #expect(out == ["a", "b", "c"])
     }
+
+    // hasConsoleAccess gates the in-app "Projects" console tab (RootTabView).
+
+    @Test func consoleAccessForGrantedScopedUser() {
+        // Dan, granted the "dan" project, sees the console.
+        #expect(Access.hasConsoleAccess(account(projects: ["dan"])) == true)
+    }
+
+    @Test func consoleAccessDeniedForEmptyProjects() {
+        // A video-only recipient with no project grant gets no console tab.
+        #expect(Access.hasConsoleAccess(account(projects: [])) == false)
+    }
+
+    @Test func consoleAccessForAdminAndUnrestricted() {
+        #expect(Access.hasConsoleAccess(account(admin: true, projects: [])) == true)
+        #expect(Access.hasConsoleAccess(account(projects: nil)) == true)
+        #expect(Access.hasConsoleAccess(account(projects: ["*"])) == true)
+    }
+
+    @Test func consoleAccessDeniedWhenSignedOut() {
+        #expect(Access.hasConsoleAccess(nil) == false)
+    }
 }

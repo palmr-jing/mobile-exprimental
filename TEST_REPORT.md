@@ -42,9 +42,33 @@ target. The only change since the passing run is the CLI's `<project>` argument
 - CLI with no args prints usage and exits 1 (the Firebase Admin SDK is imported
   lazily, so that path needs no credentials or network).
 
+### 4. iOS console feature — build + unit tests (this iteration)
+Surfaced the Commander console (`manage.everbot.org/<project>`) inside the Emma
+app as a gated, project-scoped "Projects" tab (see FOLLOW_UP.md). Verified on the
+iPhone 17 Pro simulator:
+
+```
+xcodebuild test -project MobileCommander.xcodeproj -scheme MobileCommander \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -only-testing:MobileCommanderTests
+```
+
+- **Full app target compiles** with the new `ConsoleView`, the `RootTabView`
+  gating, and the `DashboardView` / `TaskListView` project scoping.
+- **`MobileCommanderTests`: 56 tests in 8 suites — all passed.**
+- New `AccessTests` cases for the tab-gating decision (`Access.hasConsoleAccess`),
+  all passing:
+  - `consoleAccessForGrantedScopedUser` — Dan (`projects: ["dan"]`) → sees console.
+  - `consoleAccessDeniedForEmptyProjects` — video-only user (`projects: []`) → no tab.
+  - `consoleAccessForAdminAndUnrestricted` — admin / `nil` / `["*"]` → sees console.
+  - `consoleAccessDeniedWhenSignedOut` — `nil` account → no tab.
+
 ## Not run
-- Xcode unit/UI tests: this task touches only Node ops scripts (`scripts/*.mjs`)
-  and `package.json`. No Swift source changed, so the iOS test suite is unaffected
-  and was not rebuilt.
-- Production write: requires Firebase Admin credentials for the live project
-  `fir-web-codelab-8ace9` (see FOLLOW_UP.md). Verified against the emulator instead.
+- iOS UITests for the new tab: asserting the "Projects" tab is visible/hidden
+  end-to-end needs the Firebase Emulator Suite (anonymous sign-in against the auth
+  emulator) which isn't installed here. The gating *logic* is covered by the unit
+  tests above; the wiring is a straight SwiftUI `if` that compiles clean. Adding a
+  UITest (fake admin → tab present; fake non-admin → absent) is a follow-up.
+- Production write of Dan's grant: requires Firebase Admin credentials for the live
+  project `fir-web-codelab-8ace9` (see FOLLOW_UP.md). Verified against the emulator
+  in an earlier pass instead.

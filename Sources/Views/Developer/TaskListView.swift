@@ -2,11 +2,15 @@ import SwiftUI
 
 struct TaskListView: View {
     @EnvironmentObject var firestoreService: FirestoreService
+    @EnvironmentObject var authService: AuthService
     @State private var filterStatus: TaskStatus?
     @State private var searchText = ""
 
     var filteredTasks: [CommanderTask] {
-        var result = firestoreService.tasks
+        // Scope to the user's granted projects first (mirrors DashboardView).
+        var result = firestoreService.tasks.filter {
+            Access.canAccessProject($0.project, account: authService.currentUser)
+        }
         if let filter = filterStatus {
             result = result.filter { $0.effectiveStatus == filter }
         }

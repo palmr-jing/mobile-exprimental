@@ -48,6 +48,7 @@
 		78C2BC4D0CFCEC5C8D85F09E /* VideoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C174C727A828D616491518C1 /* VideoService.swift */; };
 		7E5CD74CBE0AD9B172CD5FD2 /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71341C368CEADCCFE3A2310 /* SpeechRecognitionService.swift */; };
 		7F2F4B9D5E5F69463159D171 /* MentionAutocompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C9190DD3288483A1C8431B /* MentionAutocompleteView.swift */; };
+		80A1F0718F64A07F594E837D /* ConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 739520D25BB10F7698E5F60F /* ConsoleView.swift */; };
 		8240B000A65C4EE70F9A0C2C /* PresenceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04F5C36771C11A3914D8E066 /* PresenceModels.swift */; };
 		84E4E606CB3C105C4B86C19F /* VideoFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6732BFF9392E87268330E337 /* VideoFeedView.swift */; };
 		851552C32CFDB516DD46F9AE /* NewChannelSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E10E706E56CF2DCEAA20C1A /* NewChannelSheet.swift */; };
@@ -149,6 +150,7 @@
 		70C8ABBE399379829A118AC2 /* ReelExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelExport.swift; sourceTree = "<group>"; };
 		70C9190DD3288483A1C8431B /* MentionAutocompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionAutocompleteView.swift; sourceTree = "<group>"; };
 		71B63D362C774253E6EA77BE /* MessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleView.swift; sourceTree = "<group>"; };
+		739520D25BB10F7698E5F60F /* ConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleView.swift; sourceTree = "<group>"; };
 		7ACBA1195835D92F2EB091A5 /* ProjectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDetailView.swift; sourceTree = "<group>"; };
 		7D360CC57BCCE6F73C6611B6 /* TestConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestConfig.swift; sourceTree = "<group>"; };
 		7E2D099B5A5F0E142DA7E3EA /* DeveloperTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperTabView.swift; sourceTree = "<group>"; };
@@ -416,6 +418,7 @@
 		F1279A3C60B781873ECCF006 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				739520D25BB10F7698E5F60F /* ConsoleView.swift */,
 				CEDCD4D7F25722D64FA527B0 /* RootTabView.swift */,
 				3057CD5E730919CDE62E7B50 /* Chat */,
 				1847F402583CAE8F4FE2564C /* Developer */,
@@ -584,6 +587,7 @@
 				07BCA8C89CC625096BFEDA13 /* ChatPagination.swift in Sources */,
 				A280FFBA652EC89B12FD479E /* ChatService.swift in Sources */,
 				0851E0DF548219FC5AA85EAF /* ChatView.swift in Sources */,
+				80A1F0718F64A07F594E837D /* ConsoleView.swift in Sources */,
 				877B131ABEF7155DBA05F064 /* CreateTaskView.swift in Sources */,
 				648FF4F950395D8709CEBCF3 /* DashboardView.swift in Sources */,
 				95A43C9BC9C29C67DCEEFC92 /* DesignSystem.swift in Sources */,

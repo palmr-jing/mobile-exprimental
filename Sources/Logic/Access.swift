@@ -14,6 +14,19 @@ enum Access {
         return projects.contains(project)
     }
 
+    // Whether the user should see the in-app Commander console (the "Projects"
+    // tab). True for admins, unrestricted users, and anyone granted at least one
+    // named project. A user with an empty `projects` list (e.g. a video-only
+    // recipient) gets no console tab. Signed-out → false. This gates UI only;
+    // the backend rules remain the hard boundary.
+    static func hasConsoleAccess(_ account: UserAccount?) -> Bool {
+        guard let account else { return false }
+        if account.isAdmin { return true }
+        guard let projects = account.projects else { return true }   // nil = unrestricted
+        if projects.contains("*") { return true }
+        return !projects.isEmpty
+    }
+
     static func emailToDocId(_ email: String) -> String {
         email.lowercased().map { ($0 == "." || $0 == "@") ? "_" : $0 }.reduce(into: "") { $0.append($1) }
     }

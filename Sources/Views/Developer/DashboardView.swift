@@ -2,9 +2,21 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject var firestoreService: FirestoreService
+    @EnvironmentObject var authService: AuthService
+
+    // Tasks the signed-in user is allowed to see, filtered by their allowlist
+    // project grant. Everything on this dashboard (stats, projects, recent) is
+    // derived from this so a scoped user (e.g. Dan → "dan") only sees their
+    // projects; admins/unrestricted see all. UI scoping only — the backend
+    // rules remain the hard boundary.
+    private var scopedTasks: [CommanderTask] {
+        firestoreService.tasks.filter {
+            Access.canAccessProject($0.project, account: authService.currentUser)
+        }
+    }
 
     private var projects: [(name: String, tasks: [CommanderTask])] {
-        let grouped = Dictionary(grouping: firestoreService.tasks, by: \.project)
+        let grouped = Dictionary(grouping: scopedTasks, by: \.project)
         return grouped
             .map { (name: $0.key, tasks: $0.value) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
@@ -36,32 +48,32 @@ struct DashboardView: View {
         ], spacing: DS.Spacing.md) {
             StatCard(
                 title: "Running",
-                value: "\(firestoreService.tasks.filter { $0.status == .running }.count)",
+                value: "\(scopedTasks.filter { $0.status == .running }.count)",
                 color: DS.Colors.amber
             )
             StatCard(
                 title: "Pending",
-                value: "\(firestoreService.tasks.filter { $0.status == .pending || $0.status == .claimed }.count)",
+                value: "\(scopedTasks.filter { $0.status == .pending || $0.status == .claimed }.count)",
                 color: DS.Colors.blue
             )
             StatCard(
                 title: "Review",
-                value: "\(firestoreService.tasks.filter { $0.effectiveStatus == .needsReview }.count)",
+                value: "\(scopedTasks.filter { $0.effectiveStatus == .needsReview }.count)",
                 color: DS.Colors.amber
             )
             StatCard(
                 title: "Done",
-                value: "\(firestoreService.tasks.filter { $0.status == .done }.count)",
+                value: "\(scopedTasks.filter { $0.status == .done }.count)",
                 color: DS.Colors.green
             )
         }
     }
 
     private var overallProgress: some View {
-        let total = firestoreService.tasks.count
-        let done = firestoreService.tasks.filter { $0.status == .done }.count
+        let total = scopedTasks.count
+        let done = scopedTasks.filter { $0.status == .done }.count
         let progress = total > 0 ? Double(done) / Double(total) : 0
-        let totalCost = firestoreService.tasks.compactMap(\.costUsd).reduce(0, +)
+        let totalCost = scopedTasks.compactMap(\.costUsd).reduce(0, +)
 
         return CommanderDarkCard {
             VStack(spacing: DS.Spacing.sm) {
@@ -161,7 +173,7 @@ struct DashboardView: View {
                 .foregroundStyle(DS.Colors.accent)
             }
 
-            ForEach(firestoreService.tasks.prefix(5)) { task in
+            ForEach(scopedTasks.prefix(5)) { task in
                 NavigationLink(destination: TaskDetailView(task: task)) {
                     TaskRow(task: task)
                 }

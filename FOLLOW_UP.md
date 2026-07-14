@@ -1,49 +1,56 @@
 # Follow-Up — Task #970: Add access to Dan sandbox
 
-**What was done**: Added a Node operator script that grants a user access to a
-Commander project by writing the `commander_allowed_users` allowlist in Firestore,
-and used it to encode the intended change — `dan@palmr.ai` gets the `sandbox`
-project. Access is stored server-side (the iOS app only reads it), so the grant is
-an operator action, not an app code change. The script's merge logic is unit-tested
-and was verified end-to-end against the Firebase emulator. The emulator seed now
-reflects the same end state (Dan + a `sandbox` repo) for local dev and tests.
+**What was done**: Retargeted the existing operator grant to match the URL the user
+gave — `https://manage.everbot.org/dan`. The web console routes each project at
+`/<slug>`, so that URL identifies the project whose slug is `dan`. The grant now
+encodes *Dan gets the `dan` project* (previously `sandbox`). Access lives in the
+Firestore `commander_allowed_users` allowlist, which the iOS app only reads, so this
+stays an operator action run through `scripts/grant-project-access.mjs`, not an app
+code change. The merge logic is unit-tested (12 cases, all passing) and the emulator
+seed now reflects the same end state (Dan scoped to `dan`, plus a `dan` repo).
 
-Why a script rather than in-app UI: `AuthService` reads `commander_allowed_users`
-but nothing in the app writes it — grants have always been an operator step, and
-the repo already keeps that kind of tooling in `scripts/` (`add-internal-testers.mjs`,
-`seed-emulator.mjs`). This follows that pattern.
+Why a script and not in-app UI: `AuthService` reads `commander_allowed_users` but
+nothing in the app writes it, and it shouldn't — the rules' source of truth lives in
+the commander repo (`firestore.rules` here is a vendored read-only subset), and grants
+have always been an operator step (see `add-internal-testers.mjs`, `seed-emulator.mjs`).
+"Through the iOS app" is where the request came from and where Dan will *see* the
+project after the grant; it is not a place the app can write the allowlist.
 
-Note on interpretation: "Dan sandbox" was read as *grant Dan (dan@palmr.ai) access
-to the `sandbox` project*. If it instead meant a differently-named project (or a
-different person), just change the two CLI arguments — the script is general.
+Email domain — read before running against production: the console and the real
+human accounts use `@everbot.org` (e.g. `jing@everbot.org`, `tim@everbot.org`), so the
+production command below defaults to `dan@everbot.org`. The emulator seed keeps
+`dan@palmr.ai` because every local fixture user is on the `palmr.ai` test domain. If
+Dan's real sign-in email differs, change the one CLI argument — the script is general.
 
 **What needs review**:
-- Confirm the intended grant is `dan@palmr.ai` → project `sandbox` (vs. a different
-  email or project name). The script takes both as arguments, so it's a one-line change.
-- Confirm `sandbox` is the exact project/repo name used in Commander's registry.
-- Review that the "never narrow access" guard is the desired behavior: if Dan is
-  already an admin or already unrestricted (`projects: null`/`['*']`), the script
-  skips rather than replacing his access with just `['sandbox']`.
+- Confirm the project slug is exactly `dan` (the last path segment of
+  `https://manage.everbot.org/dan`) and that it matches Commander's repo registry.
+- Confirm Dan's production sign-in email. Defaulted to `dan@everbot.org` (console
+  domain); the prior run had guessed `dan@palmr.ai`.
+- The "never narrow access" guard is intentional: if Dan is already an admin or
+  already unrestricted (`projects: null` / `['*']`), the script skips rather than
+  replacing his access with just `['dan']`.
 
 **Action items** (require a human with production access):
 - Run the grant against production (needs Firebase Admin creds for
   `fir-web-codelab-8ace9`):
   ```
   GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json \
-    node scripts/grant-project-access.mjs dan@palmr.ai sandbox
+    node scripts/grant-project-access.mjs dan@everbot.org dan
   ```
   It prints the before/after project list and is safe to re-run (idempotent).
 - Push the `task/970-...` branch (the worker pushes automatically after the task).
 - Tell Dan to sign out/in on the Emma iOS app so `AuthService` re-reads his allowlist
-  doc and the new project scope takes effect.
+  doc and the `dan` project scope takes effect.
 
 **Files changed**:
-- `scripts/grant-project-access.mjs` — new. Idempotent allowlist grant: merges a
-  project into a user's `commander_allowed_users` doc (creating it if absent), never
-  narrows an admin/unrestricted user, targets `fir-web-codelab-8ace9` by default and
-  the emulator when `FIRESTORE_EMULATOR_HOST` is set. Firebase Admin SDK is imported
-  lazily so the pure `planGrant`/`docId` helpers are importable and testable alone.
-- `scripts/grant-project-access.test.mjs` — new. 12 `node:test` cases for the merge logic.
-- `scripts/seed-emulator.mjs` — added `dan@palmr.ai` (`projects: ['sandbox']`) to the
-  allowlist and registered a `sandbox` repo, so fixtures match the intended state.
-- `package.json` — added a `test:scripts` script (`node --test scripts/*.test.mjs`).
+- `scripts/grant-project-access.mjs` — usage examples retargeted to the `dan`
+  project (and `dan@everbot.org` for the production example); added a note that the
+  `<project>` arg is the console URL slug. No logic change.
+- `scripts/grant-project-access.test.mjs` — fixture project `sandbox` → `dan`;
+  updated the expected merge result to `['dan', 'palmr-ios']` (sorted — `dan` sorts
+  before `palmr-ios`) and the already-has-it / malformed cases to match.
+- `scripts/seed-emulator.mjs` — Dan scoped to `projects: ['dan']` and the seeded repo
+  registry entry changed from `sandbox` to `dan`.
+- `FOLLOW_UP.md`, `TEST_REPORT.md` — updated to reflect the `dan` project and the
+  email-domain note.

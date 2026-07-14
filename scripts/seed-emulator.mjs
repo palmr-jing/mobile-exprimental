@@ -17,8 +17,9 @@ async function seed() {
     { email: 'test@palmr.ai', name: 'Test User', isAdmin: true, projects: null },
     { email: 'tim@palmr.ai', name: 'Tim', isAdmin: false, projects: ['palmr-ios'] },
     { email: 'jing@palmr.ai', name: 'Jing', isAdmin: false, projects: ['palmr-ios'] },
-    // Dan has the sandbox project — grant applied via scripts/grant-project-access.mjs.
-    { email: 'dan@palmr.ai', name: 'Dan', isAdmin: false, projects: ['sandbox'] },
+    // Dan has the "dan" sandbox project (https://manage.everbot.org/dan) —
+    // grant applied via scripts/grant-project-access.mjs.
+    { email: 'dan@palmr.ai', name: 'Dan', isAdmin: false, projects: ['dan'] },
   ];
   for (const p of people) {
     await db.collection('commander_allowed_users').doc(docId(p.email)).set(p);
@@ -49,8 +50,8 @@ async function seed() {
   await db.collection('commander_repo_registry').doc('palmr-ios').set({
     name: 'palmr-ios', path: '~/repos/palmr-ios', default_branch: 'main',
   });
-  await db.collection('commander_repo_registry').doc('sandbox').set({
-    name: 'sandbox', path: '~/repos/sandbox', default_branch: 'main',
+  await db.collection('commander_repo_registry').doc('dan').set({
+    name: 'dan', path: '~/repos/dan', default_branch: 'main',
   });
   await db.collection('commander_tasks').add({
     num_id: 1, project: 'palmr-ios', path: '~/repos/palmr-ios',

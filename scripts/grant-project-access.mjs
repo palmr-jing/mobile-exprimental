@@ -10,13 +10,16 @@
 //   projects == ['*'] → unrestricted
 //   projects == [...] → limited to the named projects
 //
+// The <project> argument is the project's slug — the same segment the web
+// console uses in its URL, e.g. https://manage.everbot.org/dan → slug "dan".
+//
 // Usage (production — needs Firebase Admin credentials for the target project):
 //   GOOGLE_APPLICATION_CREDENTIALS=~/keys/fir-web-codelab-8ace9.json \
-//     node scripts/grant-project-access.mjs dan@palmr.ai sandbox
+//     node scripts/grant-project-access.mjs dan@everbot.org dan
 //
 // Against the local emulator (no credentials needed):
 //   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=demo-commander \
-//     node scripts/grant-project-access.mjs dan@palmr.ai sandbox
+//     node scripts/grant-project-access.mjs dan@palmr.ai dan
 //
 // The write is idempotent and never *narrows* access: a user who is already an
 // admin or already unrestricted is left untouched (adding a scoped project to
@@ -89,7 +92,7 @@ async function main() {
   const [email, project] = process.argv.slice(2);
   if (!email || !project) {
     console.error('usage: node scripts/grant-project-access.mjs <email> <project>');
-    console.error('   e.g. node scripts/grant-project-access.mjs dan@palmr.ai sandbox');
+    console.error('   e.g. node scripts/grant-project-access.mjs dan@everbot.org dan');
     process.exit(1);
   }
   const name = process.env.NAME || nameFromEmail(email);

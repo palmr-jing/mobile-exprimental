@@ -12,7 +12,7 @@ script that writes to the Commander allowlist in Firestore; the iOS app only
   environment. To apply it:
   ```
   GOOGLE_APPLICATION_CREDENTIALS=/path/to/fir-web-codelab-8ace9-sa.json \
-    node scripts/grant-project-access.mjs dan@palmr.ai sandbox
+    node scripts/grant-project-access.mjs dan@everbot.org dan
   ```
 - **Firestore rules impact**: none. The write targets an existing collection
   (`commander_allowed_users`) already covered by `firestore.rules`; no rule change

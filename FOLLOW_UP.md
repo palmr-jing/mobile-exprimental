@@ -1,50 +1,81 @@
-# Follow-up — Task #971: read `released_recordings`, show class recordings inline
+# Follow-up — Task #1049: [iOS] Reel 30 clips doesn't play when clicked on
 
-**What was done**: Added a new **Released** tab to the signed-in app that subscribes
-to the Firestore `released_recordings` collection with a live snapshot listener and
-lists one card per released class — newest-first — with its 3 grouped camera angles
-(Front / Front-right / RealSense) playable inline. New releases from
-manage.everbot.org appear without an app change, because the listener is live.
+**What was done**: Diagnosed why the "Reel · 30 clips" card opened to a black
+frame that never played, and fixed the iOS side so it now shows a clear message
+instead of hanging silently. The reel is unplayable because of its file format
+(see root cause); iOS can't decode it natively, so the durable fix is producer-
+side and is spelled out under "Action items".
 
-**What needs review**:
-- Sign in with a real account and confirm the **Released** tab shows the live
-  "IMA Fit + Tiny Tigers" doc (jing's release) — I could not do a real Google
-  sign-in in the autonomous run, so the live read path is unverified end-to-end
-  (it mirrors the shipping `VideoService`/`FirestoreService` listener pattern).
-- Confirm inline playback of a real tokenized `download_url` on a device/simulator
-  while signed in. Firebase Storage download URLs are plain tokenized HTTPS and
-  play through `AVPlayer(url:)` with no extra entitlement, but I only exercised
-  playback against public sample MP4s via the `-MOCK_RELEASED` fixtures, not a
-  real Storage URL.
-- The Released listener reads the whole collection (no `.limit`). That's fine for
-  "one doc per class" today; if it grows large, add a `.limit(to:)` and/or paging.
-- Sort is client-side (`released_at`, falling back to `starts_at`). No composite
-  index needed. If you'd rather push the sort server-side, note that an
-  `.order(by:"released_at")` query would silently drop any doc missing that field.
+## Root cause
 
-**Action items**:
-- Push this branch (the worker pushes automatically after the task).
-- Verify the production `released_recordings` read rule (`allow read: if request.auth != null`)
-  is deployed in the commander repo — this app relies on it. The rule I added to
-  this repo's `firestore.rules` is emulator-only and is not deployed from here.
-- Release a second recording from manage.everbot.org and confirm it appears live
-  on the phone without reinstalling.
+"Reel · N clips" cards are the only reels built in the browser. In
+`everbot-manage`, `ReelEditor.jsx` → `composeUploadAndRelease()` composes the
+clips with `MediaRecorder` (`components/composeReel.js`) and uploads the result.
+The container is chosen by `pickRecorderMime()` in `components/watermark.js`,
+which prefers `video/mp4;codecs=h264` but **falls back to `video/webm`** when the
+browser can't encode H.264 — which is exactly what Chrome does. So the uploaded
+file is `wallcam/reels/<id>.webm`, and its `commander_videos.video_url` points at
+that WebM.
 
-**Files changed**:
-- `Sources/Models/ReleasedRecording.swift` — NEW. Model (`ReleasedRecording` +
-  nested `Angle`), pure Firestore parser, camera-label mapping, date/device
-  labels, newest-first sort.
-- `Sources/Services/ReleasedRecordingsService.swift` — NEW. `@MainActor`
-  `ObservableObject` with a live `released_recordings` snapshot listener; client-side
-  sort; loading/error state. Mirrors `VideoService`.
-- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — NEW. The Released
-  screen: cards (title + date + device/room), lazy tap-to-play inline `AVKit`
-  `VideoPlayer` per angle, loading/error/empty states, `-MOCK_RELEASED` fixtures.
-- `Sources/Views/RootTabView.swift` — added the 4th "Released" tab (tag 3).
-- `Sources/App/MobileCommanderApp.swift` — added `MockReleasedRoot` so the tab can
-  be screenshotted from fixtures without a live sign-in.
-- `Sources/App/TestConfig.swift` — added the `isMockReleased` (`-MOCK_RELEASED`) seam.
-- `firestore.rules` — added a `released_recordings` read/write block (emulator
-  parity only; not deployed from this repo).
-- `Tests/Unit/ReleasedRecordingTests.swift` — NEW. 10 unit tests for the parser + sort.
-- `TEST_REPORT.md`, `DEPLOY_STATUS.md` — updated for this task.
+iOS `AVPlayer`/AVFoundation has no WebM/VP9 decoder, so the tapped reel loaded a
+URL it could never render. The single-source "fighter reels" (e.g. Muay Thai)
+play fine because the Python pipeline renders those as H.264 MP4 — only the
+browser-composed multi-clip reels are affected.
+
+Second problem, iOS-only: `ReelPlayerView` never observed playback failure. It
+set `failed` only when there was no URL at all, so an undecodable-but-present URL
+sat on a black frame forever with no feedback. That's the part fixed here.
+
+## What was changed (iOS)
+
+- `ReelPlayerView` now (a) rejects known-undecodable containers by extension up
+  front with a clear message, (b) probes `AVURLAsset.isPlayable` before wiring the
+  player so any other undecodable asset also surfaces an error, and (c) observes
+  `AVPlayerItemFailedToPlayToEndTime` to catch a mid-stream failure. Any of these
+  shows "This reel isn't in a format iOS can play yet." (or the underlying error)
+  instead of a black screen.
+- `AssignedVideo.isLikelyUnsupportedFormat` — pure, unit-tested helper that reads
+  the file extension from the video URL or storage path (works past a Firebase
+  download URL's percent-encoded path + query string).
+
+This makes the app honest and unstuck. It does **not** make the WebM reel play —
+nothing on the iOS side can, without bundling a third-party VP9 decoder, which is
+not worth it.
+
+## What needs review
+
+- Confirm the message copy ("This reel isn't in a format iOS can play yet.") is
+  acceptable, or swap it for whatever product wants users to see.
+- Decide the durable fix direction (below): force MP4 at compose time vs. a
+  server-side transcode. That choice lives in the `everbot-manage` repo, not here.
+- Sanity-check the extension list in `AssignedVideo.unsupportedVideoExtensions`
+  (`webm`, `mkv`, `ogv`, `ogg`) against what the pipeline can emit.
+
+## Action items (the real fix lives in another repo)
+
+1. **`everbot-manage` — make composed reels playable on iOS.** Two options:
+   - Preferred: transcode the composed upload to H.264 MP4 server-side (a Storage-
+     triggered Cloud Function running ffmpeg) and write that MP4's URL into
+     `commander_videos.video_url`. This is the only option that works regardless of
+     which browser the admin used.
+   - Cheaper but partial: only allow "Release to app" when `pickRecorderMime()`
+     returned an MP4 mime (block/warn on WebM), so no unplayable reel is ever
+     released. Doesn't help admins on Chrome.
+   - Files: `components/watermark.js` (`pickRecorderMime`),
+     `components/ReelEditor.jsx` (`composeUploadAndRelease`).
+2. **Backfill** any WebM docs already in `commander_videos` once the transcode
+   exists (re-release, or a one-off transcode job), so previously-released reels
+   like this one become playable.
+3. Push this branch to remote (the worker does this automatically).
+
+## Files changed
+
+- `Sources/Views/Videos/ReelPlayerView.swift` — probe playability + observe
+  playback failure; show a message instead of a permanent black frame.
+- `Sources/Models/AssignedVideo.swift` — add `isLikelyUnsupportedFormat` +
+  `unsupportedVideoExtensions`.
+- `Sources/Views/Videos/VideosView.swift` — add a WebM "Reel · 30 clips" mock so
+  the bug is reproducible offline in the UITest seam.
+- `Tests/Unit/VideoTests.swift` — 2 tests for `isLikelyUnsupportedFormat`.
+- `Tests/UITests/VideosUITests.swift` — `testUnsupportedFormatReelShowsMessage`:
+  tap the WebM reel, assert the failure message, close, return to grid.

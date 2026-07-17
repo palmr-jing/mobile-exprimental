@@ -72,6 +72,31 @@ struct VideoTests {
         #expect(AssignedVideo.rotated(vids, first: vids[0]).map(\.id) == ["a", "b", "c", "d"])
     }
 
+    private func mk(videoURL: String? = nil, storagePath: String? = nil) -> AssignedVideo {
+        AssignedVideo(id: "x", kind: .reel, title: "t", videoURL: videoURL.flatMap(URL.init(string:)),
+                      storagePath: storagePath, thumbnailURL: nil, durationSeconds: nil,
+                      project: nil, sourceURL: nil, createdAt: nil)
+    }
+
+    @Test func flagsBrowserComposedWebMAsUnsupported() {
+        // A Firebase download URL keeps the extension in its percent-encoded path,
+        // past the ?alt=media&token=… query — this is the real "Reel · N clips" shape.
+        let fb = "https://firebasestorage.googleapis.com/v0/b/app.appspot.com/o/wallcam%2Freels%2Freel-1.webm?alt=media&token=abc"
+        #expect(mk(videoURL: fb).isLikelyUnsupportedFormat)
+        #expect(mk(videoURL: "https://cdn.example.com/clip.mkv").isLikelyUnsupportedFormat)
+        #expect(mk(storagePath: "wallcam/reels/reel-2.webm").isLikelyUnsupportedFormat)
+    }
+
+    @Test func doesNotFlagPlayableFormats() {
+        let fb = "https://firebasestorage.googleapis.com/v0/b/app.appspot.com/o/wallcam%2Freels%2Freel-1.mp4?alt=media&token=abc"
+        #expect(!mk(videoURL: fb).isLikelyUnsupportedFormat)
+        #expect(!mk(videoURL: "https://cdn.example.com/reel.mp4").isLikelyUnsupportedFormat)
+        #expect(!mk(videoURL: "https://cdn.example.com/reel.mov").isLikelyUnsupportedFormat)
+        #expect(!mk(storagePath: "reels/x.mp4").isLikelyUnsupportedFormat)
+        // No source at all shouldn't be treated as an unsupported format.
+        #expect(!mk().isLikelyUnsupportedFormat)
+    }
+
     @Test func rotatedMatchesByIdEvenWhenOtherFieldsDiffer() {
         func mk(_ id: String, title: String) -> AssignedVideo {
             AssignedVideo(id: id, kind: .reel, title: title, videoURL: nil, storagePath: "p",

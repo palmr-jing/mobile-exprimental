@@ -27,6 +27,22 @@ struct AssignedVideo: Identifiable, Equatable {
         return String(format: "%d:%02d", s / 60, s % 60)
     }
 
+    // Containers AVPlayer can't decode. Reels composed in the browser (the
+    // "Reel · N clips" cards from manage.everbot.org's Reel Editor) come out of
+    // Chrome's MediaRecorder as WebM/VP9 when it can't encode H.264 — iOS has no
+    // decoder for those, so they'd otherwise open to a black frame that never plays.
+    static let unsupportedVideoExtensions: Set<String> = ["webm", "mkv", "ogv", "ogg"]
+
+    // True when the playback source is a container iOS can't decode, judged by file
+    // extension. A Firebase download URL keeps the extension in its (percent-encoded)
+    // path — .../o/wallcam%2Freels%2Fid.webm?alt=media&token=… — so `pathExtension`
+    // still reads "webm" past the query string.
+    var isLikelyUnsupportedFormat: Bool {
+        let exts = [videoURL?.pathExtension, storagePath.map { ($0 as NSString).pathExtension }]
+        return exts.compactMap { $0?.lowercased() }
+            .contains { !$0.isEmpty && Self.unsupportedVideoExtensions.contains($0) }
+    }
+
     // Pure parser so the Firestore shape is unit-testable without a live snapshot.
     // Returns nil when the doc has no playable source. Field names match exactly
     // what the Reels "Release to app" action writes.

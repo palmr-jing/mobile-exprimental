@@ -76,12 +76,24 @@ struct VideosView: View {
         // where scaledToFill overflowed the cell and inflated its tap frame. A
         // bundled file loads offline in tests; real reels' thumbnails are landscape.
         let landscape = Bundle.main.url(forResource: "test-landscape", withExtension: "png")
-        return titles.indices.map { i in
+        let hosted = titles.indices.map { i in
             AssignedVideo(id: "m\(i)", kind: i % 3 == 2 ? .recording : .reel, title: titles[i],
                           videoURL: URL(string: "https://example.com/\(i).mp4"), storagePath: nil,
                           thumbnailURL: landscape, durationSeconds: durs[i], project: "mobile commander",
                           sourceURL: nil, createdAt: Date(timeIntervalSince1970: Double(10_000 - i)))
         }
+        // A browser-composed reel released as WebM (task #1049): Chrome's
+        // MediaRecorder can't encode H.264, so the "Reel · N clips" upload is
+        // WebM/VP9 — a container iOS can't decode. Opening it must show a clear
+        // message, not a black frame that never plays. Newest so it leads the grid,
+        // matching the reported screenshot.
+        let webmReel = AssignedVideo(
+            id: "webm", kind: .reel, title: "Reel · 30 clips",
+            videoURL: URL(string: "https://firebasestorage.googleapis.com/v0/b/app/o/wallcam%2Freels%2Freel-30.webm?alt=media&token=t"),
+            storagePath: "wallcam/reels/reel-30.webm", thumbnailURL: landscape,
+            durationSeconds: 90, project: "mobile commander", sourceURL: nil,
+            createdAt: Date(timeIntervalSince1970: 10_100))
+        return [webmReel] + hosted
     }()
 
     private func empty(_ icon: String, _ title: String, _ subtitle: String) -> some View {

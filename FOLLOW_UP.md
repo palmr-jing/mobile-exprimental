@@ -1,50 +1,59 @@
-# Follow-up — Task #971: read `released_recordings`, show class recordings inline
+# Follow-up — Task #1038
 
-**What was done**: Added a new **Released** tab to the signed-in app that subscribes
-to the Firestore `released_recordings` collection with a live snapshot listener and
-lists one card per released class — newest-first — with its 3 grouped camera angles
-(Front / Front-right / RealSense) playable inline. New releases from
-manage.everbot.org appear without an app change, because the listener is live.
+**What was done**: When Emma stops on a request because it took too long ("That took
+too long and I had to stop — try a narrower question."), the chat bubble now offers a
+one-tap "Turn this into a task" that files the dropped request as a `commander_tasks`
+ticket and shows the returned number ("Filed #N — tracking it there"), so the request
+is tracked instead of lost. Works in both team Chat and the private Ask Emma thread.
 
-**What needs review**:
-- Sign in with a real account and confirm the **Released** tab shows the live
-  "IMA Fit + Tiny Tigers" doc (jing's release) — I could not do a real Google
-  sign-in in the autonomous run, so the live read path is unverified end-to-end
-  (it mirrors the shipping `VideoService`/`FirestoreService` listener pattern).
-- Confirm inline playback of a real tokenized `download_url` on a device/simulator
-  while signed in. Firebase Storage download URLs are plain tokenized HTTPS and
-  play through `AVPlayer(url:)` with no extra entitlement, but I only exercised
-  playback against public sample MP4s via the `-MOCK_RELEASED` fixtures, not a
-  real Storage URL.
-- The Released listener reads the whole collection (no `.limit`). That's fine for
-  "one doc per class" today; if it grows large, add a `.limit(to:)` and/or paging.
-- Sort is client-side (`released_at`, falling back to `starts_at`). No composite
-  index needed. If you'd rather push the sort server-side, note that an
-  `.order(by:"released_at")` query would silently drop any doc missing that field.
+## Important context
+The Emma bot that actually times out and posts the dead-end reply runs on the
+**backend/worker, which is not in this iOS repo** — this app is a Firestore client.
+So the truly automatic behavior the task describes ("*Emma* files a task before
+dropping it") belongs in the Emma worker, out of reach here. What shipped is the
+iOS-side recovery: a human sees the dead end and turns it into a tracked ticket in
+one tap. Filing is idempotent (keyed by the timeout message id), so a double-tap —
+or two people/devices on the same team channel — collapse to ONE ticket rather than
+spraying duplicates. That idempotency is also why it isn't auto-fired on every
+client: auto-filing across N viewers, plus back-filling every historical timeout on
+load, would create noise; a deliberate tap avoids both.
 
-**Action items**:
-- Push this branch (the worker pushes automatically after the task).
-- Verify the production `released_recordings` read rule (`allow read: if request.auth != null`)
-  is deployed in the commander repo — this app relies on it. The rule I added to
-  this repo's `firestore.rules` is emulator-only and is not deployed from here.
-- Release a second recording from manage.everbot.org and confirm it appears live
-  on the phone without reinstalling.
+## What needs review
+- **Decision: is a one-tap button enough, or do you want it fully automatic?** If
+  automatic is required, that's a change in the Emma worker (file the task + return
+  the number in Emma's own reply). This iOS change is compatible with that — it's a
+  safety net either way.
+- **Task routing**: an Emma-dropped request isn't necessarily iOS/mobile-commander
+  work (e.g. "reduce memory usage on manage.everbot.org"). The ticket is filed into
+  the `mobile commander` project (same convention as "Report an issue"), left
+  UNassigned (auto worker, not the iOS builder), with a body that says "pick the
+  right project and re-route." Confirm that triage lane is where you want these to
+  land, or tell me a better default project/inbox.
+- **Copy**: check the button + confirmation strings in
+  `Sources/Views/Chat/MessageBubbleView.swift` (`escalationRow`) and the ticket
+  title/body in `Sources/Logic/EmmaEscalation.swift`.
+- **Detection string**: `EmmaEscalation.isTimeoutReply` matches "took too long" /
+  "had to stop". If the worker changes that copy, update this matcher (kept
+  intentionally loose so a small tweak doesn't silently disable the button).
 
-**Files changed**:
-- `Sources/Models/ReleasedRecording.swift` — NEW. Model (`ReleasedRecording` +
-  nested `Angle`), pure Firestore parser, camera-label mapping, date/device
-  labels, newest-first sort.
-- `Sources/Services/ReleasedRecordingsService.swift` — NEW. `@MainActor`
-  `ObservableObject` with a live `released_recordings` snapshot listener; client-side
-  sort; loading/error state. Mirrors `VideoService`.
-- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — NEW. The Released
-  screen: cards (title + date + device/room), lazy tap-to-play inline `AVKit`
-  `VideoPlayer` per angle, loading/error/empty states, `-MOCK_RELEASED` fixtures.
-- `Sources/Views/RootTabView.swift` — added the 4th "Released" tab (tag 3).
-- `Sources/App/MobileCommanderApp.swift` — added `MockReleasedRoot` so the tab can
-  be screenshotted from fixtures without a live sign-in.
-- `Sources/App/TestConfig.swift` — added the `isMockReleased` (`-MOCK_RELEASED`) seam.
-- `firestore.rules` — added a `released_recordings` read/write block (emulator
-  parity only; not deployed from this repo).
-- `Tests/Unit/ReleasedRecordingTests.swift` — NEW. 10 unit tests for the parser + sort.
+## Action items
+- Push the branch (worker auto-pushes) and build a TestFlight if you want it on device.
+- Human-only: decide the routing default (above) and whether to make it automatic in
+  the Emma worker.
+- Optional: add a UITest driving `emma-file-task` → `emma-filed-task` under the
+  Firebase emulator (seed a message whose text is the timeout reply). Accessibility
+  ids are already in place.
+
+## Files changed
+- `Sources/Logic/EmmaEscalation.swift` — NEW. Pure helpers: detect the timeout
+  reply, find the dropped request in the thread, deterministic idempotency doc id,
+  and the ticket title/body shape.
+- `Sources/Services/ChatService.swift` — NEW `fileDroppedEmmaTask(...)` (idempotent
+  `commander_tasks` write, returns the ticket num_id) + `nextTaskNumId()` helper.
+- `Sources/Views/Chat/MessageBubbleView.swift` — `onFileTask` hook + `escalationRow`
+  (idle → filing → filed #N → retry) shown only on Emma timeout replies.
+- `Sources/Views/Chat/ChatView.swift` — passes `onFileTask` (resolves the dropped
+  request from the team thread + channel name).
+- `Sources/Views/Chat/AskEmmaView.swift` — passes `onFileTask` for the private thread.
+- `Tests/Unit/EmmaEscalationTests.swift` — NEW, 9 cases over the pure logic.
 - `TEST_REPORT.md`, `DEPLOY_STATUS.md` — updated for this task.

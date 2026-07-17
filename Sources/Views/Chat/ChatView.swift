@@ -118,6 +118,14 @@ struct ChatView: View {
                             myHandle: chatService.myHandle,
                             onReply: { chatService.startReply(to: $0) },
                             onScrollToParent: { scrollToParent($0, proxy: proxy) },
+                            onFileTask: { msg in
+                                let req = EmmaEscalation.precedingRequest(before: msg.id, in: chatService.messages)?.text ?? ""
+                                let channelName = chatService.visibleChannels
+                                    .first(where: { $0.id == chatService.effectiveChannelId })?.name
+                                return await chatService.fileDroppedEmmaTask(
+                                    timeoutMessageId: msg.id, requestText: req, channelName: channelName
+                                )
+                            },
                             isHighlighted: message.id == highlightedId
                         )
                         .id(message.id)

@@ -12,6 +12,10 @@ struct MessageBubbleView: View {
     // Ask-Emma thread leaves these nil so the affordances simply don't appear.
     var onReply: ((ChannelMessage) -> Void)? = nil
     var onScrollToParent: ((String) -> Void)? = nil
+    // Supplied by the hosting thread (team chat and Ask Emma both pass it). When
+    // Emma stops on a request because it took too long, this files the dropped
+    // request as a task and returns its ticket number. nil hides the affordance.
+    var onFileTask: ((ChannelMessage) async -> Int?)? = nil
     // Briefly ringed when another message's quote scrolls to this one.
     var isHighlighted: Bool = false
 
@@ -19,8 +23,14 @@ struct MessageBubbleView: View {
     @State private var dragOffset: CGFloat = 0
     // A shared reel/recording opens full-screen on tap rather than autoplaying inline.
     @State private var playingURL: IdentifiableURL?
+    // Local state for the "turn this into a task" recovery on an Emma timeout.
+    @State private var fileState: FileState = .idle
+    private enum FileState: Equatable { case idle, filing, filed(Int), failed }
 
     private var isBot: Bool { message.isBot || message.authorUid == "emma-bot" }
+    // A dead-end reply Emma posts when a request took too long. Only surfaced on
+    // bot messages, so a human quoting the phrase never trips it.
+    private var isEmmaTimeout: Bool { isBot && EmmaEscalation.isTimeoutReply(message.text) }
     private var canReply: Bool { onReply != nil && !message.emmaThinking }
     // Swipe past this many points (rightward) commits the reply.
     private let replyTriggerDistance: CGFloat = 60
@@ -239,6 +249,53 @@ struct MessageBubbleView: View {
                 .font(DS.Typography.body)
                 .foregroundStyle(DS.Colors.text)
                 .textSelection(.enabled)
+        }
+        if isEmmaTimeout, onFileTask != nil {
+            escalationRow
+        }
+    }
+
+    // Recover a dropped Emma request: one tap files it as a tracked ticket and
+    // shows the number, instead of leaving the user at a dead end. Filing is
+    // idempotent (keyed by this message), so re-tapping just re-surfaces #N.
+    @ViewBuilder private var escalationRow: some View {
+        switch fileState {
+        case .idle:
+            Button {
+                fileState = .filing
+                Task {
+                    let filed = await onFileTask?(message) ?? nil
+                    fileState = filed.map(FileState.filed) ?? .failed
+                }
+            } label: {
+                Label("Turn this into a task", systemImage: "ticket")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.accent)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("emma-file-task")
+        case .filing:
+            HStack(spacing: DS.Spacing.xs) {
+                ProgressView().scaleEffect(0.7)
+                Text("Filing a task…")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.secondary)
+            }
+        case .filed(let num):
+            Label("Filed #\(num) — tracking it there", systemImage: "checkmark.circle.fill")
+                .font(DS.Typography.caption)
+                .foregroundStyle(DS.Colors.green)
+                .accessibilityIdentifier("emma-filed-task")
+        case .failed:
+            Button {
+                fileState = .idle
+            } label: {
+                Label("Couldn't file — tap to retry", systemImage: "exclamationmark.triangle")
+                    .font(DS.Typography.caption)
+                    .foregroundStyle(DS.Colors.red)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("emma-file-task-retry")
         }
     }
 

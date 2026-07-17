@@ -217,6 +217,56 @@ final class ChatService: ObservableObject {
         }
     }
 
+    // ── Recover a dropped Emma request as a task ────────────────────────────────
+
+    /// Turn a request Emma dropped (she stopped because it took too long) into a
+    /// tracked ticket in the `mobile commander` project, returning its `num_id`
+    /// so the UI can show "Filed #N". Idempotent: the task doc is keyed by the
+    /// timeout message id, so a double-tap — or two devices watching the same
+    /// thread — return the SAME ticket instead of filing duplicates. Returns nil
+    /// on failure so the caller can offer a retry.
+    func fileDroppedEmmaTask(timeoutMessageId: String, requestText: String, channelName: String?) async -> Int? {
+        let taskRef = db.collection("commander_tasks")
+            .document(EmmaEscalation.taskDocId(timeoutMessageId: timeoutMessageId))
+        do {
+            // Already filed for this dead-end? Hand back the existing number.
+            let existing = try await taskRef.getDocument()
+            if existing.exists, let n = existing.data()?["num_id"] as? Int {
+                return n
+            }
+            let nextId = try await nextTaskNumId()
+            // Deliberately unassigned (auto/any worker): an Emma-dropped request
+            // isn't necessarily iOS work, so it must not inherit the iOS builder.
+            // Project inference is Emma's job — triage re-routes from the body.
+            try await taskRef.setData([
+                "num_id": nextId,
+                "project": "mobile commander",
+                "path": "~/repos/mobile-exprimental",
+                "task": EmmaEscalation.taskTitle(request: requestText),
+                "description": EmmaEscalation.taskBody(request: requestText, channelName: channelName),
+                "status": "pending",
+                "priority": 5,
+                "depends_on": [],
+                "allow_parallel": false,
+                "source": "ios-emma-timeout",
+                "created_at": FieldValue.serverTimestamp(),
+                "updated_at": FieldValue.serverTimestamp(),
+            ])
+            return nextId
+        } catch {
+            print("ChatService.fileDroppedEmmaTask failed:", error)
+            return nil
+        }
+    }
+
+    // Fresh max(num_id)+1, read straight from Firestore rather than any in-memory
+    // list (mirrors the "Report an issue" allocation).
+    private func nextTaskNumId() async throws -> Int {
+        let snap = try await db.collection("commander_tasks")
+            .order(by: "num_id", descending: true).limit(to: 1).getDocuments()
+        return ((snap.documents.first?.data()["num_id"] as? Int) ?? 0) + 1
+    }
+
     // ── Share a released reel/recording into chat ───────────────────────────────
 
     /// Build the message payload for sharing a `commander_videos` clip into chat.

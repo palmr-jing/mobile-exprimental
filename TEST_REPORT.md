@@ -1,21 +1,34 @@
-# Test Report — Task #971 (read `released_recordings`, show class recordings)
+# Test Report — Task #1038 (Emma: file a task instead of dropping a slow request)
 
 ## Build Status
-- **Platform**: iOS Simulator — iPhone 17 Pro (iOS 26.x)
-- **Status**: BUILD SUCCEEDED (`xcodebuild build -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`)
+- **Platform**: iOS Simulator — iPhone 17 Pro
+- **Status**: BUILD SUCCEEDED + **TEST SUCCEEDED** (`xcodebuild test -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:MobileCommanderTests`)
+- Full unit target: **73 tests / 10 suites, all green.**
+
+## What changed and why it's testable
+The Emma *worker* that posts "That took too long and I had to stop — try a narrower
+question." lives on the backend, not in this repo. This iOS app is a Firestore
+client, so the fix is client-side recovery: when Emma posts that dead-end reply,
+the bubble offers a one-tap "Turn this into a task" that files the dropped request
+as a `commander_tasks` ticket and shows the returned number. The recognition,
+request-lookup, and ticket-shaping logic is pure (`EmmaEscalation`) so it's unit
+tested; the Firestore write (`ChatService.fileDroppedEmmaTask`) is exercised by the
+build compiling every call site.
 
 ## Tests
 
-### Unit Tests (`Tests/Unit/`)
-- **ReleasedRecordingTests.swift** — NEW, 10 cases covering the `released_recordings` parser + sort:
-  - `parsesReleasedClassWithGroupedAngles` — decodes plan_id/class/device and keeps all 3 camera angles grouped under one doc.
-  - `mapsCameraLabels` — `front` / `front-right` / `realsense` → `Front` / `Front-right` / `RealSense`.
-  - `nullRoomBecomesNilAndIsOmittedFromLabel` / `roomWhenPresentJoinsDeviceLabel` — `room: null` handling and the "device · room" label.
-  - `angleCountFallsBackToVideoCount` / `angleCountDecodesFromDouble` — `angle_count` as missing / Double.
-  - `invalidDownloadURLBecomesNilAngle` — empty/invalid `download_url` decodes to a nil URL (rendered as an "Unavailable" tile, not a crash).
-  - `rejectsDocWithNoClassAndNoAngles` / `keepsDocWithAnglesButNoClassLabel` — empty-doc rejection vs. angle-only survival.
-  - `sortsNewestFirstByReleasedAtThenStartsAt` — newest-first by `released_at`, falling back to `starts_at` when `released_at` is missing.
-- Other suites (AccessTests, ChatPaginationTests, ChatShareTests, PresenceTests, VideoTests, ReelExportTests, ReportIssueTests, SpeechRecognitionServiceTests) — unchanged, still pass.
+### Unit Tests (`Tests/Unit/EmmaEscalationTests.swift` — NEW, 9 cases)
+- `recognisesTheWorkerTimeoutReply` / `ignoresNormalReplies` — the "took too long / had to stop" reply is detected (case-insensitive), normal replies and empty/nil are not.
+- `precedingRequestPrefersTheAtEmmaAsk` — in a busy channel, the dropped request is the nearest earlier `@emma` message, not just the previous line.
+- `precedingRequestFallsBackToNearestHuman` — with no `@emma` tag, falls back to the nearest earlier human message.
+- `precedingRequestSkipsBotsAndMissingIds` — bot-only threads and unknown ids return nil (no crash).
+- `docIdIsDeterministicPerMessage` — `emma-timeout-<messageId>`, the idempotency key.
+- `titleStripsMentionPrefixesAndClips` — `[Emma] …` title, `@emma` stripped, 80-char clip, empty-request fallback.
+- `bodyCarriesRequestAndOrigin` — body includes the original request + origin (`#channel` or "Ask Emma"), with the `@emma` mention stripped.
+
+Other suites (AccessTests, ChatPaginationTests, ChatShareTests, PresenceTests,
+VideoTests, ReelExportTests, ReportIssueTests, ReleasedRecordingTests,
+SpeechRecognitionServiceTests) — unchanged, still pass.
 
 ## How to Run
 ```bash
@@ -25,14 +38,15 @@ SKIP_EMULATOR=1 scripts/run-tests.sh
 # Just the new suite:
 xcodebuild test -scheme MobileCommander \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:MobileCommanderTests/ReleasedRecordingTests
+  -only-testing:MobileCommanderTests/EmmaEscalationTests
 ```
 
-## Current Status
-- **Unit tests**: ALL PASS. The new `ReleasedRecordingTests` suite is 10/10 green; the full `MobileCommanderTests` target still passes.
-- **Simulator run**: launched on iPhone 17 Pro with `-MOCK_RELEASED`. The **Released** tab lists the card "IMA Fit + Tiny Tigers" (Jul 10, 2026, `everbot-lubancat-2`) with its 3 grouped angles (Front / Front-right / RealSense). Tapping a tile swaps it to an inline `VideoPlayer` — verified via Maestro tap + screenshot.
-- **Live Firestore**: NOT exercised here — that needs an interactive Google sign-in the autonomous run can't perform. The live listener path mirrors the existing, shipping `VideoService`/`FirestoreService` snapshot pattern.
-
-## Notes
-- The `FirebaseFirestore … Could not reach Cloud Firestore backend` lines during the unit run are expected: unit tests are hermetic and don't connect to a backend.
-- The `-MOCK_RELEASED` fixtures point at Google's public sample MP4s so the inline player has something to play in the simulator; production reads tokenized `download_url`s straight from Firestore.
+## Not covered here
+- **No UI test** for the button/filed states yet — driving it needs the emulator
+  seeded with an Emma timeout reply. The affordance has accessibility ids
+  (`emma-file-task`, `emma-filed-task`, `emma-file-task-retry`) so a UITest can be
+  added. Flagged in FOLLOW_UP.
+- **Live Firestore write** (`fileDroppedEmmaTask`) not exercised against a real
+  backend — needs interactive Google sign-in this autonomous run can't do. It
+  reuses the same `commander_tasks` create shape + access rule as the shipping
+  "Report an issue" flow.

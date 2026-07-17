@@ -119,7 +119,15 @@ struct AskEmmaView: View {
                     ForEach(chatService.emmaMessages) { msg in
                         MessageBubbleView(message: msg,
                                           isMine: msg.authorUid == myUid,
-                                          myHandle: chatService.myHandle)
+                                          myHandle: chatService.myHandle,
+                                          onFileTask: { m in
+                                              let req = EmmaEscalation.precedingRequest(
+                                                  before: m.id, in: chatService.emmaMessages
+                                              )?.text ?? ""
+                                              return await chatService.fileDroppedEmmaTask(
+                                                  timeoutMessageId: m.id, requestText: req, channelName: nil
+                                              )
+                                          })
                             .id(msg.id)
                     }
                     if thinking {

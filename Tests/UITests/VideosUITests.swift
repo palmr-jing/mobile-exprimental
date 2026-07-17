@@ -94,6 +94,21 @@ final class VideosUITests: XCTestCase {
         }
     }
 
+    // Reproduces task #1049: a browser-composed reel released as WebM (the "Reel ·
+    // 30 clips" card) can't be decoded by iOS AVPlayer. Opening it must surface a
+    // clear message instead of a black frame that never plays.
+    func testUnsupportedFormatReelShowsMessage() {
+        let app = launchMockVideos()
+        let card = app.staticTexts["Reel · 30 clips"]
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "grid missing the WebM reel")
+        card.tap()
+        XCTAssertTrue(app.staticTexts["reel-failed"].waitForExistence(timeout: 10),
+                      "unsupported reel didn't surface a load-failure message")
+        // The paging feed's chrome still works — the user can back out cleanly.
+        app.buttons["reel-close"].tap()
+        XCTAssertTrue(card.waitForExistence(timeout: 10), "didn't return to the grid")
+    }
+
     // The per-tab "Report an issue" button opens a sheet with the description
     // field + a captured screenshot; Report stays disabled until text is entered.
     func testReportIssueSheetOpens() {

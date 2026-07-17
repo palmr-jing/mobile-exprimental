@@ -20,7 +20,9 @@ struct ReelPlayerView: View {
 
     @State private var player: AVPlayer?
     @State private var loopObserver: NSObjectProtocol?
+    @State private var failObserver: NSObjectProtocol?
     @State private var failed = false
+    @State private var failureMessage = "Couldn't load this video"
     @State private var paused = false
 
     var body: some View {
@@ -33,8 +35,11 @@ struct ReelPlayerView: View {
             } else if failed {
                 VStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle").font(.title)
-                    Text("Couldn't load this video").font(.subheadline)
-                }.foregroundColor(.white.opacity(0.85))
+                    Text(failureMessage).font(.subheadline).multilineTextAlignment(.center)
+                        .accessibilityIdentifier("reel-failed")
+                }
+                .foregroundColor(.white.opacity(0.85))
+                .padding(.horizontal, 32)
             } else {
                 ProgressView().tint(.white)
             }
@@ -59,15 +64,50 @@ struct ReelPlayerView: View {
 
     private func load() async {
         guard player == nil, !failed else { return }
-        guard let url = await service.playbackURL(for: video) else { failed = true; return }
-        let p = AVPlayer(url: url)
+
+        // "Reel · N clips" cards are composed in the browser (MediaRecorder) and can
+        // be WebM/VP9 — a container AVPlayer can't decode. Catch that by extension
+        // up front so the user gets a clear message immediately, offline, instead of
+        // a black frame that never plays.
+        if video.isLikelyUnsupportedFormat {
+            fail("This reel isn’t in a format iOS can play yet."); return
+        }
+        guard let url = await service.playbackURL(for: video) else {
+            fail("This reel has no video to play."); return
+        }
+
+        // Probe playability before wiring the player: any other undecodable asset
+        // (a format the extension check didn't cover) still surfaces an error rather
+        // than freezing on black.
+        let asset = AVURLAsset(url: url)
+        let playable = (try? await asset.load(.isPlayable)) ?? false
+        guard !failed else { return }   // a teardown/cancel raced the probe
+        guard playable else {
+            fail("This reel isn’t in a format iOS can play yet."); return
+        }
+
+        let item = AVPlayerItem(asset: asset)
+        let p = AVPlayer(playerItem: item)
         p.isMuted = muted
         p.actionAtItemEnd = .none
         loopObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime, object: p.currentItem, queue: .main
+            forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
         ) { _ in p.seek(to: .zero); p.play() }
+        // Surface a mid-stream decode/network failure instead of freezing on a black
+        // frame — the item can start loading fine and only then fail.
+        failObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main
+        ) { note in
+            let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+            fail(err?.localizedDescription ?? "Couldn't load this video")
+        }
         player = p
         if isActive { paused = false; p.play() }
+    }
+
+    private func fail(_ message: String) {
+        failureMessage = message
+        failed = true
     }
 
     private func resume() {
@@ -84,7 +124,9 @@ struct ReelPlayerView: View {
     private func teardown() {
         player?.pause()
         if let loopObserver { NotificationCenter.default.removeObserver(loopObserver) }
+        if let failObserver { NotificationCenter.default.removeObserver(failObserver) }
         loopObserver = nil
+        failObserver = nil
         player = nil
     }
 }

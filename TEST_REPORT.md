@@ -1,38 +1,52 @@
-# Test Report — Task #971 (read `released_recordings`, show class recordings)
+# Test report — Task #1064 (tap a Released thumbnail to open + download)
 
-## Build Status
-- **Platform**: iOS Simulator — iPhone 17 Pro (iOS 26.x)
-- **Status**: BUILD SUCCEEDED (`xcodebuild build -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`)
+Run 2026-07-18/19 from `.worktrees/task-1064`, iOS 26.4 simulators.
 
-## Tests
+## Suites
 
-### Unit Tests (`Tests/Unit/`)
-- **ReleasedRecordingTests.swift** — NEW, 10 cases covering the `released_recordings` parser + sort:
-  - `parsesReleasedClassWithGroupedAngles` — decodes plan_id/class/device and keeps all 3 camera angles grouped under one doc.
-  - `mapsCameraLabels` — `front` / `front-right` / `realsense` → `Front` / `Front-right` / `RealSense`.
-  - `nullRoomBecomesNilAndIsOmittedFromLabel` / `roomWhenPresentJoinsDeviceLabel` — `room: null` handling and the "device · room" label.
-  - `angleCountFallsBackToVideoCount` / `angleCountDecodesFromDouble` — `angle_count` as missing / Double.
-  - `invalidDownloadURLBecomesNilAngle` — empty/invalid `download_url` decodes to a nil URL (rendered as an "Unavailable" tile, not a crash).
-  - `rejectsDocWithNoClassAndNoAngles` / `keepsDocWithAnglesButNoClassLabel` — empty-doc rejection vs. angle-only survival.
-  - `sortsNewestFirstByReleasedAtThenStartsAt` — newest-first by `released_at`, falling back to `starts_at` when `released_at` is missing.
-- Other suites (AccessTests, ChatPaginationTests, ChatShareTests, PresenceTests, VideoTests, ReelExportTests, ReportIssueTests, SpeechRecognitionServiceTests) — unchanged, still pass.
+| Suite | Covers | Run it |
+| --- | --- | --- |
+| `MobileCommanderTests` (Swift Testing, 80 tests) | Pure logic. New: `VideoDownloadTests` (14 cases) — container detection, Photos compatibility, saved-filename derivation. | `SKIP_EMULATOR=1 scripts/run-tests.sh` |
+| `MobileCommanderUITests/ReleasedUITests` (5 tests) | Released tab from `-MOCK_RELEASED` fixtures: cards, share sheet, and the new open-viewer / re-open / unsupported-format flows. No Firebase, no network. | `xcodebuild test -scheme MobileCommander -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -only-testing:MobileCommanderUITests/ReleasedUITests` |
+| `MobileCommanderUITests/VideosUITests` (7 tests) | Videos tab regression check. | same, `-only-testing:MobileCommanderUITests/VideosUITests` |
 
-## How to Run
-```bash
-# Unit tests only (hermetic, no emulator):
-SKIP_EMULATOR=1 scripts/run-tests.sh
+## Status: passing
 
-# Just the new suite:
-xcodebuild test -scheme MobileCommander \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:MobileCommanderTests/ReleasedRecordingTests
-```
+- Unit: **80/80 passed** (3.9s).
+- `ReleasedUITests`: **5/5 passed** on iPhone 17e **and** iPad Air 11-inch (M4).
+- `VideosUITests`: **7/7 passed** — no regression from the Released changes.
 
-## Current Status
-- **Unit tests**: ALL PASS. The new `ReleasedRecordingTests` suite is 10/10 green; the full `MobileCommanderTests` target still passes.
-- **Simulator run**: launched on iPhone 17 Pro with `-MOCK_RELEASED`. The **Released** tab lists the card "IMA Fit + Tiny Tigers" (Jul 10, 2026, `everbot-lubancat-2`) with its 3 grouped angles (Front / Front-right / RealSense). Tapping a tile swaps it to an inline `VideoPlayer` — verified via Maestro tap + screenshot.
-- **Live Firestore**: NOT exercised here — that needs an interactive Google sign-in the autonomous run can't perform. The live listener path mirrors the existing, shipping `VideoService`/`FirestoreService` snapshot pattern.
+New UITests:
 
-## Notes
-- The `FirebaseFirestore … Could not reach Cloud Firestore backend` lines during the unit run are expected: unit tests are hermetic and don't connect to a backend.
-- The `-MOCK_RELEASED` fixtures point at Google's public sample MP4s so the inline player has something to play in the simulator; production reads tokenized `download_url`s straight from Firestore.
+- `testTappingThumbnailOpensViewerWithDownload` — tap a thumbnail → viewer opens with a
+  player and an enabled "Save to Photos"; Done returns to the cards.
+- `testViewerCanBeReopenedAfterDismiss` — open/close twice, guarding the stuck-modal
+  failure that once left the Videos grid dead to taps on iPad.
+- `testUnsupportedFormatDownloadShowsMessage` — a WebM release shows the "ask for an MP4"
+  message instead of downloading a file Photos can't store. Runs offline: the format
+  guard fires before any network call or permission prompt.
+
+## Manual end-to-end check (not committed — needs network + a Photos grant)
+
+The committed tests stop short of a real download on purpose. That path was verified by
+hand on 2026-07-18 with a temporary test pointing a fixture at a live MP4:
+
+- Permission prompt appeared with the expected copy: *"Emma" would like to add to your Photos*.
+- The button progressed idle → "Saving to Photos…" → "Saved to Photos".
+- Asset confirmed on disk in the simulator's library:
+  `.../Devices/<id>/data/Media/DCIM/100APPLE/IMG_0007.MP4`, 991,017 bytes, matching the source file.
+
+The temporary test and the fixture edit were both reverted; the working tree has neither.
+
+## Notes for the next run
+
+- The `-MOCK_RELEASED` fixture URLs (`commondatastorage.googleapis.com/gtv-videos-bucket`)
+  now answer **403**, so mock tiles open to a black player. No committed test depends on
+  playback, but a manual smoke test of playback needs a live release or a fresh sample URL.
+- Another worktree (`task-1067`) drove the **same** `iPhone 17 Pro` simulator concurrently,
+  producing a bogus `VideosUITests/testReportIssueSheetOpens` failure and cross-contaminated
+  `/tmp` logs. Re-running on a dedicated device (`-destination 'name=iPhone 17e'
+  -derivedDataPath /tmp/dd-1064`) was green. When worker runs overlap, pin a distinct
+  simulator and derived-data path.
+- The `Could not reach Cloud Firestore backend` lines during the unit run are expected —
+  unit tests are hermetic.

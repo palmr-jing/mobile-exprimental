@@ -1,50 +1,55 @@
-# Follow-up — Task #971: read `released_recordings`, show class recordings inline
+# Follow-up — Task #1064 (Released tab: open a thumbnail, download it)
 
-**What was done**: Added a new **Released** tab to the signed-in app that subscribes
-to the Firestore `released_recordings` collection with a live snapshot listener and
-lists one card per released class — newest-first — with its 3 grouped camera angles
-(Front / Front-right / RealSense) playable inline. New releases from
-manage.everbot.org appear without an app change, because the listener is live.
+**What was done**: On the Released tab, tapping a camera-angle thumbnail now opens that
+recording full-size in a viewer sheet that plays it and offers "Save to Photos", which
+downloads the file to the phone's photo library. Previously a tap only started a tiny
+inline player in a ~110pt box, and there was no way to keep the video.
 
 **What needs review**:
-- Sign in with a real account and confirm the **Released** tab shows the live
-  "IMA Fit + Tiny Tigers" doc (jing's release) — I could not do a real Google
-  sign-in in the autonomous run, so the live read path is unverified end-to-end
-  (it mirrors the shipping `VideoService`/`FirestoreService` listener pattern).
-- Confirm inline playback of a real tokenized `download_url` on a device/simulator
-  while signed in. Firebase Storage download URLs are plain tokenized HTTPS and
-  play through `AVPlayer(url:)` with no extra entitlement, but I only exercised
-  playback against public sample MP4s via the `-MOCK_RELEASED` fixtures, not a
-  real Storage URL.
-- The Released listener reads the whole collection (no `.limit`). That's fine for
-  "one doc per class" today; if it grows large, add a `.limit(to:)` and/or paging.
-- Sort is client-side (`released_at`, falling back to `starts_at`). No composite
-  index needed. If you'd rather push the sort server-side, note that an
-  `.order(by:"released_at")` query would silently drop any doc missing that field.
+
+- Tapping a thumbnail should open the viewer for **that** angle — check Front / Front-right /
+  RealSense each open their own video, not the card's first one.
+- "Save to Photos" on a real released MP4: it should prompt for photo access once, show
+  "Saving to Photos…", then "Saved to Photos", and the clip should be in the Photos app.
+  Verified on the simulator against a live MP4 (see TEST_REPORT.md) but not against a real
+  Firebase Storage `download_url` — that tokenized URL path is the one thing untested end to end.
+- A WebM release shows "…can't be saved to Photos on iOS. Ask for an MP4 release of this
+  class." immediately, with no download attempt. Confirm that wording is what you want
+  testers to see — it's the message they'll report back to you.
+- The viewer is a `.sheet`, not a `.fullScreenCover`, deliberately: a fullScreenCover in
+  this app has previously refused to re-present on iPad. If you'd rather it be edge-to-edge,
+  that trade-off needs re-testing on an iPad, not just an iPhone.
+- Long downloads show a spinner with no percentage and no cancel. Fine for a ~1-minute
+  class clip on wifi; worth revisiting if released recordings get large.
 
 **Action items**:
-- Push this branch (the worker pushes automatically after the task).
-- Verify the production `released_recordings` read rule (`allow read: if request.auth != null`)
-  is deployed in the commander repo — this app relies on it. The rule I added to
-  this repo's `firestore.rules` is emulator-only and is not deployed from here.
-- Release a second recording from manage.everbot.org and confirm it appears live
-  on the phone without reinstalling.
+
+- Push the branch and open a PR (this run does not push).
+- To get it to testers: bump `CURRENT_PROJECT_VERSION` in `project.yml` (currently
+  `20260717.1`), commit that to `main`, then `ASC_ISSUER_ID=<uuid> scripts/upload-testflight.sh`.
+  Nothing was uploaded from this run.
+- Decide whether to fix the dead mock fixtures: the `-MOCK_RELEASED` sample URLs
+  (`commondatastorage.googleapis.com/gtv-videos-bucket/...`) now return **403**, so mock
+  tiles open to a black player. No test depends on playback, so this is cosmetic — but the
+  next person doing a manual smoke test will think playback is broken. Left alone rather
+  than pulling a third-party sample host into the app source.
+- If a class ever gets released as WebM for real, the fix belongs in the release pipeline
+  (transcode to H.264/MP4); the app can only explain the problem, not solve it.
 
 **Files changed**:
-- `Sources/Models/ReleasedRecording.swift` — NEW. Model (`ReleasedRecording` +
-  nested `Angle`), pure Firestore parser, camera-label mapping, date/device
-  labels, newest-first sort.
-- `Sources/Services/ReleasedRecordingsService.swift` — NEW. `@MainActor`
-  `ObservableObject` with a live `released_recordings` snapshot listener; client-side
-  sort; loading/error state. Mirrors `VideoService`.
-- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — NEW. The Released
-  screen: cards (title + date + device/room), lazy tap-to-play inline `AVKit`
-  `VideoPlayer` per angle, loading/error/empty states, `-MOCK_RELEASED` fixtures.
-- `Sources/Views/RootTabView.swift` — added the 4th "Released" tab (tag 3).
-- `Sources/App/MobileCommanderApp.swift` — added `MockReleasedRoot` so the tab can
-  be screenshotted from fixtures without a live sign-in.
-- `Sources/App/TestConfig.swift` — added the `isMockReleased` (`-MOCK_RELEASED`) seam.
-- `firestore.rules` — added a `released_recordings` read/write block (emulator
-  parity only; not deployed from this repo).
-- `Tests/Unit/ReleasedRecordingTests.swift` — NEW. 10 unit tests for the parser + sort.
-- `TEST_REPORT.md`, `DEPLOY_STATUS.md` — updated for this task.
+
+- `Sources/Logic/VideoDownload.swift` — NEW. Download-and-save-to-Photos: the container
+  guard (rejects webm/mkv/avi/… before downloading anything), add-only photo authorization,
+  and filename derivation. The decision logic is pure and unit-tested.
+- `Sources/Views/Recordings/AngleViewerView.swift` — NEW. The viewer sheet: large player,
+  angle name + class date, "Save to Photos" button with idle/saving/saved/failed states.
+- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — the thumbnail is now a
+  full-tile button that opens the viewer instead of playing inline; viewer presentation
+  hoisted to the screen root (a `.sheet` on a `LazyVStack` row silently never presents);
+  added a WebM fixture so the unsupported-format path is testable offline; stale comments
+  corrected.
+- `Tests/Unit/VideoDownloadTests.swift` — NEW, 14 cases over format/compatibility/filename.
+- `Tests/UITests/ReleasedUITests.swift` — 3 new tests: open viewer, re-open after dismiss,
+  unsupported-format message.
+- `MobileCommander.xcodeproj/project.pbxproj` — regenerated by `xcodegen` for the new files.
+- `TEST_REPORT.md`, `DEPLOY_STATUS.md`, `FOLLOW_UP.md` — replaced (they described task #971).

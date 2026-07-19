@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		028FC5B89B26FBBC6E41FBAC /* ReleasedRecordingsErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D75894A58C8983F3946239C /* ReleasedRecordingsErrorTests.swift */; };
 		0394F703B4482781994B933F /* AngleViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6AFFC71BDEF07E5BF28DCB0 /* AngleViewerView.swift */; };
 		03C38B2F424DCA71B47F1AFC /* Watermark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 423039F07E79328027E697B6 /* Watermark.swift */; };
 		07BCA8C89CC625096BFEDA13 /* ChatPagination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 634C57B56575928FEA983555 /* ChatPagination.swift */; };
@@ -133,6 +134,7 @@
 		1495690D41AED3DE18CFB6BB /* ReelPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelPlayerView.swift; sourceTree = "<group>"; };
 		15AA9CFBB8A92904A0D4ECD5 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatShareTests.swift; sourceTree = "<group>"; };
+		1D75894A58C8983F3946239C /* ReleasedRecordingsErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleasedRecordingsErrorTests.swift; sourceTree = "<group>"; };
 		1E9A1252569E280218AE528A /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
 		1FAF186111B6A31409657C63 /* VideoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoTests.swift; sourceTree = "<group>"; };
 		24300106A0235189A0CC811B /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
@@ -320,6 +322,7 @@
 				1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */,
 				CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */,
 				2A42923151A08F0B0630276E /* ReelExportTests.swift */,
+				1D75894A58C8983F3946239C /* ReleasedRecordingsErrorTests.swift */,
 				0FC003FF1988487ED972F873 /* ReleasedRecordingTests.swift */,
 				D8A747BF3C6371A04CFCD83B /* ReportIssueTests.swift */,
 				47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */,
@@ -693,6 +696,7 @@
 				55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */,
 				EC61E796C0648251EB205BEF /* ReelExportTests.swift in Sources */,
 				7E549D50AF7DE8921C7CD41F /* ReleasedRecordingTests.swift in Sources */,
+				028FC5B89B26FBBC6E41FBAC /* ReleasedRecordingsErrorTests.swift in Sources */,
 				3D3E34AFB011C7BA980687D2 /* ReportIssueTests.swift in Sources */,
 				479C3D1C385DAC5E2310A135 /* SpeechRecognitionServiceTests.swift in Sources */,
 				EE753D0D8012D5FFA24DBF9D /* VideoDownloadTests.swift in Sources */,

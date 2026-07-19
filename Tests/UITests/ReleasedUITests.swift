@@ -20,6 +20,46 @@ final class ReleasedUITests: XCTestCase {
         for _ in 0..<maxSwipes where !element.isHittable { app.swipeUp() }
     }
 
+    private func launchFailing() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UITEST", "-MOCK_RELEASED_ERROR"]
+        app.launch()
+        return app
+    }
+
+    // The reported bug (#1068, "Jing can't see anything"): the tab rendered
+    // Firestore's raw "Missing or insufficient permissions." and nothing else.
+    // The failure must now read as something a user can act on.
+    func testPermissionFailureShowsActionableMessage() {
+        let app = launchFailing()
+        XCTAssertTrue(app.staticTexts["Couldn't load recordings"].waitForExistence(timeout: 20))
+
+        let raw = app.staticTexts["Missing or insufficient permissions."]
+        XCTAssertFalse(raw.exists, "still showing the raw Firestore error string")
+
+        let retry = app.buttons["empty-state-action"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 5),
+                      "a load failure must offer a way out, not be a dead end")
+        XCTAssertEqual(retry.label, "Try again")
+    }
+
+    // Firestore permanently tears down a listener that hit permission-denied, so
+    // before this fix the tab stayed on the error for the life of the process —
+    // no tab switch, re-auth or pull could recover it. Retrying must re-subscribe
+    // and land on the recordings.
+    func testRetryAfterPermissionFailureRecoversTheList() {
+        let app = launchFailing()
+        let retry = app.buttons["empty-state-action"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 20))
+        retry.tap()
+
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20),
+                      "retry didn't recover the recordings list")
+        XCTAssertFalse(app.staticTexts["Couldn't load recordings"].exists,
+                       "error state survived a successful retry")
+        XCTAssertTrue(app.buttons["angle-play"].firstMatch.exists)
+    }
+
     func testReleasedShowsCards() {
         let app = launch()
         XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))

@@ -21,7 +21,14 @@ enum TestConfig {
 
     /// Drive the Released tab from deterministic mock fixtures so the released
     /// recordings screen is screenshot-able without Firebase. Inert in production.
-    static var isMockReleased: Bool { args.contains("-MOCK_RELEASED") }
+    /// Implied by `-MOCK_RELEASED_ERROR`, whose recovery path lands on these
+    /// same fixtures.
+    static var isMockReleased: Bool { args.contains("-MOCK_RELEASED") || isMockReleasedError }
+
+    /// Start the Released tab in the permission-denied failure state (task #1068)
+    /// so the "Couldn't load recordings" screen and its retry path are testable
+    /// offline. Tapping retry recovers to the `-MOCK_RELEASED` fixtures.
+    static var isMockReleasedError: Bool { args.contains("-MOCK_RELEASED_ERROR") }
 
     /// Inject a canned transcript instead of running SFSpeechRecognizer.
     static var useFakeVoice: Bool { args.contains("-FAKE_VOICE") }

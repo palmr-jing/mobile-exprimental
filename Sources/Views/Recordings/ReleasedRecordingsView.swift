@@ -13,17 +13,28 @@ struct ReleasedRecordingsView: View {
     // than from each thumbnail: a .sheet attached to a row inside the LazyVStack
     // silently never presents, because the row it's attached to is created lazily.
     @State private var opened: OpenAngle?
+    // Whether the injected `-MOCK_RELEASED_ERROR` failure has been retried away.
+    // Inert in production.
+    @State private var mockRetried = false
 
     private var source: [ReleasedRecording] { TestConfig.isMockReleased ? Self.mock : service.recordings }
     private var isLoading: Bool { TestConfig.isMockReleased ? false : service.isLoading }
+
+    // The failure to show instead of the list, if any.
+    private var failure: String? {
+        if TestConfig.isMockReleasedError {
+            return mockRetried ? nil : ReleasedRecordingsService.permissionDeniedMessage
+        }
+        return TestConfig.isMockReleased ? nil : service.errorMessage
+    }
 
     var body: some View {
         NavigationStack {
             Group {
                 if isLoading {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let msg = service.errorMessage, !TestConfig.isMockReleased {
-                    empty("exclamationmark.triangle", "Couldn't load recordings", msg)
+                } else if let msg = failure {
+                    errorState(msg)
                 } else if source.isEmpty {
                     empty("video.slash", "No released recordings",
                           "Class recordings released from manage.everbot.org will appear here.")
@@ -56,8 +67,27 @@ struct ReleasedRecordingsView: View {
         // The collection is readable only to a signed-in user; start once we have
         // an authenticated session (re-runs if the user changes).
         .task(id: auth.currentUser?.uid) {
-            if !TestConfig.isMockReleased, auth.currentUser != nil { service.start() }
+            if !TestConfig.isMockReleased, let uid = auth.currentUser?.uid { service.start(uid: uid) }
         }
+    }
+
+    // A load failure is recoverable, so it gets an action rather than being a
+    // dead end: Firestore kills a listener that hits permission-denied and never
+    // retries it, which used to strand this tab on the error until the app was
+    // force-quit (#1068). No container-level accessibilityIdentifier here — one
+    // would propagate down and flatten the retry button out of the query tree.
+    private func errorState(_ message: String) -> some View {
+        EmptyStateView(icon: "exclamationmark.triangle",
+                       title: "Couldn't load recordings",
+                       subtitle: message,
+                       actionLabel: "Try again",
+                       action: retry)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func retry() {
+        if TestConfig.isMockReleasedError { mockRetried = true; return }
+        service.retry()
     }
 
     // The angle the viewer sheet is showing. Identified by class + camera, which

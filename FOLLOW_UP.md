@@ -1,50 +1,89 @@
-# Follow-up — Task #971: read `released_recordings`, show class recordings inline
+# Follow-up — Task #1067: Palmr watermarks
 
-**What was done**: Added a new **Released** tab to the signed-in app that subscribes
-to the Firestore `released_recordings` collection with a live snapshot listener and
-lists one card per released class — newest-first — with its 3 grouped camera angles
-(Front / Front-right / RealSense) playable inline. New releases from
-manage.everbot.org appear without an app change, because the listener is live.
+**What was done**: Added the Palmr watermark to the app, in two places that were
+both completely unbranded: it is now burned into the pixels of every reel the app
+exports, and overlaid on the video surfaces the app displays (Released angle
+tiles, full-screen reel player). `PalmrMark` already existed as an asset but was
+only ever used as the Ask-Emma header logo.
 
-**What needs review**:
-- Sign in with a real account and confirm the **Released** tab shows the live
-  "IMA Fit + Tiny Tigers" doc (jing's release) — I could not do a real Google
-  sign-in in the autonomous run, so the live read path is unverified end-to-end
-  (it mirrors the shipping `VideoService`/`FirestoreService` listener pattern).
-- Confirm inline playback of a real tokenized `download_url` on a device/simulator
-  while signed in. Firebase Storage download URLs are plain tokenized HTTPS and
-  play through `AVPlayer(url:)` with no extra entitlement, but I only exercised
-  playback against public sample MP4s via the `-MOCK_RELEASED` fixtures, not a
-  real Storage URL.
-- The Released listener reads the whole collection (no `.limit`). That's fine for
-  "one doc per class" today; if it grows large, add a `.limit(to:)` and/or paging.
-- Sort is client-side (`released_at`, falling back to `starts_at`). No composite
-  index needed. If you'd rather push the sort server-side, note that an
-  `.order(by:"released_at")` query would silently drop any doc missing that field.
+## Read this first — the app can only watermark its own pixels
 
-**Action items**:
-- Push this branch (the worker pushes automatically after the task).
-- Verify the production `released_recordings` read rule (`allow read: if request.auth != null`)
-  is deployed in the commander repo — this app relies on it. The rule I added to
-  this repo's `firestore.rules` is emulator-only and is not deployed from here.
-- Release a second recording from manage.everbot.org and confirm it appears live
-  on the phone without reinstalling.
+There are two kinds of video here, and only one can be fixed from this repo:
 
-**Files changed**:
-- `Sources/Models/ReleasedRecording.swift` — NEW. Model (`ReleasedRecording` +
-  nested `Angle`), pure Firestore parser, camera-label mapping, date/device
-  labels, newest-first sort.
-- `Sources/Services/ReleasedRecordingsService.swift` — NEW. `@MainActor`
-  `ObservableObject` with a live `released_recordings` snapshot listener; client-side
-  sort; loading/error state. Mirrors `VideoService`.
-- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — NEW. The Released
-  screen: cards (title + date + device/room), lazy tap-to-play inline `AVKit`
-  `VideoPlayer` per angle, loading/error/empty states, `-MOCK_RELEASED` fixtures.
-- `Sources/Views/RootTabView.swift` — added the 4th "Released" tab (tag 3).
-- `Sources/App/MobileCommanderApp.swift` — added `MockReleasedRoot` so the tab can
-  be screenshotted from fixtures without a live sign-in.
-- `Sources/App/TestConfig.swift` — added the `isMockReleased` (`-MOCK_RELEASED`) seam.
-- `firestore.rules` — added a `released_recordings` read/write block (emulator
-  parity only; not deployed from this repo).
-- `Tests/Unit/ReleasedRecordingTests.swift` — NEW. 10 unit tests for the parser + sort.
-- `TEST_REPORT.md`, `DEPLOY_STATUS.md` — updated for this task.
+- **Reels the app exports** (reel editor → "Send to chat"). Rendered on-device, so
+  the watermark is now burned into the file itself and travels with it anywhere.
+  This was a real leak: before this change a plain trim exported with no branding
+  at all, because the video composition was only built when a caption was set.
+- **The released class recordings** (what the screenshot shows). These are
+  rendered upstream by the release pipeline and only *streamed* here — the app
+  never holds the file. The watermark on those tiles is a **display overlay**: it
+  brands the app's playback surface, but it is not in the file. Download the
+  `download_url` directly, or play the recording anywhere else, and there's no
+  watermark.
+
+So "nothing makes it to the app without a watermark" is now true for what the app
+produces and for what the app *shows*. Making it true of the recording files
+themselves needs a change where they're rendered (manage.everbot.org / the
+commander repo), not here. That's the main call to make — see action items.
+
+## What needs review
+
+- **Placement and size.** Bottom-right. On the Released tiles it's the glyph only
+  at ~25×19pt — those tiles are a third of a card wide and the wordmark wouldn't
+  read. See `output/released-watermarked.png` and decide whether that's prominent
+  enough or too subtle. Both are one-line changes in
+  `Sources/Design/Watermark.swift` (`markHeight`, and the `0.055` unit in
+  `drawBurnIn`).
+- **Burn-in opacity** — plate black at 32%, contents white at 95%. See
+  `output/export-watermark-burnin.png` (1080×1920) and
+  `output/exported-frame-watermarked.png` (decoded back out of a real export).
+- **Unplayable tiles get no mark.** A tile with no source URL ("Unavailable") is
+  left alone — there's no content to brand. Say if you'd rather it appear anyway.
+- **Export cost.** Every export now runs a Core Image composition pass where a
+  caption-less trim used to pass through. Not noticeable on the test clips; worth
+  checking on a long reel on an older device.
+
+## Action items
+
+- **Decide on pipeline-side watermarking for the released class recordings.** The
+  app cannot do this, and it's the part of the original complaint that isn't fully
+  addressed. If those need a burned-in watermark, file it against the repo that
+  renders them.
+- **Ship it**: bump `CURRENT_PROJECT_VERSION` in `project.yml`, `xcodegen
+  generate`, then `ASC_ISSUER_ID=<uuid> scripts/upload-testflight.sh`. I did not
+  bump or upload — that burns a build number and wasn't part of the ask.
+- **Push the branch** (`task/1067-ios-also-where-are-the-palmr-watermarks`).
+- **Unrelated, but worth knowing**: `ChatUITests` and `SignInUITests` (6 tests)
+  fail on this machine because they need the Firebase emulator and the `firebase`
+  CLI isn't installed. They fail identically without this change. `npm i -g
+  firebase-tools` if you want them running.
+- **Also unrelated**: something else on this machine was running a different app
+  ("Simple Strength") on the shared iOS simulator during this run, which produced
+  spurious crashes and false `hittable=false` readings until I moved to a
+  dedicated device. Check for other booted simulators before trusting a red UITest
+  run here.
+
+## Files changed
+
+- `Sources/Design/Watermark.swift` — NEW. One definition of the mark:
+  `PalmrWatermark` (SwiftUI) for displayed video, a `.palmrWatermark()` modifier,
+  and `drawBurnIn(canvasSize:)` (UIKit) for exported pixels. The white glyph is
+  pre-rendered into its own canvas before compositing — tinting it in place would
+  have repainted the plate underneath it.
+- `Sources/Logic/ReelExport.swift` — the video composition is now always built, so
+  no export path can skip the watermark. Caption drawing moved into the same
+  canvas (one pass, not two). The overlay is built from the first frame's real
+  extent and memoised behind a lock, since the filter handler runs concurrently.
+- `Sources/Views/Recordings/ReleasedRecordingsView.swift` — watermark on each
+  angle tile that has footage, via a `ViewModifier` rather than an `if` around the
+  tile so view identity stays stable (an identity change there would tear down a
+  playing `AVPlayer`).
+- `Sources/Views/Videos/ReelPlayerView.swift` — watermark on the full-screen
+  player, bottom-right with hit testing off so tap-to-pause still works through it.
+- `Tests/Unit/WatermarkTests.swift` — NEW. Pixel assertions plus a reusable
+  `Pixels` probe helper.
+- `Tests/Unit/ReelExportTests.swift` — 2 new cases that decode a frame back out of
+  an exported file.
+- `Tests/UITests/ReleasedUITests.swift` — 1 new case.
+- `TEST_REPORT.md`, `DEPLOY_STATUS.md` — rewritten for this task.
+- `output/*.png` — visual evidence (force-added; `*.png` is gitignored).

@@ -1,13 +1,18 @@
 import SwiftUI
-import AVKit
 
 // The Released tab: class recordings released to the app from
 // manage.everbot.org's Recordings tab (the `released_recordings` collection).
 // One card per released class, newest-first, with its grouped camera angles
-// (Front / Front-right / RealSense) playable inline.
+// (Front / Front-right / RealSense) as thumbnails. Tapping one opens it
+// full-size in AngleViewerView, where it plays large and can be saved to the
+// phone's Photos library.
 struct ReleasedRecordingsView: View {
     @EnvironmentObject private var auth: AuthService
     @StateObject private var service = ReleasedRecordingsService()
+    // The viewer is presented from ONE place at the top of the screen rather
+    // than from each thumbnail: a .sheet attached to a row inside the LazyVStack
+    // silently never presents, because the row it's attached to is created lazily.
+    @State private var opened: OpenAngle?
 
     private var source: [ReleasedRecording] { TestConfig.isMockReleased ? Self.mock : service.recordings }
     private var isLoading: Bool { TestConfig.isMockReleased ? false : service.isLoading }
@@ -26,7 +31,10 @@ struct ReleasedRecordingsView: View {
                     ScrollView {
                         LazyVStack(spacing: DS.Spacing.lg) {
                             ForEach(source) { rec in
-                                RecordingCard(recording: rec)
+                                RecordingCard(recording: rec) { angle in
+                                    opened = OpenAngle(angle: angle, className: rec.className,
+                                                       subtitle: rec.startsAtLabel)
+                                }
                             }
                         }
                         .padding(DS.Spacing.lg)
@@ -41,11 +49,24 @@ struct ReleasedRecordingsView: View {
             }
         }
         .tint(DS.Colors.accent)
+        .sheet(item: $opened) { target in
+            AngleViewerView(angle: target.angle, className: target.className,
+                            subtitle: target.subtitle)
+        }
         // The collection is readable only to a signed-in user; start once we have
         // an authenticated session (re-runs if the user changes).
         .task(id: auth.currentUser?.uid) {
             if !TestConfig.isMockReleased, auth.currentUser != nil { service.start() }
         }
+    }
+
+    // The angle the viewer sheet is showing. Identified by class + camera, which
+    // is unique across the list (one doc per class, one entry per camera).
+    struct OpenAngle: Identifiable {
+        let angle: ReleasedRecording.Angle
+        let className: String
+        let subtitle: String?
+        var id: String { "\(className)-\(angle.camera)" }
     }
 
     private func empty(_ icon: String, _ title: String, _ subtitle: String) -> some View {
@@ -55,7 +76,10 @@ struct ReleasedRecordingsView: View {
     }
 
     // Deterministic fixtures for the -MOCK_RELEASED screenshot seam (inert in
-    // production). Uses public sample MP4s so the inline players actually play.
+    // production). NOTE: the gtv-videos-bucket sample URLs below now answer 403,
+    // so these tiles open to a black player — fine for the offline UITests (they
+    // assert navigation and the format guard, never playback), but a manual
+    // smoke test of playback needs a live release or a working sample URL.
     static let mock: [ReleasedRecording] = {
         let sample = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample"
         func angle(_ camera: String, _ file: String) -> ReleasedRecording.Angle {
@@ -81,30 +105,33 @@ struct ReleasedRecordingsView: View {
                 videos: [angle("front", "ForBiggerEscapes.mp4"),
                          angle("front-right", "ForBiggerFun.mp4"),
                          angle("realsense", "ForBiggerJoyrides.mp4")]),
-            // Reproduces the "tap play, nothing ever comes up" report offline: a
-            // WebM angle iOS can't decode, plus an angle the release wrote with no
-            // URL at all. Kept LAST so the one-row geometry assertions in
-            // ReleasedUITests still read the first card's three angles.
+            // A class released as WebM. iOS can neither play nor save that
+            // container (task #1049), so the full-screen viewer must show a clear
+            // "can't play" message instead of a black frame (the ported #1063
+            // guard), and "Save to Photos" must say so up front instead of
+            // downloading the whole file and failing at the end. The second angle
+            // has no URL at all, so its tile renders "unavailable" rather than an
+            // inert black rectangle. Last in the list so it doesn't shift the
+            // other cards' geometry.
             ReleasedRecording(
-                id: "plan_3", groupKey: "g3", className: "Unsupported Format Class",
-                device: "everbot-lubancat-1", room: nil,
+                id: "plan_3", groupKey: "g3", className: "Kids BJJ (WebM release)",
+                device: "everbot-lubancat-3", room: nil,
                 startsAt: Date(timeIntervalSince1970: 1_783_500_000),
                 releasedAt: Date(timeIntervalSince1970: 1_783_501_000),
                 releasedBy: "jing@everbot.org", angleCount: 2,
-                videos: [
-                    .init(camera: "front", storagePath: "recordings/front.webm",
-                          downloadURL: URL(string: "\(sample)/front.webm")),
-                    .init(camera: "realsense", storagePath: nil, downloadURL: nil),
-                ]),
+                videos: [.init(camera: "front", storagePath: "recordings/kids-bjj.webm",
+                               downloadURL: URL(string: "https://firebasestorage.googleapis.com/v0/b/app/o/recordings%2Fkids-bjj.webm?alt=media&token=t")),
+                         .init(camera: "realsense", storagePath: nil, downloadURL: nil)]),
         ]
     }()
 }
 
 // One released class: title + date + device/room, with its grouped camera angles
-// stacked below as tap-to-play inline players. The 3 angles stay together under
+// below as thumbnails that open the viewer. The 3 angles stay together under
 // this single card (they're already one doc).
 private struct RecordingCard: View {
     let recording: ReleasedRecording
+    let onOpenAngle: (ReleasedRecording.Angle) -> Void
     @EnvironmentObject private var chatService: ChatService
     @State private var sharing = false
 
@@ -147,7 +174,7 @@ private struct RecordingCard: View {
                     // All angles in a single row — three compact tiles side by side.
                     HStack(alignment: .top, spacing: DS.Spacing.sm) {
                         ForEach(recording.videos) { angle in
-                            AnglePlayer(angle: angle)
+                            AngleThumbnail(angle: angle) { onOpenAngle(angle) }
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -174,25 +201,14 @@ private struct RecordingCard: View {
     }
 }
 
-// A single camera angle: a labeled 16:9 tile that plays inline on tap. The
-// AVPlayer is created lazily (only when tapped), so a card with three angles —
-// and a list of many cards — doesn't spin up dozens of players up front.
-//
-// Tapping play does NOT hand the URL straight to AVPlayer. A released angle can
-// be undecodable (the browser-side release pipeline can emit WebM/VP9, which iOS
-// has no decoder for) or its tokenized Storage URL can be expired/403, and an
-// AVPlayer pointed at either just renders black forever with no feedback — the
-// "click on videos and they don't load or come up" report. So the tap runs the
-// same sequence the reel player got in #1049: reject known-bad containers by
-// extension, probe `isPlayable`, then watch for a mid-stream failure. Every
-// path ends in either a playing video or a message, never a silent black tile.
-private struct AnglePlayer: View {
+// A single camera angle: a labeled 16:9 poster tile. Tapping ANYWHERE on the
+// tile opens the angle full-size in AngleViewerView, where it plays large and
+// can be saved to the phone's Photos library — rather than playing inline in a
+// ~110pt-wide box, which is too small to watch and offers nowhere to put a
+// download action. A nil/invalid URL renders a disabled "unavailable" tile.
+private struct AngleThumbnail: View {
     let angle: ReleasedRecording.Angle
-    @State private var player: AVPlayer?
-    @State private var failObserver: NSObjectProtocol?
-    @State private var failed = false
-    @State private var failureMessage = "Couldn't load this angle"
-    @State private var loading = false
+    let onTap: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -201,123 +217,75 @@ private struct AnglePlayer: View {
                 .foregroundStyle(DS.Colors.secondary)
                 .lineLimit(1)
 
-            ZStack {
-                RoundedRectangle(cornerRadius: DS.Radius.sm).fill(Color.black)
+            tile
+        }
+    }
 
-                // Poster behind the play glyph (nil until the release pipeline
-                // writes thumbnail_url). scaledToFill is clipped below so it can't
-                // inflate the tile's frame and overlap its neighbours in the row.
-                if player == nil, let t = angle.thumbnailURL {
-                    AsyncImage(url: t) { img in
-                        img.resizable().scaledToFill()
-                    } placeholder: { Color.black }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                }
+    // A real Button (not a tap gesture) so XCUITest sees `app.buttons[...]`,
+    // matching the Videos grid's thumbnail cells.
+    @ViewBuilder
+    private var tile: some View {
+        if angle.downloadURL == nil {
+            poster
+                .accessibilityIdentifier("angle-unavailable")
+        } else {
+            Button(action: onTap) { poster }
+                .buttonStyle(.plain)
+                // The whole tile is the tap target, not just the 26pt glyph.
+                .contentShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                .accessibilityIdentifier("angle-play")
+        }
+    }
 
-                if let player {
-                    VideoPlayer(player: player)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-                        .accessibilityIdentifier("angle-player")
-                } else if failed {
-                    // The tile is small, so the message is terse and the full text
-                    // rides on the accessibility label for UITests + VoiceOver.
-                    // Tap to retry: "couldn't load" can be a transient network blip,
-                    // and without this the tile stays stuck on the error. A genuine
-                    // format failure just re-fails instantly with the same message.
-                    VStack(spacing: 2) {
-                        Image(systemName: "exclamationmark.triangle.fill").font(.caption)
-                        Text(failureMessage)
-                            .font(.system(size: 9))
-                            .multilineTextAlignment(.center)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.8)
-                    }
-                    .foregroundStyle(.white.opacity(0.85))
-                    .padding(.horizontal, 4)
-                    .contentShape(Rectangle())
-                    .onTapGesture { failed = false; Task { await load() } }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("angle-failed")
-                } else if loading {
-                    ProgressView().tint(.white).accessibilityIdentifier("angle-loading")
-                } else if angle.downloadURL == nil {
-                    // No source at all — say so in words. A bare glyph on a black
-                    // tile reads as "the app is broken" rather than "this angle
-                    // wasn't released".
-                    VStack(spacing: 2) {
-                        Image(systemName: "video.slash").font(.caption)
-                        Text("Not available").font(.system(size: 9))
-                    }
-                    .foregroundStyle(.white.opacity(0.8))
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("angle-unavailable")
-                } else {
-                    Button { Task { await load() } } label: {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 26))
-                            .foregroundStyle(.white.opacity(0.9))
-                            .shadow(radius: 3)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("angle-play")
-                }
+    private var poster: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: DS.Radius.sm).fill(Color.black)
+
+            // Poster behind the play glyph (nil until the release pipeline
+            // writes thumbnail_url). scaledToFill is clipped below so it can't
+            // inflate the tile's frame and overlap its neighbours in the row.
+            if let t = angle.thumbnailURL {
+                AsyncImage(url: t) { img in
+                    img.resizable().scaledToFill()
+                } placeholder: { Color.black }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
             }
-            .clipped()
-            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+
+            if angle.downloadURL == nil {
+                Image(systemName: "video.slash")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.8))
+            } else {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 26))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .shadow(radius: 3)
+            }
         }
-        .onDisappear(perform: teardown)
+        // .clipped() constrains layout AND hit-testing to the tile, so a
+        // scaledToFill poster can't inflate the frame and swallow taps meant
+        // for the neighbouring angle (the iPad bug fixed in the Videos grid).
+        .clipped()
+        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        // Brand the tile whenever it holds real footage — poster, or playing.
+        // Compact (mark only): these tiles are a third of the card wide, too
+        // narrow for the wordmark to read. (#1067)
+        .modifier(TileWatermark(show: angle.downloadURL != nil))
     }
+}
 
-    @MainActor
-    private func load() async {
-        guard player == nil, !loading else { return }
-        guard let url = angle.downloadURL else {
-            fail("Not available"); return
+// Applies the watermark only to tiles that actually hold footage — an
+// "unavailable" tile has nothing to brand. A modifier rather than an `if` around
+// the tile so both branches keep the same view identity. (#1067)
+private struct TileWatermark: ViewModifier {
+    let show: Bool
+
+    func body(content: Content) -> some View {
+        if show {
+            content.palmrWatermark(.compact, inset: 4)
+        } else {
+            content
         }
-
-        // Catch a container iOS can't decode by extension first: it's instant and
-        // works offline, so the user gets the real reason immediately.
-        if angle.isLikelyUnsupportedFormat {
-            fail("Format not supported on iOS"); return
-        }
-
-        loading = true
-        // Probe before wiring the player so anything else undecodable — or an
-        // expired/denied Storage token — surfaces a message instead of black.
-        let asset = AVURLAsset(url: url)
-        let playable = (try? await asset.load(.isPlayable)) ?? false
-        guard loading else { return }   // a teardown raced the probe
-        loading = false
-        guard playable else {
-            fail("Couldn't load this angle"); return
-        }
-
-        let item = AVPlayerItem(asset: asset)
-        let p = AVPlayer(playerItem: item)
-        // An item can start loading fine and only then fail mid-stream; without
-        // this the tile would freeze on a black frame with no explanation.
-        failObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main
-        ) { _ in
-            teardown()
-            fail("Couldn't load this angle")
-        }
-        player = p
-        p.play()
-    }
-
-    private func fail(_ message: String) {
-        failureMessage = message
-        failed = true
-        loading = false
-    }
-
-    private func teardown() {
-        player?.pause()
-        if let failObserver { NotificationCenter.default.removeObserver(failObserver) }
-        failObserver = nil
-        player = nil
-        loading = false
     }
 }

@@ -217,7 +217,13 @@ private struct AngleThumbnail: View {
                 .foregroundStyle(DS.Colors.secondary)
                 .lineLimit(1)
 
+            // Brand the tile whenever it holds real footage — poster, or playing.
+            // Compact (mark only): these tiles are a third of the card wide, too
+            // narrow for the wordmark to read. Applied OUTSIDE the tap Button so
+            // the mark surfaces as its own accessibility element (a watermark
+            // buried inside a Button's label is flattened into the button). (#1067)
             tile
+                .modifier(TileWatermark(show: angle.downloadURL != nil))
         }
     }
 
@@ -268,10 +274,6 @@ private struct AngleThumbnail: View {
         // for the neighbouring angle (the iPad bug fixed in the Videos grid).
         .clipped()
         .aspectRatio(16.0 / 9.0, contentMode: .fit)
-        // Brand the tile whenever it holds real footage — poster, or playing.
-        // Compact (mark only): these tiles are a third of the card wide, too
-        // narrow for the wordmark to read. (#1067)
-        .modifier(TileWatermark(show: angle.downloadURL != nil))
     }
 }
 

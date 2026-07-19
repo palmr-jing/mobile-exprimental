@@ -81,6 +81,21 @@ struct ReleasedRecordingsView: View {
                 videos: [angle("front", "ForBiggerEscapes.mp4"),
                          angle("front-right", "ForBiggerFun.mp4"),
                          angle("realsense", "ForBiggerJoyrides.mp4")]),
+            // Reproduces the "tap play, nothing ever comes up" report offline: a
+            // WebM angle iOS can't decode, plus an angle the release wrote with no
+            // URL at all. Kept LAST so the one-row geometry assertions in
+            // ReleasedUITests still read the first card's three angles.
+            ReleasedRecording(
+                id: "plan_3", groupKey: "g3", className: "Unsupported Format Class",
+                device: "everbot-lubancat-1", room: nil,
+                startsAt: Date(timeIntervalSince1970: 1_783_500_000),
+                releasedAt: Date(timeIntervalSince1970: 1_783_501_000),
+                releasedBy: "jing@everbot.org", angleCount: 2,
+                videos: [
+                    .init(camera: "front", storagePath: "recordings/front.webm",
+                          downloadURL: URL(string: "\(sample)/front.webm")),
+                    .init(camera: "realsense", storagePath: nil, downloadURL: nil),
+                ]),
         ]
     }()
 }
@@ -161,11 +176,23 @@ private struct RecordingCard: View {
 
 // A single camera angle: a labeled 16:9 tile that plays inline on tap. The
 // AVPlayer is created lazily (only when tapped), so a card with three angles —
-// and a list of many cards — doesn't spin up dozens of players up front. A
-// nil/invalid URL renders a disabled "unavailable" tile instead of crashing.
+// and a list of many cards — doesn't spin up dozens of players up front.
+//
+// Tapping play does NOT hand the URL straight to AVPlayer. A released angle can
+// be undecodable (the browser-side release pipeline can emit WebM/VP9, which iOS
+// has no decoder for) or its tokenized Storage URL can be expired/403, and an
+// AVPlayer pointed at either just renders black forever with no feedback — the
+// "click on videos and they don't load or come up" report. So the tap runs the
+// same sequence the reel player got in #1049: reject known-bad containers by
+// extension, probe `isPlayable`, then watch for a mid-stream failure. Every
+// path ends in either a playing video or a message, never a silent black tile.
 private struct AnglePlayer: View {
     let angle: ReleasedRecording.Angle
     @State private var player: AVPlayer?
+    @State private var failObserver: NSObjectProtocol?
+    @State private var failed = false
+    @State private var failureMessage = "Couldn't load this angle"
+    @State private var loading = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -192,12 +219,41 @@ private struct AnglePlayer: View {
                     VideoPlayer(player: player)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                         .accessibilityIdentifier("angle-player")
+                } else if failed {
+                    // The tile is small, so the message is terse and the full text
+                    // rides on the accessibility label for UITests + VoiceOver.
+                    // Tap to retry: "couldn't load" can be a transient network blip,
+                    // and without this the tile stays stuck on the error. A genuine
+                    // format failure just re-fails instantly with the same message.
+                    VStack(spacing: 2) {
+                        Image(systemName: "exclamationmark.triangle.fill").font(.caption)
+                        Text(failureMessage)
+                            .font(.system(size: 9))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .foregroundStyle(.white.opacity(0.85))
+                    .padding(.horizontal, 4)
+                    .contentShape(Rectangle())
+                    .onTapGesture { failed = false; Task { await load() } }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("angle-failed")
+                } else if loading {
+                    ProgressView().tint(.white).accessibilityIdentifier("angle-loading")
                 } else if angle.downloadURL == nil {
-                    Image(systemName: "video.slash")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.8))
+                    // No source at all — say so in words. A bare glyph on a black
+                    // tile reads as "the app is broken" rather than "this angle
+                    // wasn't released".
+                    VStack(spacing: 2) {
+                        Image(systemName: "video.slash").font(.caption)
+                        Text("Not available").font(.system(size: 9))
+                    }
+                    .foregroundStyle(.white.opacity(0.8))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("angle-unavailable")
                 } else {
-                    Button(action: play) {
+                    Button { Task { await load() } } label: {
                         Image(systemName: "play.circle.fill")
                             .font(.system(size: 26))
                             .foregroundStyle(.white.opacity(0.9))
@@ -210,12 +266,58 @@ private struct AnglePlayer: View {
             .clipped()
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
         }
+        .onDisappear(perform: teardown)
     }
 
-    private func play() {
-        guard let url = angle.downloadURL else { return }
-        let p = AVPlayer(url: url)
+    @MainActor
+    private func load() async {
+        guard player == nil, !loading else { return }
+        guard let url = angle.downloadURL else {
+            fail("Not available"); return
+        }
+
+        // Catch a container iOS can't decode by extension first: it's instant and
+        // works offline, so the user gets the real reason immediately.
+        if angle.isLikelyUnsupportedFormat {
+            fail("Format not supported on iOS"); return
+        }
+
+        loading = true
+        // Probe before wiring the player so anything else undecodable — or an
+        // expired/denied Storage token — surfaces a message instead of black.
+        let asset = AVURLAsset(url: url)
+        let playable = (try? await asset.load(.isPlayable)) ?? false
+        guard loading else { return }   // a teardown raced the probe
+        loading = false
+        guard playable else {
+            fail("Couldn't load this angle"); return
+        }
+
+        let item = AVPlayerItem(asset: asset)
+        let p = AVPlayer(playerItem: item)
+        // An item can start loading fine and only then fail mid-stream; without
+        // this the tile would freeze on a black frame with no explanation.
+        failObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main
+        ) { _ in
+            teardown()
+            fail("Couldn't load this angle")
+        }
         player = p
         p.play()
+    }
+
+    private func fail(_ message: String) {
+        failureMessage = message
+        failed = true
+        loading = false
+    }
+
+    private func teardown() {
+        player?.pause()
+        if let failObserver { NotificationCenter.default.removeObserver(failObserver) }
+        failObserver = nil
+        player = nil
+        loading = false
     }
 }

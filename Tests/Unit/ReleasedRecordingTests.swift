@@ -89,6 +89,42 @@ struct ReleasedRecordingTests {
         #expect(r?.videos.count == 1)
     }
 
+    // A released angle can be a container iOS has no decoder for (the browser-side
+    // release pipeline emits WebM/VP9 when it can't encode H.264). Detecting that
+    // by extension is what lets the tile show a reason instead of a black frame.
+    @Test func flagsWebMAngleAsUnsupported() {
+        let a = ReleasedRecording.Angle(camera: "front", storagePath: nil,
+                                        downloadURL: URL(string: "https://e.com/a.webm"))
+        #expect(a.isLikelyUnsupportedFormat)
+    }
+
+    @Test func treatsMP4AngleAsSupported() {
+        let a = ReleasedRecording.Angle(camera: "front", storagePath: "recordings/a.mp4",
+                                        downloadURL: URL(string: "https://e.com/a.mp4"))
+        #expect(!a.isLikelyUnsupportedFormat)
+    }
+
+    // Firebase download URLs percent-encode the path and append a query string;
+    // the extension must still be readable through both.
+    @Test func readsExtensionThroughFirebaseDownloadURL() {
+        let url = URL(string: "https://firebasestorage.googleapis.com/v0/b/x/o/"
+                      + "recordings%2Fclass%2Ffront.webm?alt=media&token=abc-123")
+        let a = ReleasedRecording.Angle(camera: "front", storagePath: nil, downloadURL: url)
+        #expect(a.isLikelyUnsupportedFormat)
+    }
+
+    // Falls back to storage_path when the doc has no download_url yet.
+    @Test func fallsBackToStoragePathExtension() {
+        let a = ReleasedRecording.Angle(camera: "front", storagePath: "recordings/a.mkv",
+                                        downloadURL: nil)
+        #expect(a.isLikelyUnsupportedFormat)
+    }
+
+    @Test func angleWithNoSourceIsNotFlaggedAsUnsupported() {
+        let a = ReleasedRecording.Angle(camera: "front", storagePath: nil, downloadURL: nil)
+        #expect(!a.isLikelyUnsupportedFormat)
+    }
+
     @Test func sortsNewestFirstByReleasedAtThenStartsAt() {
         func mk(_ id: String, released: TimeInterval?, starts: TimeInterval?) -> ReleasedRecording {
             ReleasedRecording(

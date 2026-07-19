@@ -30,6 +30,18 @@ struct ReleasedRecording: Identifiable, Equatable {
         // Stable within a doc: the producer emits one entry per camera.
         var id: String { camera }
 
+        // True when the source is a container iOS can't decode, judged by file
+        // extension — same check (and same shared extension list) the reel player
+        // uses. A Firebase download URL keeps the extension in its percent-encoded
+        // path, .../o/recordings%2Ffront.webm?alt=media&token=…, so `pathExtension`
+        // still reads "webm" past the query string.
+        var isLikelyUnsupportedFormat: Bool {
+            let exts = [downloadURL?.pathExtension,
+                        storagePath.map { ($0 as NSString).pathExtension }]
+            return exts.compactMap { $0?.lowercased() }
+                .contains { !$0.isEmpty && AssignedVideo.unsupportedVideoExtensions.contains($0) }
+        }
+
         // Human label for the camera. Falls back to a title-cased raw value so an
         // unexpected camera name still renders sensibly.
         var displayName: String {

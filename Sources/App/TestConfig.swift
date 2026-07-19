@@ -23,6 +23,12 @@ enum TestConfig {
     /// recordings screen is screenshot-able without Firebase. Inert in production.
     static var isMockReleased: Bool { args.contains("-MOCK_RELEASED") }
 
+    /// Force the Released tab into its "couldn't load" error state so the retry
+    /// path is UITestable offline — the reported #1070 failure was that this
+    /// state had no way out. Combine with -MOCK_RELEASED: tapping "Try again"
+    /// clears it and the fixtures render. Inert in production.
+    static var isMockReleasedError: Bool { args.contains("-MOCK_RELEASED_ERROR") }
+
     /// Inject a canned transcript instead of running SFSpeechRecognizer.
     static var useFakeVoice: Bool { args.contains("-FAKE_VOICE") }
     static var fakeVoiceTranscript: String { value(for: "-FAKE_VOICE_TRANSCRIPT") ?? "test dictation" }

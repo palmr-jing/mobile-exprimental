@@ -78,6 +78,7 @@
 		BCFE13C94DC340540746131C /* ShareToChatSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8205E8D431A5BE893022FC /* ShareToChatSheet.swift */; };
 		C2B3D80FCF26ACD2E0BFEF4C /* SignInUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F5C3C386D05351E9EF308A /* SignInUITests.swift */; };
 		C768436FF97FFD66D70777BD /* Access.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF5DA4D48024E07C8D6E1122 /* Access.swift */; };
+		C7A1CE536AC131D14A01180A /* ListenerGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86CDC9EFA55036F698DDE17 /* ListenerGate.swift */; };
 		CBC33E2B9264E411D535BFB0 /* ReleasedRecordingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBF5882B4260E18B5768302 /* ReleasedRecordingsView.swift */; };
 		CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE92C9AA042B981A92E1F41A /* LoginView.swift */; };
 		D0BE51B3B8534633781ECC45 /* ReelExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C8ABBE399379829A118AC2 /* ReelExport.swift */; };
@@ -88,6 +89,7 @@
 		E311EE63FFA165E548EDBBEC /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D2C4E686452B36CB8FBDC68 /* SpeechService.swift */; };
 		E461BE853D381D6D399CECA4 /* NotificationBell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308A8B6DCACA137B7F76E423 /* NotificationBell.swift */; };
 		E779E7E3DFEA7DD3C3AC5B4E /* ReleasedRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EA8CAC699390852CCBD866 /* ReleasedRecording.swift */; };
+		E92774B72D59F13CAA227919 /* ListenerGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD4E75A18F617C13BA669928 /* ListenerGateTests.swift */; };
 		EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */; };
 		EC61E796C0648251EB205BEF /* ReelExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A42923151A08F0B0630276E /* ReelExportTests.swift */; };
 		EE753D0D8012D5FFA24DBF9D /* VideoDownloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C851EF18EB9536245D7498D6 /* VideoDownloadTests.swift */; };
@@ -188,12 +190,14 @@
 		B6AFFC71BDEF07E5BF28DCB0 /* AngleViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AngleViewerView.swift; sourceTree = "<group>"; };
 		BA8205E8D431A5BE893022FC /* ShareToChatSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareToChatSheet.swift; sourceTree = "<group>"; };
 		BB596265733DE9F91A8E46AE /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
+		BD4E75A18F617C13BA669928 /* ListenerGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListenerGateTests.swift; sourceTree = "<group>"; };
 		BE92C9AA042B981A92E1F41A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		BF5DA4D48024E07C8D6E1122 /* Access.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Access.swift; sourceTree = "<group>"; };
 		C174C727A828D616491518C1 /* VideoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoService.swift; sourceTree = "<group>"; };
 		C2EEA4D4B1516D417164E908 /* AccessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessTests.swift; sourceTree = "<group>"; };
 		C838B1AA4508B05B974B7C30 /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
 		C851EF18EB9536245D7498D6 /* VideoDownloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDownloadTests.swift; sourceTree = "<group>"; };
+		C86CDC9EFA55036F698DDE17 /* ListenerGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListenerGate.swift; sourceTree = "<group>"; };
 		C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
 		CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceTests.swift; sourceTree = "<group>"; };
 		CEDCD4D7F25722D64FA527B0 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
@@ -269,6 +273,7 @@
 			children = (
 				BF5DA4D48024E07C8D6E1122 /* Access.swift */,
 				634C57B56575928FEA983555 /* ChatPagination.swift */,
+				C86CDC9EFA55036F698DDE17 /* ListenerGate.swift */,
 				B19949C9D327B6062BBEEDF0 /* Presence.swift */,
 				70C8ABBE399379829A118AC2 /* ReelExport.swift */,
 				9E1D591037921CE269AFE7F6 /* VideoDownload.swift */,
@@ -318,6 +323,7 @@
 				C2EEA4D4B1516D417164E908 /* AccessTests.swift */,
 				D978EE162A42A4F0B2A5EB93 /* ChatPaginationTests.swift */,
 				1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */,
+				BD4E75A18F617C13BA669928 /* ListenerGateTests.swift */,
 				CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */,
 				2A42923151A08F0B0630276E /* ReelExportTests.swift */,
 				0FC003FF1988487ED972F873 /* ReleasedRecordingTests.swift */,
@@ -632,6 +638,7 @@
 				95A43C9BC9C29C67DCEEFC92 /* DesignSystem.swift in Sources */,
 				478CB0FCB2E4A8A8F73EFB80 /* DeveloperTabView.swift in Sources */,
 				16D43CB1B0A61BA5273A0289 /* FirestoreService.swift in Sources */,
+				C7A1CE536AC131D14A01180A /* ListenerGate.swift in Sources */,
 				CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */,
 				7F2F4B9D5E5F69463159D171 /* MentionAutocompleteView.swift in Sources */,
 				2D7797AE2372091D94CD291D /* MessageBubbleView.swift in Sources */,
@@ -690,6 +697,7 @@
 				FC6D7DEBCAFD222E20926F17 /* AccessTests.swift in Sources */,
 				F6907302C350BADEA264CD61 /* ChatPaginationTests.swift in Sources */,
 				AF6E814BFC9F507EAB5E4E81 /* ChatShareTests.swift in Sources */,
+				E92774B72D59F13CAA227919 /* ListenerGateTests.swift in Sources */,
 				55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */,
 				EC61E796C0648251EB205BEF /* ReelExportTests.swift in Sources */,
 				7E549D50AF7DE8921C7CD41F /* ReleasedRecordingTests.swift in Sources */,

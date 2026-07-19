@@ -78,6 +78,7 @@
 		BCFE13C94DC340540746131C /* ShareToChatSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8205E8D431A5BE893022FC /* ShareToChatSheet.swift */; };
 		C2B3D80FCF26ACD2E0BFEF4C /* SignInUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F5C3C386D05351E9EF308A /* SignInUITests.swift */; };
 		C768436FF97FFD66D70777BD /* Access.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF5DA4D48024E07C8D6E1122 /* Access.swift */; };
+		C88DB4D05BDA547F6C4DD382 /* test-angle.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 69A35F2BBD951645AC7C8644 /* test-angle.mp4 */; };
 		CBC33E2B9264E411D535BFB0 /* ReleasedRecordingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBF5882B4260E18B5768302 /* ReleasedRecordingsView.swift */; };
 		CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE92C9AA042B981A92E1F41A /* LoginView.swift */; };
 		D0BE51B3B8534633781ECC45 /* ReelExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C8ABBE399379829A118AC2 /* ReelExport.swift */; };
@@ -161,6 +162,7 @@
 		646C45799112F5E05BBD5CAD /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
 		66698EA5021CF2CBBC9D7F4B /* MobileCommanderTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MobileCommanderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6732BFF9392E87268330E337 /* VideoFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoFeedView.swift; sourceTree = "<group>"; };
+		69A35F2BBD951645AC7C8644 /* test-angle.mp4 */ = {isa = PBXFileReference; path = "test-angle.mp4"; sourceTree = "<group>"; };
 		70C8ABBE399379829A118AC2 /* ReelExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelExport.swift; sourceTree = "<group>"; };
 		70C9190DD3288483A1C8431B /* MentionAutocompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionAutocompleteView.swift; sourceTree = "<group>"; };
 		71B63D362C774253E6EA77BE /* MessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleView.swift; sourceTree = "<group>"; };
@@ -243,6 +245,7 @@
 			children = (
 				0A7809AA71F47C8B7C15CC08 /* Assets.xcassets */,
 				DA0A87C3BCF9883A3F744F1A /* GoogleService-Info.plist */,
+				69A35F2BBD951645AC7C8644 /* test-angle.mp4 */,
 				01CCCAA881AD0F6A7ACBDA8F /* test-landscape.png */,
 			);
 			path = Resources;
@@ -590,6 +593,7 @@
 			files = (
 				92E7E5426B90EC57DAE44185 /* Assets.xcassets in Resources */,
 				FE0130D64E517F2B2734E9EB /* GoogleService-Info.plist in Resources */,
+				C88DB4D05BDA547F6C4DD382 /* test-angle.mp4 in Resources */,
 				24BEAFEBD25C33E1E22E6E65 /* test-landscape.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

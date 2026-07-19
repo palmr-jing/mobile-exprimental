@@ -74,6 +74,39 @@ final class ReleasedUITests: XCTestCase {
                       "a source-less angle rendered with no explanation")
     }
 
+    // The #1072 report: a Released video opened full-size carried no Palmr
+    // branding at all — #1067 reached the tiles and the reel export but not this
+    // surface, which is the one you actually watch a class on. Uses the first
+    // card's MP4 angle (the WebM fixture resolves to the "can't play" message,
+    // which is deliberately NOT branded — it isn't video).
+    func testFullSizeViewerIsWatermarked() {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))
+        app.buttons["angle-play"].firstMatch.tap()
+
+        let player = app.descendants(matching: .any).matching(identifier: "angle-player").firstMatch
+        XCTAssertTrue(player.waitForExistence(timeout: 15), "viewer didn't reach a player")
+
+        let mark = app.descendants(matching: .any).matching(identifier: "palmr-watermark").firstMatch
+        XCTAssertTrue(mark.waitForExistence(timeout: 10),
+                      "a Released video played full-size with no Palmr watermark")
+
+        // Bottom-trailing of the player, as manage stamps its reels.
+        XCTAssertGreaterThan(mark.frame.midX, player.frame.midX, "mark should sit on the trailing side")
+        XCTAssertGreaterThan(mark.frame.midY, player.frame.midY, "mark should sit near the bottom")
+        // Inside the video, not floating in the sheet's padding below it.
+        XCTAssertLessThanOrEqual(mark.frame.maxY, player.frame.maxY + 1,
+                                 "mark escaped the player's frame")
+
+        // Kept so the branding can be eyeballed against manage's reels without
+        // re-driving the app by hand — geometry assertions can't tell you the
+        // asset rendered as the right mark.
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = "released-viewer-watermark"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     // Every angle tile holding footage carries the Palmr mark, so nothing is
     // presented in the app as unbranded video.
     func testEveryAngleTileIsWatermarked() {

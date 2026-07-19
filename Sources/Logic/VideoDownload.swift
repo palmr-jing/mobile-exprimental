@@ -16,6 +16,7 @@ enum VideoDownload {
     enum Failure: LocalizedError, Equatable {
         case unsupportedFormat(String)      // container Photos won't ingest
         case download(String)
+        case watermark(String)
         case notAuthorized
         case photos(String)
 
@@ -26,12 +27,21 @@ enum VideoDownload {
                 return "\(name) can't be saved to Photos on iOS. Ask for an MP4 release of this class."
             case .download(let m):
                 return "Couldn't download the video. \(m)"
+            case .watermark(let m):
+                return "Couldn't add the Palmr watermark, so the video wasn't saved. \(m)"
             case .notAuthorized:
                 return "Allow photo access in Settings › Emma › Photos, then try again."
             case .photos(let m):
                 return "Couldn't save to Photos. \(m)"
             }
         }
+    }
+
+    /// What the save is doing right now, so the button can say so. Watermarking
+    /// re-encodes the whole recording and is by far the slowest step — leaving
+    /// it unlabelled reads as a hang on a long class.
+    enum Phase: Equatable {
+        case downloading, watermarking, saving
     }
 
     // MARK: - Pure helpers
@@ -79,17 +89,41 @@ enum VideoDownload {
 
     // MARK: - Download + save
 
-    /// Download `url` and add it to the user's Photos library. Throws a
-    /// `Failure` with a message that is safe to show verbatim.
-    static func saveToPhotos(from url: URL, className: String, camera: String) async throws {
+    /// Download `url`, burn the Palmr watermark into it, and add it to the
+    /// user's Photos library. Throws a `Failure` with a message that is safe to
+    /// show verbatim.
+    ///
+    /// The watermark step is not optional and has no silent fallback: saving the
+    /// original bytes when the burn-in fails would put an unbranded copy of a
+    /// class recording on someone's phone, which is exactly the bug this path
+    /// was changed to fix (#1075). Failing loudly keeps the guarantee honest.
+    static func saveToPhotos(from url: URL, className: String, camera: String,
+                             progress: @MainActor (Phase) -> Void = { _ in }) async throws {
         guard isPhotosCompatible(url) else {
             throw Failure.unsupportedFormat(fileExtension(for: url))
         }
         guard try await requestAddAuthorization() else { throw Failure.notAuthorized }
 
+        await progress(.downloading)
         let local = try await download(url, named: suggestedFilename(className: className, camera: camera, url: url))
-        defer { try? FileManager.default.removeItem(at: local) }
-        try await addToLibrary(local)
+
+        await progress(.watermarking)
+        let branded: URL
+        do {
+            branded = try await VideoWatermark.burnIn(
+                into: local,
+                named: suggestedFilename(className: className, camera: camera, url: url))
+        } catch {
+            try? FileManager.default.removeItem(at: local.deletingLastPathComponent())
+            throw Failure.watermark((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+        }
+        // Drop the unbranded original before handing the copy to Photos: a class
+        // recording is large and holding both doubles peak temp usage.
+        try? FileManager.default.removeItem(at: local.deletingLastPathComponent())
+        defer { try? FileManager.default.removeItem(at: branded.deletingLastPathComponent()) }
+
+        await progress(.saving)
+        try await addToLibrary(branded)
     }
 
     /// Download to a uniquely-named temp file that keeps the media extension.

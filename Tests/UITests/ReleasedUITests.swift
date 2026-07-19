@@ -98,6 +98,51 @@ final class ReleasedUITests: XCTestCase {
         XCTAssertGreaterThan(mark.midY, tile.midY, "watermark should sit near the bottom, off the play glyph")
     }
 
+    // The reported bug (#1075): the mark is on the tile, but tapping through to
+    // the full-size viewer used to drop it — "when u click on the video
+    // watermark is gone when u look".
+    //
+    // This can only assert once a player actually exists. The -MOCK_RELEASED
+    // sample URLs answer 403 (see ReleasedRecordingsView.mock), so on this
+    // machine the viewer resolves to the "can't play" guard instead and there is
+    // no video surface to brand. It skips in that case rather than passing
+    // vacuously — a green tick here would be a lie about untested code.
+    func testOpenedViewerKeepsTheWatermark() throws {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))
+
+        app.buttons["angle-play"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["angle-download"].waitForExistence(timeout: 10), "viewer didn't open")
+
+        let player = app.descendants(matching: .any).matching(identifier: "angle-player").firstMatch
+        let failed = app.descendants(matching: .any).matching(identifier: "angle-viewer-failed").firstMatch
+
+        // Whichever resolves first decides whether there's anything to assert.
+        let deadline = Date().addingTimeInterval(20)
+        while Date() < deadline && !player.exists && !failed.exists {
+            usleep(300_000)
+        }
+
+        try XCTSkipIf(!player.exists,
+                      "fixture couldn't play (sample URLs 403), so the viewer has no video surface to brand — "
+                      + "verify the overlay against a live release")
+
+        let marks = app.descendants(matching: .any).matching(identifier: "palmr-watermark")
+        XCTAssertTrue(marks.firstMatch.waitForExistence(timeout: 5),
+                      "the full-size viewer dropped the Palmr watermark (#1075)")
+
+        // Kept as an attachment: this is a visual regression, so the next person
+        // to touch the viewer can see what it looked like when it was correct.
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "angle-viewer-watermarked"
+        shot.lifetime = .keepAlways
+        add(shot)
+        // Bottom-trailing of the player, clear of the transport controls' centre.
+        let mark = marks.element(boundBy: 0).frame
+        XCTAssertGreaterThan(mark.midX, player.frame.midX, "watermark should sit on the trailing side")
+        XCTAssertGreaterThan(mark.midY, player.frame.midY, "watermark should sit near the bottom")
+    }
+
     func testSendRecordingBundleToChatSheetOpens() {
         let app = launch()
         XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))

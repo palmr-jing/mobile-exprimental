@@ -76,15 +76,26 @@ struct ReleasedRecordingsView: View {
     }
 
     // Deterministic fixtures for the -MOCK_RELEASED screenshot seam (inert in
-    // production). NOTE: the gtv-videos-bucket sample URLs below now answer 403,
-    // so these tiles open to a black player — fine for the offline UITests (they
-    // assert navigation and the format guard, never playback), but a manual
-    // smoke test of playback needs a live release or a working sample URL.
+    // production). The remote gtv-videos-bucket sample URLs answer 403, so the
+    // FIRST angle instead points at a 17KB clip bundled with the app
+    // (Resources/test-sample-clip.mp4). That gives the offline UITests a tile
+    // that genuinely plays, which is what makes the full-screen viewer's
+    // playback surface — and the watermark on it (#1075) — assertable on a
+    // simulator with no network. The remaining angles keep the remote URLs so
+    // the "couldn't load" guard still has something to fire on.
     static let mock: [ReleasedRecording] = {
         let sample = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample"
         func angle(_ camera: String, _ file: String) -> ReleasedRecording.Angle {
             .init(camera: camera, storagePath: "recordings/\(file)",
                   downloadURL: URL(string: "\(sample)/\(file)"))
+        }
+        // Bundled, so it plays with no network. Falls back to the remote URL if
+        // the resource is somehow missing rather than yielding a nil-URL tile.
+        func playableAngle(_ camera: String) -> ReleasedRecording.Angle {
+            guard let local = Bundle.main.url(forResource: "test-sample-clip", withExtension: "mp4") else {
+                return angle(camera, "BigBuckBunny.mp4")
+            }
+            return .init(camera: camera, storagePath: "recordings/test-sample-clip.mp4", downloadURL: local)
         }
         return [
             ReleasedRecording(
@@ -93,7 +104,7 @@ struct ReleasedRecordingsView: View {
                 startsAt: Date(timeIntervalSince1970: 1_783_680_000),   // 2026-07-10
                 releasedAt: Date(timeIntervalSince1970: 1_783_686_000),
                 releasedBy: "jing@everbot.org", angleCount: 3,
-                videos: [angle("front", "BigBuckBunny.mp4"),
+                videos: [playableAngle("front"),
                          angle("front-right", "ElephantsDream.mp4"),
                          angle("realsense", "ForBiggerBlazes.mp4")]),
             ReleasedRecording(

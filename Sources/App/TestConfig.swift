@@ -19,6 +19,11 @@ enum TestConfig {
     /// flow is UITestable without Firebase. Inert in production.
     static var isMockVideos: Bool { args.contains("-MOCK_VIDEOS") }
 
+    /// Render the Videos tab's load-failure state with this message, so the
+    /// error + "Try Again" recovery path is UITestable offline (#1069). Inert
+    /// in production.
+    static var mockVideosError: String? { value(for: "-MOCK_VIDEOS_ERROR") }
+
     /// Drive the Released tab from deterministic mock fixtures so the released
     /// recordings screen is screenshot-able without Firebase. Inert in production.
     static var isMockReleased: Bool { args.contains("-MOCK_RELEASED") }

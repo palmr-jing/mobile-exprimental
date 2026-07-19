@@ -68,12 +68,14 @@
 		992AB213B3022EC68E063BF3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A27F1173FE1DD9EFD49A6E1C /* AppDelegate.swift */; };
 		9ABBF7D5D8C07B543B85EF43 /* VideosUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939D91E5408BE60D0DD07C0F /* VideosUITests.swift */; };
 		9C6FD92F6ABFDA4FBF5DBFA8 /* WorkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD25D1286ED63727B1D6D1A /* WorkersView.swift */; };
+		A087F2925685DDD7C1867208 /* PhotoAttachmentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5BCC73415E644F2F05393DF /* PhotoAttachmentLoader.swift */; };
 		A280FFBA652EC89B12FD479E /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E98349D61D0B8C8F760113B0 /* ChatService.swift */; };
 		A7AE114261AC579849910ABA /* AppMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD75F006B9819FDCB8065D7 /* AppMode.swift */; };
 		A8A9205635E65FA97651054C /* PresenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45E3CF0A7E56DC2F0EA1883 /* PresenceService.swift */; };
 		AC2D84777B6497814F7E5242 /* VideoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FAF186111B6A31409657C63 /* VideoTests.swift */; };
 		AC338A155DA6CD06577564C0 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AF5412817C64A3A082A72D /* AvatarView.swift */; };
 		AF6E814BFC9F507EAB5E4E81 /* ChatShareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */; };
+		BAE6111FFDDC1BF28C36674C /* AttachmentLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697190212D616CD96FF17041 /* AttachmentLoaderTests.swift */; };
 		BC7B9953744ED97CE82C0C7A /* ModeSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */; };
 		BCFE13C94DC340540746131C /* ShareToChatSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8205E8D431A5BE893022FC /* ShareToChatSheet.swift */; };
 		C2B3D80FCF26ACD2E0BFEF4C /* SignInUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F5C3C386D05351E9EF308A /* SignInUITests.swift */; };
@@ -161,6 +163,7 @@
 		646C45799112F5E05BBD5CAD /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
 		66698EA5021CF2CBBC9D7F4B /* MobileCommanderTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MobileCommanderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6732BFF9392E87268330E337 /* VideoFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoFeedView.swift; sourceTree = "<group>"; };
+		697190212D616CD96FF17041 /* AttachmentLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentLoaderTests.swift; sourceTree = "<group>"; };
 		70C8ABBE399379829A118AC2 /* ReelExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelExport.swift; sourceTree = "<group>"; };
 		70C9190DD3288483A1C8431B /* MentionAutocompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MentionAutocompleteView.swift; sourceTree = "<group>"; };
 		71B63D362C774253E6EA77BE /* MessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleView.swift; sourceTree = "<group>"; };
@@ -206,6 +209,7 @@
 		E98349D61D0B8C8F760113B0 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
 		EAD75F006B9819FDCB8065D7 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
 		F5A960B6DBF40C36DF2CD5AC /* MobileCommanderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileCommanderApp.swift; sourceTree = "<group>"; };
+		F5BCC73415E644F2F05393DF /* PhotoAttachmentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAttachmentLoader.swift; sourceTree = "<group>"; };
 		F71AFA68039AC55C915CF09F /* OwnerStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerStatusView.swift; sourceTree = "<group>"; };
 		FCB5399961D1B4BB73889D26 /* OwnerTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerTabView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -269,6 +273,7 @@
 			children = (
 				BF5DA4D48024E07C8D6E1122 /* Access.swift */,
 				634C57B56575928FEA983555 /* ChatPagination.swift */,
+				F5BCC73415E644F2F05393DF /* PhotoAttachmentLoader.swift */,
 				B19949C9D327B6062BBEEDF0 /* Presence.swift */,
 				70C8ABBE399379829A118AC2 /* ReelExport.swift */,
 				9E1D591037921CE269AFE7F6 /* VideoDownload.swift */,
@@ -316,6 +321,7 @@
 			isa = PBXGroup;
 			children = (
 				C2EEA4D4B1516D417164E908 /* AccessTests.swift */,
+				697190212D616CD96FF17041 /* AttachmentLoaderTests.swift */,
 				D978EE162A42A4F0B2A5EB93 /* ChatPaginationTests.swift */,
 				1C3B76146895FDC0D5EB1798 /* ChatShareTests.swift */,
 				CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */,
@@ -645,6 +651,7 @@
 				68A6DC81E2933D7B9A46CF17 /* OwnerRequestView.swift in Sources */,
 				EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */,
 				1CAF88F53D8E141A28DE0857 /* OwnerTabView.swift in Sources */,
+				A087F2925685DDD7C1867208 /* PhotoAttachmentLoader.swift in Sources */,
 				168179FD3504BFE01EF96F9B /* Presence.swift in Sources */,
 				8240B000A65C4EE70F9A0C2C /* PresenceModels.swift in Sources */,
 				A8A9205635E65FA97651054C /* PresenceService.swift in Sources */,
@@ -688,6 +695,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC6D7DEBCAFD222E20926F17 /* AccessTests.swift in Sources */,
+				BAE6111FFDDC1BF28C36674C /* AttachmentLoaderTests.swift in Sources */,
 				F6907302C350BADEA264CD61 /* ChatPaginationTests.swift in Sources */,
 				AF6E814BFC9F507EAB5E4E81 /* ChatShareTests.swift in Sources */,
 				55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */,

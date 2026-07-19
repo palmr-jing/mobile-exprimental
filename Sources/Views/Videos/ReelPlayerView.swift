@@ -52,6 +52,18 @@ struct ReelPlayerView: View {
                     .shadow(radius: 8)
             }
         }
+        // Bottom-trailing: the feed's caption and action row are leading-aligned
+        // and the close/mute controls sit up top, so this corner is the one spot
+        // that stays clear. Raised past the home indicator. Hit testing is off,
+        // so tap-to-pause still works through it.
+        .overlay(alignment: .bottomTrailing) {
+            if player != nil {
+                PalmrWatermark()
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 44)
+                    .allowsHitTesting(false)
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture { togglePause() }
         .task { await load() }

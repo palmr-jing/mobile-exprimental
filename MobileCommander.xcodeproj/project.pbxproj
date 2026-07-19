@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03C38B2F424DCA71B47F1AFC /* Watermark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 423039F07E79328027E697B6 /* Watermark.swift */; };
 		07BCA8C89CC625096BFEDA13 /* ChatPagination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 634C57B56575928FEA983555 /* ChatPagination.swift */; };
 		0851E0DF548219FC5AA85EAF /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01CAC1AC0DCFE51B50D66E5 /* ChatView.swift */; };
 		0EFE0C9CD038035DBDD9A9B3 /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 466B5533CDA618DAE87541EF /* Channel.swift */; };
@@ -35,6 +36,7 @@
 		478CB0FCB2E4A8A8F73EFB80 /* DeveloperTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2D099B5A5F0E142DA7E3EA /* DeveloperTabView.swift */; };
 		479C3D1C385DAC5E2310A135 /* SpeechRecognitionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */; };
 		490D582889EA0138F34E4F65 /* AllowedUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8982BA295B91E50C0E4F341C /* AllowedUser.swift */; };
+		4E4BE328FDD5AC12F33D739A /* WatermarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1E7AF51B5F711B48CCFF49 /* WatermarkTests.swift */; };
 		55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */; };
 		5820C8F8D4C136B9CF50F3DA /* AssignedVideo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1980CB29E124CEDE94CF56 /* AssignedVideo.swift */; };
 		592A0C66C8E5D40D7F69F332 /* VideosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1BC0414B9EC9FE047A8AE7 /* VideosView.swift */; };
@@ -139,12 +141,14 @@
 		3D44F76C5A2172EDD778D55F /* AskEmmaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskEmmaView.swift; sourceTree = "<group>"; };
 		3F2C9A69156DF26B53EDB1C6 /* ReelEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelEditorView.swift; sourceTree = "<group>"; };
 		3F5BA382DB636BDDEFC46235 /* MicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicButton.swift; sourceTree = "<group>"; };
+		423039F07E79328027E697B6 /* Watermark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Watermark.swift; sourceTree = "<group>"; };
 		429C44E0037C948917C776C1 /* OwnerRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerRequestView.swift; sourceTree = "<group>"; };
 		466B5533CDA618DAE87541EF /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channel.swift; sourceTree = "<group>"; };
 		47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionServiceTests.swift; sourceTree = "<group>"; };
 		4AA482E94E6FADF69052A2CB /* AppNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
 		4C1980CB29E124CEDE94CF56 /* AssignedVideo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssignedVideo.swift; sourceTree = "<group>"; };
 		4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		4D1E7AF51B5F711B48CCFF49 /* WatermarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatermarkTests.swift; sourceTree = "<group>"; };
 		4ED5C958A5C01CB45929F160 /* ChatUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUITests.swift; sourceTree = "<group>"; };
 		5E10E706E56CF2DCEAA20C1A /* NewChannelSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChannelSheet.swift; sourceTree = "<group>"; };
 		62CE21C127D8B0CBA0629C76 /* Worker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Worker.swift; sourceTree = "<group>"; };
@@ -312,6 +316,7 @@
 				D8A747BF3C6371A04CFCD83B /* ReportIssueTests.swift */,
 				47BECD0A2F1949088E23D990 /* SpeechRecognitionServiceTests.swift */,
 				1FAF186111B6A31409657C63 /* VideoTests.swift */,
+				4D1E7AF51B5F711B48CCFF49 /* WatermarkTests.swift */,
 			);
 			name = Unit;
 			path = Tests/Unit;
@@ -457,6 +462,7 @@
 			isa = PBXGroup;
 			children = (
 				4C7F05FAE32EF64B4BC67C3F /* DesignSystem.swift */,
+				423039F07E79328027E697B6 /* Watermark.swift */,
 			);
 			path = Design;
 			sourceTree = "<group>";
@@ -660,6 +666,7 @@
 				592A0C66C8E5D40D7F69F332 /* VideosView.swift in Sources */,
 				3F39F5EBF1759B2D1D74C1DF /* VoiceInputButton.swift in Sources */,
 				333BCB1C27CB5937DDFB3553 /* VoiceTranscriber.swift in Sources */,
+				03C38B2F424DCA71B47F1AFC /* Watermark.swift in Sources */,
 				30B6BF012D8D0EB6C9EDA113 /* Worker.swift in Sources */,
 				9C6FD92F6ABFDA4FBF5DBFA8 /* WorkersView.swift in Sources */,
 			);
@@ -678,6 +685,7 @@
 				3D3E34AFB011C7BA980687D2 /* ReportIssueTests.swift in Sources */,
 				479C3D1C385DAC5E2310A135 /* SpeechRecognitionServiceTests.swift in Sources */,
 				AC2D84777B6497814F7E5242 /* VideoTests.swift in Sources */,
+				4E4BE328FDD5AC12F33D739A /* WatermarkTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -704,7 +712,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260710.5;
+				CURRENT_PROJECT_VERSION = 20260717.1;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -881,7 +889,7 @@
 				CODE_SIGN_ENTITLEMENTS = Resources/MobileCommander.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260710.5;
+				CURRENT_PROJECT_VERSION = 20260717.1;
 				DEVELOPMENT_TEAM = 9SCSBH976W;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

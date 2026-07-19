@@ -209,6 +209,10 @@ private struct AnglePlayer: View {
             }
             .clipped()
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            // Brand the tile whenever it holds real footage — poster, or playing.
+            // Compact (mark only): these tiles are a third of the card wide, too
+            // narrow for the wordmark to read.
+            .modifier(TileWatermark(show: angle.downloadURL != nil))
         }
     }
 
@@ -217,5 +221,21 @@ private struct AnglePlayer: View {
         let p = AVPlayer(url: url)
         player = p
         p.play()
+    }
+}
+
+// Applies the watermark only to tiles that actually hold footage — an
+// "unavailable" tile has nothing to brand. A modifier rather than an `if` around
+// the tile so both branches keep the same view identity (an identity change here
+// would tear down a playing AVPlayer).
+private struct TileWatermark: ViewModifier {
+    let show: Bool
+
+    func body(content: Content) -> some View {
+        if show {
+            content.palmrWatermark(.compact, inset: 4)
+        } else {
+            content
+        }
     }
 }

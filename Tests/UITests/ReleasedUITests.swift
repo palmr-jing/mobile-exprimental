@@ -31,6 +31,27 @@ final class ReleasedUITests: XCTestCase {
         XCTAssertLessThan(row[1].maxX, row[2].midX, "angle 1 overlaps angle 2")
     }
 
+    // Every angle tile holding footage carries the Palmr mark, so nothing is
+    // presented in the app as unbranded video.
+    func testEveryAngleTileIsWatermarked() {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))
+
+        let marks = app.descendants(matching: .any).matching(identifier: "palmr-watermark")
+        XCTAssertTrue(marks.firstMatch.waitForExistence(timeout: 5), "no Palmr watermark on the Released tab")
+
+        // One per angle tile of the first card, at minimum.
+        let plays = app.buttons.matching(identifier: "angle-play").allElementsBoundByIndex
+        XCTAssertGreaterThanOrEqual(marks.count, min(3, plays.count),
+                                    "expected a watermark on each angle tile, found \(marks.count)")
+
+        // Pinned to the bottom-right of the tile it brands, clear of the centred
+        // play button — so it never covers the control or the action area.
+        let mark = marks.element(boundBy: 0).frame
+        let tile = plays[0].frame
+        XCTAssertFalse(mark.intersects(tile), "watermark overlaps the play button")
+    }
+
     func testSendRecordingBundleToChatSheetOpens() {
         let app = launch()
         XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))

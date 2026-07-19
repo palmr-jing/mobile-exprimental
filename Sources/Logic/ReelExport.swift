@@ -4,9 +4,14 @@ import CoreImage
 
 // The reel-editor export pipeline, factored out of the view so it can be tested
 // without UI: trim to [start, end], optionally change speed, drop audio, and
-// burn in a text caption, then write an .mp4. Pure inputs → output URL.
+// burn in the Palmr watermark plus an optional text caption, then write an .mp4.
+// Pure inputs → output URL.
 //
-// Text is burned in with a Core Image per-frame handler rather than
+// The watermark is unconditional. Every clip this app writes leaves with Palmr
+// branding burned into its pixels — there is no export path that skips it, so a
+// reel shared into chat or saved out stays attributed to Palmr.
+//
+// Overlays are burned in with a Core Image per-frame handler rather than
 // AVVideoCompositionCoreAnimationTool — the animation tool renders its CALayer
 // tree on a background thread during export and crashes intermittently.
 enum ReelExport {
@@ -45,7 +50,9 @@ enum ReelExport {
         let transform = (try? await srcV.load(.preferredTransform)) ?? .identity
         do {
             try dstV.insertTimeRange(range, of: srcV, at: .zero)
-            dstV.preferredTransform = transform   // keep orientation for the no-overlay path
+            // The video composition reads this to orient frames and derive its
+            // render size, so the burned-in overlay lands the right way up.
+            dstV.preferredTransform = transform
             if !o.muted, let srcA = try? await asset.loadTracks(withMediaType: .audio).first,
                let dstA = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
                 try dstA.insertTimeRange(range, of: srcA, at: .zero)
@@ -61,16 +68,26 @@ enum ReelExport {
             throw Failure.noSession
         }
 
-        if !o.text.isEmpty {
-            let natural = (try? await srcV.load(.naturalSize)) ?? CGSize(width: 720, height: 1280)
-            let rotated = abs(transform.b) == 1 && abs(transform.c) == 1
-            let renderSize = rotated ? CGSize(width: natural.height, height: natural.width) : natural
-            if let overlay = makeTextOverlay(text: o.text, renderSize: renderSize, pos: o.textPos) {
-                session.videoComposition = AVMutableVideoComposition(asset: comp) { request in
-                    let out = overlay.composited(over: request.sourceImage).cropped(to: request.sourceImage.extent)
-                    request.finish(with: out, context: nil)
-                }
+        // Always composited — the watermark makes this unconditional, and the
+        // caption rides along in the same canvas so it costs one pass, not two.
+        //
+        // The overlay is built from the first frame's actual extent rather than
+        // from naturalSize + a rotation guess: the filtering handler hands back
+        // frames already oriented, so the extent is the truth about where the
+        // corner is. It's identical for every frame, hence the cache.
+        let cache = OverlayCache()
+        let text = o.text, textPos = o.textPos
+        session.videoComposition = AVMutableVideoComposition(asset: comp) { request in
+            let src = request.sourceImage
+            let extent = src.extent
+            guard let overlay = cache.image(for: extent.size, make: {
+                makeOverlay(renderSize: $0, text: text, pos: textPos)
+            }) else {
+                request.finish(with: src, context: nil); return
             }
+            let placed = overlay.transformed(by: CGAffineTransform(translationX: extent.origin.x,
+                                                                  y: extent.origin.y))
+            request.finish(with: placed.composited(over: src).cropped(to: extent), context: nil)
         }
 
         let out = FileManager.default.temporaryDirectory.appendingPathComponent("edit-\(UUID().uuidString).mp4")
@@ -85,29 +102,52 @@ enum ReelExport {
         return out
     }
 
-    // Render the caption into a full-frame transparent image (scale 1 so its pixel
-    // size matches renderSize), then hand back a CIImage to composite per frame.
-    private static func makeTextOverlay(text: String, renderSize: CGSize, pos: CGPoint) -> CIImage? {
+    // Render the watermark, and the caption when there is one, into a full-frame
+    // transparent image (scale 1 so its pixel size matches renderSize), then hand
+    // back a CIImage to composite per frame.
+    static func makeOverlay(renderSize: CGSize, text: String, pos: CGPoint) -> CIImage? {
         guard renderSize.width > 0, renderSize.height > 0 else { return nil }
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
         format.opaque = false
         let img = UIGraphicsImageRenderer(size: renderSize, format: format).image { _ in
-            let fontSize = max(14, renderSize.height * 0.045)
-            let font = UIFont.systemFont(ofSize: fontSize, weight: .semibold)
-            let para = NSMutableParagraphStyle(); para.alignment = .center
-            let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.white, .paragraphStyle: para]
-            let str = text as NSString
-            let maxW = renderSize.width * 0.9
-            let bounds = str.boundingRect(with: CGSize(width: maxW, height: .greatestFiniteMagnitude),
-                                          options: [.usesLineFragmentOrigin], attributes: attrs, context: nil)
-            let boxW = min(maxW, ceil(bounds.width) + 28), boxH = ceil(bounds.height) + 14
-            let cx = renderSize.width * pos.x, cy = renderSize.height * pos.y
-            let box = CGRect(x: cx - boxW / 2, y: cy - boxH / 2, width: boxW, height: boxH)
-            UIColor.black.withAlphaComponent(0.5).setFill()
-            UIBezierPath(roundedRect: box, cornerRadius: 8).fill()
-            str.draw(in: box.insetBy(dx: 14, dy: 7), withAttributes: attrs)
+            if !text.isEmpty { drawCaption(text: text, renderSize: renderSize, pos: pos) }
+            PalmrWatermark.drawBurnIn(canvasSize: renderSize)
         }
         return CIImage(image: img)
+    }
+
+    private static func drawCaption(text: String, renderSize: CGSize, pos: CGPoint) {
+        let fontSize = max(14, renderSize.height * 0.045)
+        let font = UIFont.systemFont(ofSize: fontSize, weight: .semibold)
+        let para = NSMutableParagraphStyle(); para.alignment = .center
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.white, .paragraphStyle: para]
+        let str = text as NSString
+        let maxW = renderSize.width * 0.9
+        let bounds = str.boundingRect(with: CGSize(width: maxW, height: .greatestFiniteMagnitude),
+                                      options: [.usesLineFragmentOrigin], attributes: attrs, context: nil)
+        let boxW = min(maxW, ceil(bounds.width) + 28), boxH = ceil(bounds.height) + 14
+        let cx = renderSize.width * pos.x, cy = renderSize.height * pos.y
+        let box = CGRect(x: cx - boxW / 2, y: cy - boxH / 2, width: boxW, height: boxH)
+        UIColor.black.withAlphaComponent(0.5).setFill()
+        UIBezierPath(roundedRect: box, cornerRadius: 8).fill()
+        str.draw(in: box.insetBy(dx: 14, dy: 7), withAttributes: attrs)
+    }
+}
+
+// Builds the overlay once and hands the same CIImage to every frame. The
+// filtering handler runs on AVFoundation's own queue and may be re-entered
+// concurrently, so the memo is lock-guarded.
+private final class OverlayCache: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cached: (size: CGSize, image: CIImage?)?
+
+    func image(for size: CGSize, make: (CGSize) -> CIImage?) -> CIImage? {
+        lock.lock()
+        defer { lock.unlock() }
+        if let cached, cached.size == size { return cached.image }
+        let made = make(size)
+        cached = (size, made)
+        return made
     }
 }

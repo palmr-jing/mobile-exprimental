@@ -217,29 +217,29 @@ struct ChatComposerView: View {
     }
 
     private func handlePicked(_ item: PhotosPickerItem) async {
-        guard let data = try? await item.loadTransferable(type: Data.self) else {
+        let loaded: PhotoAttachmentLoader.Loaded
+        do {
+            loaded = try await PhotoAttachmentLoader.load(item)
+        } catch {
+            // Videos used to hit this path silently — loadTransferable(Data) is nil
+            // for movies, so the attach vanished. Surface a real error instead.
             await MainActor.run {
-                chatService.uploadError = "Couldn't read that photo. Try a different one."
+                chatService.uploadError = "Couldn't read that attachment. Try a different file."
                 photoItem = nil
             }
             return
         }
-        let contentType = item.supportedContentTypes.first
-        let mime = contentType?.preferredMIMEType ?? "application/octet-stream"
-        let ext = contentType?.preferredFilenameExtension ?? "dat"
-        let name = "upload-\(Int(Date().timeIntervalSince1970)).\(ext)"
 
-        let isImage = mime.hasPrefix("image/")
-        if isImage {
+        if loaded.isImage {
             await MainActor.run {
-                pendingImageData = data
-                pendingImageName = name
-                pendingImageMime = mime
+                pendingImageData = loaded.data
+                pendingImageName = loaded.fileName
+                pendingImageMime = loaded.mime
                 photoItem = nil
             }
         } else {
-            await chatService.attach(data: data, fileName: name, contentType: mime)
             await MainActor.run { photoItem = nil }
+            await chatService.attach(data: loaded.data, fileName: loaded.fileName, contentType: loaded.mime)
         }
     }
 

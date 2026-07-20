@@ -239,25 +239,31 @@ struct AskEmmaView: View {
     // MARK: - Attachment helpers
 
     private func handlePicked(_ item: PhotosPickerItem) async {
-        guard let data = try? await item.loadTransferable(type: Data.self) else { return }
-        let contentType = item.supportedContentTypes.first
-        let mime = contentType?.preferredMIMEType ?? "application/octet-stream"
-        let ext = contentType?.preferredFilenameExtension ?? "dat"
-        let name = "upload-\(Int(Date().timeIntervalSince1970)).\(ext)"
-
-        let isImage = mime.hasPrefix("image/")
-        if isImage {
+        let loaded: PhotoAttachmentLoader.Loaded
+        do {
+            loaded = try await PhotoAttachmentLoader.load(item)
+        } catch {
+            // A video used to fail here silently (loadTransferable(Data) is nil for
+            // movies) — surface it instead so the user knows the pick didn't take.
             await MainActor.run {
-                pendingImageData = data
-                pendingImageName = name
-                pendingImageMime = mime
+                chatService.uploadError = "Couldn't read that attachment. Try a different file."
+                photoItem = nil
+            }
+            return
+        }
+
+        if loaded.isImage {
+            await MainActor.run {
+                pendingImageData = loaded.data
+                pendingImageName = loaded.fileName
+                pendingImageMime = loaded.mime
                 photoItem = nil
             }
         } else {
-            await chatService.sendToEmmaWithAttachment(
-                text: "", data: data, fileName: name, contentType: mime
-            )
             await MainActor.run { photoItem = nil }
+            await chatService.sendToEmmaWithAttachment(
+                text: "", data: loaded.data, fileName: loaded.fileName, contentType: loaded.mime
+            )
         }
     }
 

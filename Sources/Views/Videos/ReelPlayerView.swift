@@ -56,14 +56,7 @@ struct ReelPlayerView: View {
         // and the close/mute controls sit up top, so this corner is the one spot
         // that stays clear. Raised past the home indicator. Hit testing is off,
         // so tap-to-pause still works through it.
-        .overlay(alignment: .bottomTrailing) {
-            if player != nil {
-                PalmrWatermark()
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 44)
-                    .allowsHitTesting(false)
-            }
-        }
+        .modifier(PlayerWatermark(show: player != nil))
         .contentShape(Rectangle())
         .onTapGesture { togglePause() }
         .task { await load() }
@@ -163,5 +156,22 @@ private struct PlayerLayerView: UIViewRepresentable {
     final class PlayerView: UIView {
         override static var layerClass: AnyClass { AVPlayerLayer.self }
         var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+    }
+}
+
+// Brands the reel only once it actually has a player — a spinner or a failure
+// message is not video and shouldn't carry the mark. A modifier rather than an
+// `if` around the ZStack so both branches keep the same view identity.
+// `bottomInset` clears the home indicator, which the proportional margin doesn't
+// know about. (#1072)
+private struct PlayerWatermark: ViewModifier {
+    let show: Bool
+
+    func body(content: Content) -> some View {
+        if show {
+            content.palmrWatermark(bottomInset: 44)
+        } else {
+            content
+        }
     }
 }

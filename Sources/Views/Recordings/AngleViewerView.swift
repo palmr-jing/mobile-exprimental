@@ -58,6 +58,13 @@ struct AngleViewerView: View {
                 }
                 .aspectRatio(16.0 / 9.0, contentMode: .fit)
                 .frame(maxWidth: .infinity)
+                // The surface the bug was actually about: tapping a Released
+                // thumbnail played the class recording full-size with no Palmr
+                // branding at all (#1067 only reached the tiles and the export).
+                // Only when a player exists — the "can't play" message is not
+                // video. Applied to the ZStack, so the mark lands inside the
+                // player's rounded frame rather than out in the sheet's padding.
+                .modifier(ViewerWatermark(show: player != nil))
 
                 VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     Text(angle.displayName)
@@ -199,6 +206,15 @@ struct AngleViewerView: View {
         statusObserver?.cancel()
         statusObserver = nil
         player = nil
+
+        // Hand the audio session back. `start()` activates a .playback session to
+        // silence the ringer, and leaving it active after the sheet closes keeps
+        // whatever the user had playing (music, a podcast) ducked or stopped, and
+        // slows the next app launch while the session is reclaimed. Off the main
+        // thread — deactivation blocks until the route tears down.
+        DispatchQueue.global(qos: .utility).async {
+            try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+        }
     }
 
     private func download() {
@@ -211,6 +227,21 @@ struct AngleViewerView: View {
             } catch {
                 save = .failed((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
             }
+        }
+    }
+}
+
+// Brands the viewer only once the angle is actually playing — the "can't play"
+// message and the black placeholder are not video. A modifier rather than an
+// `if` around the ZStack so both branches keep the same view identity. (#1072)
+private struct ViewerWatermark: ViewModifier {
+    let show: Bool
+
+    func body(content: Content) -> some View {
+        if show {
+            content.palmrWatermark()
+        } else {
+            content
         }
     }
 }

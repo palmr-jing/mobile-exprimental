@@ -124,9 +124,15 @@ struct ReleasedRecordingsView: View {
 
     // Deterministic fixtures for the -MOCK_RELEASED screenshot seam (inert in
     // production). NOTE: the gtv-videos-bucket sample URLs below now answer 403,
-    // so these tiles open to a black player — fine for the offline UITests (they
-    // assert navigation and the format guard, never playback), but a manual
-    // smoke test of playback needs a live release or a working sample URL.
+    // so those tiles open to the "couldn't be loaded" message — fine for the
+    // UITests that assert navigation and the format guard, but useless for
+    // anything that needs a *playing* video.
+    //
+    // So the first angle points at a bundled 3-second MP4 instead
+    // (`Resources/test-angle.mp4`). That makes playback itself testable offline:
+    // it's the only fixture that reaches a real AVPlayer with no network, which
+    // is what lets `testFullSizeViewerIsWatermarked` verify the #1072 branding on
+    // the surface it was missing from. Keep it first in the list.
     static let mock: [ReleasedRecording] = {
         let sample = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample"
         // A bundled LANDSCAPE poster (320×180) stands in for the watcher-written
@@ -139,6 +145,9 @@ struct ReleasedRecordingsView: View {
                   downloadURL: URL(string: "\(sample)/\(file)"),
                   thumbnailURL: poster)
         }
+        // Falls back to the (403ing) remote sample if the fixture ever falls out
+        // of the bundle, so the mock still renders a tile rather than crashing.
+        let local = Bundle.main.url(forResource: "test-angle", withExtension: "mp4")
         return [
             ReleasedRecording(
                 id: "plan_1", groupKey: "g1", className: "IMA Fit + Tiny Tigers",
@@ -146,7 +155,8 @@ struct ReleasedRecordingsView: View {
                 startsAt: Date(timeIntervalSince1970: 1_783_680_000),   // 2026-07-10
                 releasedAt: Date(timeIntervalSince1970: 1_783_686_000),
                 releasedBy: "jing@everbot.org", angleCount: 3,
-                videos: [angle("front", "BigBuckBunny.mp4"),
+                videos: [.init(camera: "front", storagePath: "recordings/test-angle.mp4",
+                               downloadURL: local ?? URL(string: "\(sample)/BigBuckBunny.mp4")),
                          angle("front-right", "ElephantsDream.mp4"),
                          angle("realsense", "ForBiggerBlazes.mp4")]),
             ReleasedRecording(
@@ -271,10 +281,13 @@ private struct AngleThumbnail: View {
                 .lineLimit(1)
 
             // Brand the tile whenever it holds real footage — poster, or playing.
-            // Compact (mark only): these tiles are a third of the card wide, too
-            // narrow for the wordmark to read. Applied OUTSIDE the tap Button so
-            // the mark surfaces as its own accessibility element (a watermark
-            // buried inside a Button's label is flattened into the button). (#1067)
+            // Logo AND wordmark, as manage stamps its reels: these tiles are a
+            // third of the card wide, so the mark sits at its 56pt legibility
+            // floor rather than the 14%-of-width manage uses on a full frame
+            // (#1072; #1067 shipped mark-only here, which read as unbranded).
+            // Applied OUTSIDE the tap Button so the mark surfaces as its own
+            // accessibility element (a watermark buried inside a Button's label
+            // is flattened into the button).
             tile
                 .modifier(TileWatermark(show: angle.downloadURL != nil))
         }
@@ -340,7 +353,7 @@ private struct TileWatermark: ViewModifier {
 
     func body(content: Content) -> some View {
         if show {
-            content.palmrWatermark(.compact, inset: 4)
+            content.palmrWatermark()
         } else {
             content
         }

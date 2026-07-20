@@ -168,6 +168,35 @@ final class ReleasedUITests: XCTestCase {
                        "error state survived a successful retry")
     }
 
+    // The reported ask (#1071): the Released grid should paint a poster frame
+    // per angle — like manage.everbot.org/recordings — instead of a black tile
+    // that waits on the video. Driven off the bundled fixture poster, so it
+    // proves the load path offline.
+    func testAnglesShowPosterThumbnails() {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))
+
+        let posters = app.descendants(matching: .any).matching(identifier: "angle-poster")
+        XCTAssertTrue(posters.firstMatch.waitForExistence(timeout: 10),
+                      "no poster rendered — the Released grid is still black tiles")
+
+        // One per angle of the first card, at minimum.
+        let plays = app.buttons.matching(identifier: "angle-play").allElementsBoundByIndex
+        XCTAssertGreaterThanOrEqual(posters.count, min(3, plays.count),
+                                    "expected a poster on each angle tile, found \(posters.count)")
+
+        // The poster must stay INSIDE the tile it fills. A landscape poster
+        // scaledToFill is wider than the 16:9 tile, and without .clipped() it
+        // inflates the layout+hit frame and swallows the neighbouring angle's
+        // taps — the iPad bug already fixed in the Videos grid.
+        let poster = posters.element(boundBy: 0).frame
+        let tile = plays[0].frame
+        XCTAssertLessThanOrEqual(poster.width, tile.width + 1,
+                                 "poster overflows its tile horizontally")
+        XCTAssertLessThanOrEqual(poster.height, tile.height + 1,
+                                 "poster overflows its tile vertically")
+    }
+
     func testSendRecordingBundleToChatSheetOpens() {
         let app = launch()
         XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))

@@ -78,6 +78,39 @@ struct ReleasedRecordingTests {
         #expect(r?.videos.first?.storagePath == nil)
     }
 
+    // The poster watcher writes a per-angle `thumbnail_url` into videos[]. The
+    // Released grid paints that instead of waiting on the video, so it has to
+    // survive the parse (#1071).
+    @Test func parsesPerAnglePosterURL() {
+        let d = data(["videos": [
+            ["camera": "front", "download_url": "https://e.com/front.mp4",
+             "thumbnail_url": "https://firebasestorage.googleapis.com/v0/b/x/o/"
+                + "released-recordings-thumbs%2Fplan%2Ffront.jpg?alt=media&token=t1"],
+            ["camera": "realsense", "download_url": "https://e.com/rs.mp4",
+             "thumbnail_url": "https://e.com/rs.jpg"],
+        ]])
+        let r = ReleasedRecording.from(id: "x", data: d)
+        #expect(r?.videos.first?.thumbnailURL?.absoluteString.hasSuffix("token=t1") == true)
+        #expect(r?.videos.last?.thumbnailURL?.absoluteString == "https://e.com/rs.jpg")
+    }
+
+    // The watcher polls on an interval, so a freshly released class is read
+    // before its posters exist. That must parse cleanly (tile falls back to the
+    // play glyph), not drop the angle.
+    @Test func angleWithNoPosterYetStillParses() {
+        let r = ReleasedRecording.from(id: "x", data: data())
+        #expect(r?.videos.count == 3)
+        #expect(r?.videos.allSatisfy { $0.thumbnailURL == nil } == true)
+    }
+
+    // A failed ffmpeg extraction can leave the field present but empty; that is
+    // "no poster", not a URL to hand the loader.
+    @Test func emptyPosterURLBecomesNil() {
+        let d = data(["videos": [["camera": "front", "download_url": "https://e.com/a.mp4",
+                                  "thumbnail_url": ""]]])
+        #expect(ReleasedRecording.from(id: "x", data: d)?.videos.first?.thumbnailURL == nil)
+    }
+
     @Test func rejectsDocWithNoClassAndNoAngles() {
         #expect(ReleasedRecording.from(id: "x", data: ["source": "x", "videos": []]) == nil)
     }

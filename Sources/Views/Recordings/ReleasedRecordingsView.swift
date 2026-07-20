@@ -129,9 +129,15 @@ struct ReleasedRecordingsView: View {
     // smoke test of playback needs a live release or a working sample URL.
     static let mock: [ReleasedRecording] = {
         let sample = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample"
+        // A bundled LANDSCAPE poster (320×180) stands in for the watcher-written
+        // thumbnail_url, so the UITests exercise the real poster path offline —
+        // including the scaledToFill/clipped geometry that a wide poster in a
+        // 16:9 tile would otherwise use to overlap its neighbours on iPad.
+        let poster = Bundle.main.url(forResource: "test-landscape", withExtension: "png")
         func angle(_ camera: String, _ file: String) -> ReleasedRecording.Angle {
             .init(camera: camera, storagePath: "recordings/\(file)",
-                  downloadURL: URL(string: "\(sample)/\(file)"))
+                  downloadURL: URL(string: "\(sample)/\(file)"),
+                  thumbnailURL: poster)
         }
         return [
             ReleasedRecording(
@@ -294,15 +300,17 @@ private struct AngleThumbnail: View {
         ZStack {
             RoundedRectangle(cornerRadius: DS.Radius.sm).fill(Color.black)
 
-            // Poster behind the play glyph (nil until the release pipeline
-            // writes thumbnail_url). scaledToFill is clipped below so it can't
-            // inflate the tile's frame and overlap its neighbours in the row.
+            // Poster behind the play glyph, written per angle by the
+            // recording-posters watcher (#1071). PosterImage — not AsyncImage —
+            // so a tile recycled by the LazyVStack repaints its poster from
+            // cache in the first frame instead of flashing black and
+            // re-downloading, which is what makes the grid feel instant the way
+            // manage's /recordings does. scaledToFill is clipped below so it
+            // can't inflate the tile's frame and overlap its neighbours.
             if let t = angle.thumbnailURL {
-                AsyncImage(url: t) { img in
-                    img.resizable().scaledToFill()
-                } placeholder: { Color.black }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
+                PosterImage(url: t)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
             }
 
             if angle.downloadURL == nil {

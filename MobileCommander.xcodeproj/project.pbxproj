@@ -43,6 +43,7 @@
 		55E914A66D86384710B7EE1A /* PresenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */; };
 		5820C8F8D4C136B9CF50F3DA /* AssignedVideo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1980CB29E124CEDE94CF56 /* AssignedVideo.swift */; };
 		592A0C66C8E5D40D7F69F332 /* VideosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1BC0414B9EC9FE047A8AE7 /* VideosView.swift */; };
+		5F5A4A330B6E00F021AF1566 /* PosterImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAAFCC2A804487A3ACA928C5 /* PosterImage.swift */; };
 		648FF4F950395D8709CEBCF3 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB11B856542D6EB45A86C10 /* DashboardView.swift */; };
 		6511EAE2670DE68090EE4139 /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB596265733DE9F91A8E46AE /* TaskListView.swift */; };
 		68A6DC81E2933D7B9A46CF17 /* OwnerRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429C44E0037C948917C776C1 /* OwnerRequestView.swift */; };
@@ -201,6 +202,7 @@
 		C851EF18EB9536245D7498D6 /* VideoDownloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDownloadTests.swift; sourceTree = "<group>"; };
 		C86CDC9EFA55036F698DDE17 /* ListenerGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListenerGate.swift; sourceTree = "<group>"; };
 		C95C64B09B0FD6CD4C822EFF /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
+		CAAFCC2A804487A3ACA928C5 /* PosterImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterImage.swift; sourceTree = "<group>"; };
 		CE74CCC71E8406A9BCE1EBFE /* PresenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceTests.swift; sourceTree = "<group>"; };
 		CEDCD4D7F25722D64FA527B0 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
 		D8A747BF3C6371A04CFCD83B /* ReportIssueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportIssueTests.swift; sourceTree = "<group>"; };
@@ -440,6 +442,7 @@
 				BE92C9AA042B981A92E1F41A /* LoginView.swift */,
 				0F8C1BB0260751C7A0D5A5D1 /* ModeSwitcher.swift */,
 				308A8B6DCACA137B7F76E423 /* NotificationBell.swift */,
+				CAAFCC2A804487A3ACA928C5 /* PosterImage.swift */,
 				B33564207E7BD5526689ADD0 /* VoiceInputButton.swift */,
 			);
 			path = Shared;
@@ -655,6 +658,7 @@
 				68A6DC81E2933D7B9A46CF17 /* OwnerRequestView.swift in Sources */,
 				EBD1458C57972C41EDC9D86D /* OwnerStatusView.swift in Sources */,
 				1CAF88F53D8E141A28DE0857 /* OwnerTabView.swift in Sources */,
+				5F5A4A330B6E00F021AF1566 /* PosterImage.swift in Sources */,
 				168179FD3504BFE01EF96F9B /* Presence.swift in Sources */,
 				8240B000A65C4EE70F9A0C2C /* PresenceModels.swift in Sources */,
 				A8A9205635E65FA97651054C /* PresenceService.swift in Sources */,

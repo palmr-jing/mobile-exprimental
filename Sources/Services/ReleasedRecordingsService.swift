@@ -20,14 +20,33 @@ final class ReleasedRecordingsService: ObservableObject {
 
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
-    private var started = false
+    // The uid we're subscribed for. Keyed on the user rather than a plain
+    // "did we start" flag so a different signed-in user re-subscribes instead of
+    // inheriting the previous session's listener (matching VideoService).
+    private var currentUID: String?
 
-    // Begin the live subscription. Idempotent: safe to call from `.task` on every
-    // appearance. Only a signed-in user may read (see the collection's rule), so
-    // the caller gates this behind an authenticated session.
-    func start() {
-        guard !started else { return }
-        started = true
+    // Begin the live subscription for the signed-in user. Idempotent: safe to
+    // call from `.task` on every appearance. Only a signed-in user may read (see
+    // the collection's rule), so the caller gates this behind an authenticated
+    // session.
+    func start(uid: String) {
+        guard uid != currentUID else { return }
+        subscribe(uid: uid)
+    }
+
+    // Re-attach after a failure (task #1068). Firestore does NOT retry a snapshot
+    // listener that failed with permission-denied — it tears the listener down for
+    // good. Without this the Released tab stayed on "Couldn't load recordings"
+    // for the rest of the process, even once the user's token was valid again;
+    // the only way out was force-quitting the app.
+    func retry() {
+        guard let uid = currentUID else { return }
+        subscribe(uid: uid)
+    }
+
+    private func subscribe(uid: String) {
+        stop()
+        currentUID = uid
         isLoading = true
         listener = db.collection("released_recordings")
             .addSnapshotListener { [weak self] snapshot, error in
@@ -35,7 +54,11 @@ final class ReleasedRecordingsService: ObservableObject {
                     guard let self else { return }
                     self.isLoading = false
                     if let error {
-                        self.errorMessage = error.localizedDescription
+                        self.errorMessage = Self.message(for: error)
+                        // The listener is already dead; drop our handle so a
+                        // retry attaches a fresh one rather than a no-op.
+                        self.listener?.remove()
+                        self.listener = nil
                         return
                     }
                     self.errorMessage = nil
@@ -49,7 +72,34 @@ final class ReleasedRecordingsService: ObservableObject {
     func stop() {
         listener?.remove()
         listener = nil
-        started = false
+        currentUID = nil
+    }
+
+    // Shown when the read is rejected by the collection's security rule. Firestore
+    // words this as "Missing or insufficient permissions.", which told the
+    // reporter of #1068 nothing about what to do next.
+    nonisolated static let permissionDeniedMessage =
+        "Your account doesn't have access to released recordings yet. Try again, or sign out and back in — if it keeps happening, ask an admin to check your access."
+
+    // Translate the SDK's error strings into something a user can act on. Anything
+    // we don't recognise falls through to the original text rather than being
+    // swallowed, so unexpected failures stay diagnosable.
+    //
+    // `nonisolated` (and static) so it's a pure function: callable off the main
+    // actor, and testable without constructing the service — which would spin up
+    // `Firestore.firestore()` and need a configured FirebaseApp.
+    nonisolated static func message(for error: Error) -> String {
+        let ns = error as NSError
+        guard ns.domain == FirestoreErrorDomain else { return ns.localizedDescription }
+        switch ns.code {
+        case FirestoreErrorCode.Code.permissionDenied.rawValue,
+             FirestoreErrorCode.Code.unauthenticated.rawValue:
+            return permissionDeniedMessage
+        case FirestoreErrorCode.Code.unavailable.rawValue:
+            return "Can't reach the server. Check your connection and try again."
+        default:
+            return ns.localizedDescription
+        }
     }
 
     deinit { listener?.remove() }

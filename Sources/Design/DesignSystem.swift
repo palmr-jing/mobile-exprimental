@@ -147,6 +147,7 @@ struct EmptyStateView: View {
                         .background(DS.Colors.accent)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                 }
+                .accessibilityIdentifier("empty-state-action")
             }
         }
         .padding(DS.Spacing.xxl)

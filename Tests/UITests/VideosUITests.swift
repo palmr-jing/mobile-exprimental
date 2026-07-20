@@ -109,6 +109,29 @@ final class VideosUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 10), "didn't return to the grid")
     }
 
+    // Reproduces task #1069: the Videos tab showed "Couldn't load videos /
+    // Missing or insufficient permissions." after the Firestore rules for
+    // commander_videos were dropped by an unrelated deploy. A Firestore listener
+    // killed by a rules denial never re-subscribes on its own, so the tab must
+    // offer a way back — otherwise force-quitting is the only recovery even
+    // after the backend is healthy again.
+    func testLoadFailureOffersRetryAndRecovers() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UITEST", "-MOCK_VIDEOS",
+                               "-MOCK_VIDEOS_ERROR", "Missing or insufficient permissions."]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Couldn't load videos"].waitForExistence(timeout: 20),
+                      "load failure didn't surface an error state")
+        let retry = app.buttons["videos-retry"]
+        XCTAssertTrue(retry.exists, "error state offered no way to retry — user is stuck until force-quit")
+
+        retry.tap()
+        XCTAssertTrue(app.staticTexts["Muay Thai Kickboxing"].waitForExistence(timeout: 20),
+                      "retry didn't re-subscribe — grid never appeared")
+        XCTAssertFalse(app.staticTexts["Couldn't load videos"].exists, "error state survived a successful retry")
+    }
+
     // The per-tab "Report an issue" button opens a sheet with the description
     // field + a captured screenshot; Report stays disabled until text is entered.
     func testReportIssueSheetOpens() {

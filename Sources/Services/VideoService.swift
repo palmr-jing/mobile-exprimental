@@ -43,7 +43,7 @@ final class VideoService: ObservableObject {
                     guard let self else { return }
                     self.isLoading = false
                     if let error {
-                        self.errorMessage = error.localizedDescription
+                        self.errorMessage = Self.friendlyMessage(for: error)
                         return
                     }
                     self.errorMessage = nil
@@ -58,6 +58,36 @@ final class VideoService: ObservableObject {
         listener?.remove()
         listener = nil
         currentEmail = nil
+    }
+
+    // Re-subscribe after a failure. Firestore TERMINATES a snapshot listener on
+    // permission-denied and never retries it, and `start` early-returns when the
+    // email is unchanged — so without this the tab stays stuck on the error for
+    // the rest of the session even once the backend is healthy again. That is
+    // what #1069 looked like from the user's side: the Firestore rules for
+    // `commander_videos` were dropped by an unrelated deploy, and force-quitting
+    // the app was the only way back.
+    func retry() {
+        guard let email = currentEmail else { return }
+        stop()  // clears currentEmail, so the "already listening" guard won't block
+        errorMessage = nil
+        start(email: email)
+    }
+
+    // Firestore's own `localizedDescription` for a rules denial is "Missing or
+    // insufficient permissions." — accurate but it reads as the user's fault and
+    // offers no way forward. Access to videos is granted server-side, so the
+    // honest framing is "this is being fixed, try again".
+    // `nonisolated` — it's a pure mapping over an NSError with no actor state,
+    // so tests (and any caller) can use it off the main actor.
+    nonisolated static func friendlyMessage(for error: Error) -> String {
+        let ns = error as NSError
+        guard ns.domain == FirestoreErrorDomain,
+              ns.code == FirestoreErrorCode.permissionDenied.rawValue else {
+            return ns.localizedDescription
+        }
+        return "Your account doesn't have access to videos right now. "
+             + "This is usually temporary — tap Try Again."
     }
 
     // Resolve a playable URL: prefer the direct https URL, otherwise turn the

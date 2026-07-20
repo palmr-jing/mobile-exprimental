@@ -11,6 +11,9 @@ struct VideosView: View {
     @EnvironmentObject private var feed: VideoFeedPresenter
     @StateObject private var service = VideoService()
     @State private var filter: Filter = .all
+    // Seeded from the -MOCK_VIDEOS_ERROR launch arg so the failure + recovery
+    // path is UITestable offline; nil (and unreachable) in production.
+    @State private var mockError: String? = TestConfig.mockVideosError
 
     enum Filter: String, CaseIterable, Identifiable {
         case all = "All", reels = "Reels", recordings = "Recordings"
@@ -21,6 +24,8 @@ struct VideosView: View {
     private var source: [AssignedVideo] { TestConfig.isMockVideos ? Self.mock : service.videos }
     private var isLoading: Bool { TestConfig.isMockVideos ? false : service.isLoading }
     private var shown: [AssignedVideo] { AssignedVideo.filter(source, kind: filter.kind) }
+    // The mock seam wins so the failure state is reachable under -MOCK_VIDEOS.
+    private var errorText: String? { mockError ?? (TestConfig.isMockVideos ? nil : service.errorMessage) }
 
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
 
@@ -35,8 +40,8 @@ struct VideosView: View {
                 Group {
                     if isLoading {
                         ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if let msg = service.errorMessage, !TestConfig.isMockVideos {
-                        empty("exclamationmark.triangle", "Couldn't load videos", msg)
+                    } else if let msg = errorText {
+                        empty("exclamationmark.triangle", "Couldn't load videos", msg, retry: retry)
                     } else if shown.isEmpty {
                         empty("film.stack", "No videos yet", "Reels released to you from the gym will appear here.")
                     } else {
@@ -96,14 +101,34 @@ struct VideosView: View {
         return [webmReel] + hosted
     }()
 
-    private func empty(_ icon: String, _ title: String, _ subtitle: String) -> some View {
+    // Re-subscribe after a load failure. A Firestore listener killed by a rules
+    // denial never comes back on its own, so without this the only recovery is
+    // force-quitting the app (#1069).
+    private func retry() {
+        if mockError != nil { mockError = nil; return }
+        service.retry()
+    }
+
+    private func empty(_ icon: String, _ title: String, _ subtitle: String,
+                       retry: (() -> Void)? = nil) -> some View {
         VStack(spacing: 10) {
             Image(systemName: icon).font(.system(size: 40)).foregroundColor(DS.Colors.secondary)
             Text(title).font(.headline).foregroundColor(DS.Colors.text)
             Text(subtitle).font(.subheadline).foregroundColor(DS.Colors.secondary)
                 .multilineTextAlignment(.center)
+            if let retry {
+                Button("Try Again", action: retry)
+                    .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 4)
+                    .accessibilityIdentifier("videos-retry")
+            }
         }
         .padding(32).frame(maxWidth: .infinity, maxHeight: .infinity)
+        // `.contain` keeps the Try Again button its own queryable element —
+        // an identifier on the container otherwise merges the children into a
+        // single element and the button becomes untappable from XCUITest.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("videos-empty")
     }
 }

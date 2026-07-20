@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import FirebaseFirestore
 @testable import MobileCommander
 
 // Verifies the iOS reader parses exactly what manage.everbot.org's Reels
@@ -108,5 +109,27 @@ struct VideoTests {
         // the real bug: Muay Thai wouldn't open because its fields differed.)
         let staleB = mk("b", title: "different")
         #expect(AssignedVideo.rotated(list, first: staleB).map(\.id) == ["b", "a"])
+    }
+
+    // Task #1069: a rules denial surfaced Firestore's raw "Missing or
+    // insufficient permissions.", which reads as the user's fault and offers no
+    // way forward. Access is granted server-side, so the copy must point at a
+    // retry instead.
+    @Test func permissionDeniedGetsActionableMessage() {
+        let denied = NSError(domain: FirestoreErrorDomain,
+                             code: FirestoreErrorCode.permissionDenied.rawValue,
+                             userInfo: [NSLocalizedDescriptionKey: "Missing or insufficient permissions."])
+        let msg = VideoService.friendlyMessage(for: denied)
+        #expect(!msg.contains("Missing or insufficient permissions"))
+        #expect(msg.contains("Try Again"))
+    }
+
+    // Any other failure (offline, backend unavailable) keeps Firestore's own
+    // wording — it's more specific than anything we'd substitute.
+    @Test func nonPermissionErrorsKeepTheirOwnMessage() {
+        let offline = NSError(domain: FirestoreErrorDomain,
+                              code: FirestoreErrorCode.unavailable.rawValue,
+                              userInfo: [NSLocalizedDescriptionKey: "The service is currently unavailable."])
+        #expect(VideoService.friendlyMessage(for: offline) == "The service is currently unavailable.")
     }
 }

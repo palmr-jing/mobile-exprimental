@@ -123,16 +123,13 @@ struct ReleasedRecordingsView: View {
     }
 
     // Deterministic fixtures for the -MOCK_RELEASED screenshot seam (inert in
-    // production). NOTE: the gtv-videos-bucket sample URLs below now answer 403,
-    // so those tiles open to the "couldn't be loaded" message — fine for the
-    // UITests that assert navigation and the format guard, but useless for
-    // anything that needs a *playing* video.
-    //
-    // So the first angle points at a bundled 3-second MP4 instead
-    // (`Resources/test-angle.mp4`). That makes playback itself testable offline:
-    // it's the only fixture that reaches a real AVPlayer with no network, which
-    // is what lets `testFullSizeViewerIsWatermarked` verify the #1072 branding on
-    // the surface it was missing from. Keep it first in the list.
+    // production). The remote gtv-videos-bucket sample URLs answer 403, so the
+    // FIRST angle instead points at a 17KB clip bundled with the app
+    // (Resources/test-sample-clip.mp4). That gives the offline UITests a tile
+    // that genuinely plays, which is what makes the full-screen viewer's
+    // playback surface — and the watermark on it (#1072/#1075) — assertable on a
+    // simulator with no network. The remaining angles keep the remote URLs so
+    // the "couldn't load" guard still has something to fire on.
     static let mock: [ReleasedRecording] = {
         let sample = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample"
         // A bundled LANDSCAPE poster (320×180) stands in for the watcher-written
@@ -145,9 +142,15 @@ struct ReleasedRecordingsView: View {
                   downloadURL: URL(string: "\(sample)/\(file)"),
                   thumbnailURL: poster)
         }
-        // Falls back to the (403ing) remote sample if the fixture ever falls out
-        // of the bundle, so the mock still renders a tile rather than crashing.
-        let local = Bundle.main.url(forResource: "test-angle", withExtension: "mp4")
+        // Bundled, so it plays with no network. Falls back to the remote URL if
+        // the resource is somehow missing rather than yielding a nil-URL tile.
+        func playableAngle(_ camera: String) -> ReleasedRecording.Angle {
+            guard let local = Bundle.main.url(forResource: "test-sample-clip", withExtension: "mp4") else {
+                return angle(camera, "BigBuckBunny.mp4")
+            }
+            return .init(camera: camera, storagePath: "recordings/test-sample-clip.mp4",
+                         downloadURL: local, thumbnailURL: poster)
+        }
         return [
             ReleasedRecording(
                 id: "plan_1", groupKey: "g1", className: "IMA Fit + Tiny Tigers",
@@ -155,8 +158,7 @@ struct ReleasedRecordingsView: View {
                 startsAt: Date(timeIntervalSince1970: 1_783_680_000),   // 2026-07-10
                 releasedAt: Date(timeIntervalSince1970: 1_783_686_000),
                 releasedBy: "jing@everbot.org", angleCount: 3,
-                videos: [.init(camera: "front", storagePath: "recordings/test-angle.mp4",
-                               downloadURL: local ?? URL(string: "\(sample)/BigBuckBunny.mp4")),
+                videos: [playableAngle("front"),
                          angle("front-right", "ElephantsDream.mp4"),
                          angle("realsense", "ForBiggerBlazes.mp4")]),
             ReleasedRecording(

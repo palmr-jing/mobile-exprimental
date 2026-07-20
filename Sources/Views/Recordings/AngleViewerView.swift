@@ -27,8 +27,11 @@ struct AngleViewerView: View {
     @State private var statusObserver: AnyCancellable?
 
     enum SaveState: Equatable {
-        case idle, saving, saved
+        case idle, saved
+        case saving(VideoDownload.Phase)
         case failed(String)
+
+        var isSaving: Bool { if case .saving = self { return true }; return false }
     }
 
     var body: some View {
@@ -37,6 +40,11 @@ struct AngleViewerView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: DS.Radius.md).fill(Color.black)
                     if let player {
+                        // The displayed surface is branded by ViewerWatermark on
+                        // the ZStack below (#1072) — without it the mark visibly
+                        // disappeared the moment you tapped a tile (#1075). This
+                        // overlay is presentation only; the copy the user *saves*
+                        // is branded in its pixels by VideoWatermark on download.
                         VideoPlayer(player: player)
                             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
                             .accessibilityIdentifier("angle-player")
@@ -113,9 +121,16 @@ struct AngleViewerView: View {
         Button(action: download) {
             HStack(spacing: DS.Spacing.sm) {
                 switch save {
-                case .saving:
+                case .saving(let phase):
                     ProgressView().tint(.white)
-                    Text("Saving to Photos…")
+                    // Name the step. Watermarking re-encodes the whole
+                    // recording, so on a long class a generic "Saving…" sits
+                    // there long enough to read as a hang.
+                    switch phase {
+                    case .downloading:  Text("Downloading…")
+                    case .watermarking: Text("Adding the Palmr watermark…")
+                    case .saving:       Text("Saving to Photos…")
+                    }
                 case .saved:
                     Image(systemName: "checkmark.circle.fill")
                     Text("Saved to Photos")
@@ -132,7 +147,7 @@ struct AngleViewerView: View {
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
         }
         .buttonStyle(.plain)
-        .disabled(save == .saving || save == .saved || angle.downloadURL == nil)
+        .disabled(save.isSaving || save == .saved || angle.downloadURL == nil)
         .opacity(angle.downloadURL == nil ? 0.5 : 1)
         .accessibilityIdentifier("angle-download")
     }
@@ -218,11 +233,12 @@ struct AngleViewerView: View {
     }
 
     private func download() {
-        guard let url = angle.downloadURL, save != .saving else { return }
-        save = .saving
+        guard let url = angle.downloadURL, !save.isSaving else { return }
+        save = .saving(.downloading)
         Task { @MainActor in
             do {
-                try await VideoDownload.saveToPhotos(from: url, className: className, camera: angle.camera)
+                try await VideoDownload.saveToPhotos(from: url, className: className,
+                                                     camera: angle.camera) { save = .saving($0) }
                 save = .saved
             } catch {
                 save = .failed((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)

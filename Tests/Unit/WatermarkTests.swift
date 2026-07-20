@@ -127,13 +127,13 @@ struct WatermarkTests {
 
     @Test func exportOverlayRendersAtTheRequestedSize() throws {
         let size = CGSize(width: 320, height: 568)
-        let overlay = try #require(ReelExport.makeOverlay(renderSize: size, text: "", pos: CGPoint(x: 0.5, y: 0.82)))
+        let overlay = try #require(VideoWatermark.makeOverlay(renderSize: size, text: "", pos: CGPoint(x: 0.5, y: 0.82)))
         #expect(overlay.extent.width == size.width)
         #expect(overlay.extent.height == size.height)
     }
 
     @Test func exportOverlayIsNilForAnEmptyFrame() {
-        #expect(ReelExport.makeOverlay(renderSize: .zero, text: "hi", pos: CGPoint(x: 0.5, y: 0.5)) == nil)
+        #expect(VideoWatermark.makeOverlay(renderSize: .zero, text: "hi", pos: CGPoint(x: 0.5, y: 0.5)) == nil)
     }
 }
 

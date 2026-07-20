@@ -20,8 +20,9 @@ struct ReleasedRecordingsView: View {
     private var source: [ReleasedRecording] { TestConfig.isMockReleased ? Self.mock : service.recordings }
     private var isLoading: Bool { TestConfig.isMockReleased ? false : service.isLoading }
 
-    // The failure to show instead of the list, if any.
-    private var failure: String? {
+    // The error to show, if any. The mock seam short-circuits the live service so
+    // the failure state is reachable without Firebase.
+    private var errorText: String? {
         if TestConfig.isMockReleasedError {
             return mockRetried ? nil : ReleasedRecordingsService.permissionDeniedMessage
         }
@@ -33,8 +34,12 @@ struct ReleasedRecordingsView: View {
             Group {
                 if isLoading {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let msg = failure {
-                    errorState(msg)
+                } else if let msg = errorText {
+                    // A failed load MUST offer a way out: Firestore kills the
+                    // listener on error, so without this the tab stayed dead
+                    // until the app was force-quit (#1068/#1070).
+                    empty("exclamationmark.triangle", "Couldn't load recordings", msg,
+                          actionLabel: "Try again", action: retry)
                 } else if source.isEmpty {
                     empty("video.slash", "No released recordings",
                           "Class recordings released from manage.everbot.org will appear here.")
@@ -64,30 +69,28 @@ struct ReleasedRecordingsView: View {
             AngleViewerView(angle: target.angle, className: target.className,
                             subtitle: target.subtitle)
         }
-        // The collection is readable only to a signed-in user; start once we have
-        // an authenticated session (re-runs if the user changes).
+        // The collection is readable only to a signed-in user, so the subscription
+        // is keyed on the uid: this re-runs when the identity changes AND when the
+        // tab is revisited, and the service re-attaches if the previous listener
+        // died — which is what makes a transient permission-denied recoverable.
+        // On sign-out (uid nil) the listener is torn down rather than left to fail
+        // against the next session.
         .task(id: auth.currentUser?.uid) {
-            if !TestConfig.isMockReleased, let uid = auth.currentUser?.uid { service.start(uid: uid) }
+            guard !TestConfig.isMockReleased else { return }
+            if let uid = auth.currentUser?.uid {
+                service.start(uid: uid)
+            } else {
+                service.stop()
+            }
         }
     }
 
-    // A load failure is recoverable, so it gets an action rather than being a
-    // dead end: Firestore kills a listener that hits permission-denied and never
-    // retries it, which used to strand this tab on the error until the app was
-    // force-quit (#1068). No container-level accessibilityIdentifier here — one
-    // would propagate down and flatten the retry button out of the query tree.
-    private func errorState(_ message: String) -> some View {
-        EmptyStateView(icon: "exclamationmark.triangle",
-                       title: "Couldn't load recordings",
-                       subtitle: message,
-                       actionLabel: "Try again",
-                       action: retry)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
     private func retry() {
-        if TestConfig.isMockReleasedError { mockRetried = true; return }
-        service.retry()
+        if TestConfig.isMockReleasedError {
+            mockRetried = true
+            return
+        }
+        service.retry(uid: auth.currentUser?.uid)
     }
 
     // The angle the viewer sheet is showing. Identified by class + camera, which
@@ -99,10 +102,24 @@ struct ReleasedRecordingsView: View {
         var id: String { "\(className)-\(angle.camera)" }
     }
 
-    private func empty(_ icon: String, _ title: String, _ subtitle: String) -> some View {
-        EmptyStateView(icon: icon, title: title, subtitle: subtitle)
+    @ViewBuilder
+    private func empty(_ icon: String, _ title: String, _ subtitle: String,
+                       actionLabel: String? = nil,
+                       action: (() -> Void)? = nil) -> some View {
+        let state = EmptyStateView(icon: icon, title: title, subtitle: subtitle,
+                                   actionLabel: actionLabel, action: action)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .accessibilityIdentifier("released-empty")
+        // Identify the container ONLY when it holds no button. A container-level
+        // identifier propagates down and clobbers the child button's own
+        // identifier, making it unfindable in UITests (the same trap documented
+        // on RecordingCard) — and an empty-string identifier still creates the
+        // flattening container, so the modifier has to be omitted outright. The
+        // actionable variant is addressed via the button's "empty-state-action" id.
+        if action == nil {
+            state.accessibilityIdentifier("released-empty")
+        } else {
+            state
+        }
     }
 
     // Deterministic fixtures for the -MOCK_RELEASED screenshot seam (inert in

@@ -30,9 +30,11 @@ enum TestConfig {
     /// same fixtures.
     static var isMockReleased: Bool { args.contains("-MOCK_RELEASED") || isMockReleasedError }
 
-    /// Start the Released tab in the permission-denied failure state (task #1068)
-    /// so the "Couldn't load recordings" screen and its retry path are testable
-    /// offline. Tapping retry recovers to the `-MOCK_RELEASED` fixtures.
+    /// Start the Released tab in the permission-denied failure state (tasks
+    /// #1068/#1070) so the "Couldn't load recordings" screen and its retry path
+    /// are testable offline — the reported failure was that this state had no way
+    /// out. Tapping "Try again" recovers to the `-MOCK_RELEASED` fixtures. Inert
+    /// in production.
     static var isMockReleasedError: Bool { args.contains("-MOCK_RELEASED_ERROR") }
 
     /// Inject a canned transcript instead of running SFSpeechRecognizer.

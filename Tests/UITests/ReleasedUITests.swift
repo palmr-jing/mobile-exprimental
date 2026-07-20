@@ -138,6 +138,36 @@ final class ReleasedUITests: XCTestCase {
         XCTAssertGreaterThan(mark.midY, tile.midY, "watermark should sit near the bottom, off the play glyph")
     }
 
+    // The reported bug (#1070): the tab showed "Couldn't load recordings /
+    // Missing or insufficient permissions" with no way out. Firestore tears the
+    // snapshot listener down on error and the old service guarded on a one-shot
+    // `started` flag, so nothing ever re-attached — force-quitting the app was
+    // the only recovery. The failure state must now name a cause the user can act
+    // on and offer a retry that actually reloads the list.
+    func testLoadFailureOffersARecoverableRetry() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UITEST", "-MOCK_RELEASED", "-MOCK_RELEASED_ERROR"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Couldn't load recordings"].waitForExistence(timeout: 20),
+                      "expected the load-failure state")
+
+        // The copy must point at the fix, not echo Firestore's opaque text.
+        XCTAssertFalse(app.staticTexts["Missing or insufficient permissions."].exists,
+                       "raw Firestore copy gives the user nothing to act on")
+
+        let retry = app.buttons["empty-state-action"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 5),
+                      "the error state stranded the user with no retry")
+        retry.tap()
+
+        // Retrying must leave the error state and render the recordings.
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20),
+                      "Try again didn't reload the recordings")
+        XCTAssertFalse(app.staticTexts["Couldn't load recordings"].exists,
+                       "error state survived a successful retry")
+    }
+
     func testSendRecordingBundleToChatSheetOpens() {
         let app = launch()
         XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))

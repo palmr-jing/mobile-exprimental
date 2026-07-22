@@ -218,9 +218,9 @@ struct MessageBubbleView: View {
 
     private func cameraLabel(_ camera: String) -> String {
         switch camera.lowercased() {
-        case "front": return "Front"
-        case "front-right": return "Front-right"
-        case "realsense": return "RealSense"
+        case "front": return "Left"
+        case "front-right": return "Right"
+        case "realsense": return "Center"
         default: return camera.isEmpty ? "Angle" : camera.replacingOccurrences(of: "-", with: " ").capitalized
         }
     }

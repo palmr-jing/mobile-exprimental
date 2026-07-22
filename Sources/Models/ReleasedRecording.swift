@@ -48,9 +48,9 @@ struct ReleasedRecording: Identifiable, Equatable {
         // unexpected camera name still renders sensibly.
         var displayName: String {
             switch camera.lowercased() {
-            case "front":       return "Front"
-            case "front-right": return "Front-right"
-            case "realsense":   return "RealSense"
+            case "front":       return "Left"
+            case "front-right": return "Right"
+            case "realsense":   return "Center"
             default:
                 return camera.isEmpty ? "Camera"
                     : camera.replacingOccurrences(of: "-", with: " ").capitalized
@@ -65,9 +65,19 @@ struct ReleasedRecording: Identifiable, Equatable {
             .hour().minute())
     }
 
-    // "everbot-lubancat-2 · Studio A" — device, plus room when present.
+    // Friendly display names for the two IMA rigs; unknown device ids fall
+    // through to the raw id so nothing renders blank.
+    static func deviceDisplayName(_ id: String) -> String {
+        switch id {
+        case "everbot-lubancat-2": return "IMA (Wall)"
+        case "everbot-lubancat-1": return "IMA (Ceiling)"
+        default:                   return id
+        }
+    }
+
+    // "IMA (Wall) · Studio A" — device (friendly name), plus room when present.
     var deviceLabel: String? {
-        let parts = [device, room].compactMap { $0 }.filter { !$0.isEmpty }
+        let parts = [device.map(Self.deviceDisplayName), room].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 

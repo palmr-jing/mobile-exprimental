@@ -3,7 +3,7 @@ import SwiftUI
 // The Released tab: class recordings released to the app from
 // manage.everbot.org's Recordings tab (the `released_recordings` collection).
 // One card per released class, newest-first, with its grouped camera angles
-// (Front / Front-right / RealSense) as thumbnails. Tapping one opens it
+// (Left / Right / Center) as thumbnails. Tapping one opens it
 // full-size in AngleViewerView, where it plays large and can be saved to the
 // phone's Photos library.
 struct ReleasedRecordingsView: View {

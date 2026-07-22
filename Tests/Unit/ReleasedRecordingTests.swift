@@ -46,19 +46,19 @@ struct ReleasedRecordingTests {
 
     @Test func mapsCameraLabels() {
         let r = ReleasedRecording.from(id: "x", data: data())
-        #expect(r?.videos.map(\.displayName) == ["Front", "Front-right", "RealSense"])
+        #expect(r?.videos.map(\.displayName) == ["Left", "Right", "Center"])
     }
 
     @Test func nullRoomBecomesNilAndIsOmittedFromLabel() {
         let r = ReleasedRecording.from(id: "x", data: data())
         #expect(r?.room == nil)
-        #expect(r?.deviceLabel == "everbot-lubancat-2")
+        #expect(r?.deviceLabel == "IMA (Wall)")
     }
 
     @Test func roomWhenPresentJoinsDeviceLabel() {
         let r = ReleasedRecording.from(id: "x", data: data(["room": "Studio A"]))
         #expect(r?.room == "Studio A")
-        #expect(r?.deviceLabel == "everbot-lubancat-2 · Studio A")
+        #expect(r?.deviceLabel == "IMA (Wall) · Studio A")
     }
 
     @Test func angleCountFallsBackToVideoCount() {

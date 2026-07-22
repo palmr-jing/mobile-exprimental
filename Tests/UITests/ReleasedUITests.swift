@@ -298,7 +298,7 @@ final class ReleasedUITests: XCTestCase {
         let download = app.buttons["angle-download"]
         XCTAssertTrue(download.waitForExistence(timeout: 10), "viewer didn't open")
         XCTAssertTrue(download.isEnabled, "download action should be available")
-        XCTAssertTrue(app.staticTexts["Front"].exists, "viewer should name the angle")
+        XCTAssertTrue(app.staticTexts["Left"].exists, "viewer should name the angle")
 
         app.buttons["angle-viewer-done"].tap()
         XCTAssertTrue(app.buttons["angle-play"].firstMatch.waitForExistence(timeout: 10),

@@ -48,7 +48,8 @@ struct ReleasedRecordingsView: View {
                         LazyVStack(spacing: DS.Spacing.lg) {
                             ForEach(source) { rec in
                                 RecordingCard(recording: rec) { angle in
-                                    opened = OpenAngle(angle: angle, className: rec.className,
+                                    opened = OpenAngle(angle: angle, recording: rec,
+                                                       className: rec.className,
                                                        subtitle: rec.startsAtLabel)
                                 }
                             }
@@ -67,7 +68,7 @@ struct ReleasedRecordingsView: View {
         .tint(DS.Colors.accent)
         .sheet(item: $opened) { target in
             AngleViewerView(angle: target.angle, className: target.className,
-                            subtitle: target.subtitle)
+                            subtitle: target.subtitle, recording: target.recording)
         }
         // The collection is readable only to a signed-in user, so the subscription
         // is keyed on the uid: this re-runs when the identity changes AND when the
@@ -97,6 +98,8 @@ struct ReleasedRecordingsView: View {
     // is unique across the list (one doc per class, one entry per camera).
     struct OpenAngle: Identifiable {
         let angle: ReleasedRecording.Angle
+        // The parent class, so the viewer can stamp recording context on a report.
+        let recording: ReleasedRecording
         let className: String
         let subtitle: String?
         var id: String { "\(className)-\(angle.camera)" }

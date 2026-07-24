@@ -12,8 +12,17 @@ struct AngleViewerView: View {
     let angle: ReleasedRecording.Angle
     let className: String
     let subtitle: String?
+    // The parent released class, so "Report an issue" from here stamps the exact
+    // recording (class, plan id, device, angles) onto the ticket's context map.
+    var recording: ReleasedRecording?
 
     @Environment(\.dismiss) private var dismiss
+    // A viewer-local reporter + a viewer-local report sheet (below). Deliberately
+    // NOT the app-root ReportIssuePresenter: presenting the root's shared sheet
+    // from inside this already-presented sheet asks UIKit to present from a view
+    // controller that's now behind us, which silently no-ops. A local sheet
+    // presents from the topmost controller — this viewer — as it must.
+    @StateObject private var reporter = ReportIssuePresenter()
     @State private var player: AVPlayer?
     @State private var save: SaveState = .idle
     // Playback (not the Save path) failed — a container iOS can't decode, an
@@ -105,6 +114,15 @@ struct AngleViewerView: View {
             .navigationTitle(className)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        reporter.start(context: reportContext)
+                    } label: {
+                        Image(systemName: "exclamationmark.bubble")
+                    }
+                    .accessibilityLabel("Report an issue")
+                    .accessibilityIdentifier("report-issue")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }.accessibilityIdentifier("angle-viewer-done")
                 }
@@ -112,8 +130,22 @@ struct AngleViewerView: View {
         }
         .tint(DS.Colors.accent)
         .accessibilityIdentifier("angle-viewer")
+        // Report sheet attached HERE (topmost presented controller) rather than at
+        // the app root, so it presents correctly over this viewer sheet.
+        .sheet(item: $reporter.draft) { draft in
+            ReportIssueView(draft: draft).environmentObject(reporter)
+        }
         .onAppear(perform: start)
         .onDisappear(perform: teardown)
+    }
+
+    // The recording (and focused angle) this report is about, or just the tab when
+    // the parent class wasn't passed in.
+    private var reportContext: ReportContext {
+        if let recording {
+            return .recording(recording, focusedAngle: angle, tab: "Released")
+        }
+        return ReportContext(tab: "Released")
     }
 
     @ViewBuilder

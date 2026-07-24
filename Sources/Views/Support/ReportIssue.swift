@@ -24,6 +24,79 @@ enum ScreenCapture {
     }
 }
 
+// Structured "where did this come from" that every report stamps onto its task's
+// `context` map, mirroring palmr-coach and the web issue_reports standard so a
+// ticket self-describes the app, screen, and object it's about — and nothing gets
+// mis-attributed. Every report carries at least the tab; a screen focused on a
+// single object (a class recording, say) adds that object's identifying fields
+// under the same map.
+struct ReportContext: Equatable {
+    let tab: String
+    // Per-screen object context, keyed by field name. Empty for a tab with no
+    // single object in focus (a list, the chat, Ask Emma).
+    var screen: [String: ReportContextValue]
+
+    init(tab: String, screen: [String: ReportContextValue] = [:]) {
+        self.tab = tab
+        self.screen = screen
+    }
+
+    // The map written to the task's `context` field: `tab` plus every per-screen
+    // field, flattened to Firestore-safe values.
+    var firestoreValue: [String: Any] {
+        var map: [String: Any] = ["tab": tab]
+        for (key, value) in screen { map[key] = value.firestoreValue }
+        return map
+    }
+
+    // Context for the recording viewer: the fields triage needs to pin down the
+    // exact released class (and, when open, the angle) a report is about.
+    static func recording(_ recording: ReleasedRecording,
+                          focusedAngle: ReleasedRecording.Angle? = nil,
+                          tab: String) -> ReportContext {
+        var screen: [String: ReportContextValue] = [
+            "screen": .string("recording"),
+            "className": .string(recording.className),
+            "planId": .string(recording.id),
+            "angleCount": .int(recording.angleCount),
+            "anglesPresent": .strings(recording.videos.map(\.camera)),
+        ]
+        if let device = recording.device, !device.isEmpty {
+            screen["device"] = .string(device)
+        }
+        if let room = recording.room, !room.isEmpty {
+            screen["room"] = .string(room)
+        }
+        if let deviceLabel = recording.deviceLabel {
+            screen["deviceLabel"] = .string(deviceLabel)
+        }
+        if let date = recording.startsAtLabel {
+            screen["date"] = .string(date)
+        }
+        if let focusedAngle {
+            screen["focusedAngle"] = .string(focusedAngle.camera)
+        }
+        return ReportContext(tab: tab, screen: screen)
+    }
+}
+
+// A Firestore-safe scalar (or scalar array) for one per-screen context field.
+// Keeping the value typed — rather than dropping straight to `Any` — is what
+// lets the context builder be unit-tested without a live Firestore.
+enum ReportContextValue: Equatable {
+    case string(String)
+    case int(Int)
+    case strings([String])
+
+    var firestoreValue: Any {
+        switch self {
+        case .string(let value):  return value
+        case .int(let value):     return value
+        case .strings(let value): return value
+        }
+    }
+}
+
 // Presented from the app root (above the TabView) so the sheet is shared by every
 // tab, while the button lives in each tab's toolbar.
 @MainActor
@@ -33,14 +106,20 @@ final class ReportIssuePresenter: ObservableObject {
     struct Draft: Identifiable {
         let id = UUID()
         let screenshot: UIImage?
-        let tab: String
+        let context: ReportContext
+        var tab: String { context.tab }
     }
 
     private let db = Firestore.firestore()
 
     // Snapshot now, then open the sheet.
+    func start(context: ReportContext) {
+        draft = Draft(screenshot: ScreenCapture.current(), context: context)
+    }
+
+    // Convenience for a tab-level report with no single object in focus.
     func start(tab: String) {
-        draft = Draft(screenshot: ScreenCapture.current(), tab: tab)
+        start(context: ReportContext(tab: tab))
     }
 
     // File the ticket: create the task (attachments_pending while the screenshot
@@ -48,14 +127,22 @@ final class ReportIssuePresenter: ObservableObject {
     // TaskForm writes and the worker's downloadAttachments expects.
     // Returns the ticket's num_id so the UI can show "Filed #<n>".
     @discardableResult
-    func submit(description: String, tab: String, screenshot: UIImage?) async throws -> Int {
+    func submit(description: String, context: ReportContext, screenshot: UIImage?) async throws -> Int {
         let nextId = try await nextNumId()
         let png = screenshot?.pngData()
+        let tab = context.tab
 
         var data: [String: Any] = [
             "num_id": nextId,
             "project": "mobile commander",
             "path": "~/repos/mobile-exprimental",
+            // Normalized app/screen provenance so a report self-describes FROM
+            // which app/screen (app, app_platform, context) it came and FOR which
+            // repo (project/path) it's filed — matching palmr-coach and the web
+            // issue_reports standard so nothing gets mis-attributed.
+            "app": "emma-ios",
+            "app_platform": "ios",
+            "context": context.firestoreValue,
             "task": Self.title(from: description),
             "description": Self.body(description: description, tab: tab),
             "status": "pending",
@@ -132,10 +219,17 @@ final class ReportIssuePresenter: ObservableObject {
 struct ReportIssueButton: View {
     @EnvironmentObject private var reporter: ReportIssuePresenter
     let tab: String
+    // Richer per-screen context; when nil the report carries just the tab.
+    var context: ReportContext?
+
+    init(tab: String, context: ReportContext? = nil) {
+        self.tab = tab
+        self.context = context
+    }
 
     var body: some View {
         Button {
-            reporter.start(tab: tab)
+            reporter.start(context: context ?? ReportContext(tab: tab))
         } label: {
             Image(systemName: "exclamationmark.bubble")
         }
@@ -214,11 +308,11 @@ struct ReportIssueView: View {
         submitting = true
         errorMessage = nil
         let shot = draft.screenshot
-        let tab = draft.tab
+        let context = draft.context
         let text = description
         Task {
             do {
-                filedNumId = try await reporter.submit(description: text, tab: tab, screenshot: shot)
+                filedNumId = try await reporter.submit(description: text, context: context, screenshot: shot)
                 done = true
             } catch {
                 errorMessage = "Couldn't file the report: \(error.localizedDescription)"

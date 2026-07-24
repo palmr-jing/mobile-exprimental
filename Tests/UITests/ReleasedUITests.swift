@@ -344,4 +344,29 @@ final class ReleasedUITests: XCTestCase {
         XCTAssertTrue(error.waitForExistence(timeout: 10), "no message for an unsaveable format")
         XCTAssertTrue(error.label.contains("MP4"), "message should say what to ask for: \(error.label)")
     }
+
+    // The recording viewer carries its own "Report an issue" affordance so a
+    // report filed from here can stamp the exact class/angle onto the ticket's
+    // `context` map. The sheet is viewer-local (not the app-root reporter), so it
+    // must present over the viewer offline — asserted without submitting, since
+    // filing the ticket needs live Firestore.
+    func testViewerReportOpensTheReportSheet() {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))
+
+        app.buttons["angle-play"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["angle-download"].waitForExistence(timeout: 10), "viewer didn't open")
+
+        // Two "report-issue" buttons can exist (the Released tab's, behind the
+        // viewer sheet, and the viewer's own) — tap the one that's hittable, which
+        // is the viewer's on top.
+        let report = app.buttons.matching(identifier: "report-issue")
+            .allElementsBoundByIndex.first { $0.isHittable }
+        XCTAssertNotNil(report, "viewer should expose a Report an issue button")
+        report?.tap()
+
+        XCTAssertTrue(app.textFields["report-description"].waitForExistence(timeout: 10),
+                      "the report sheet should present over the viewer")
+        XCTAssertTrue(app.buttons["report-submit"].exists, "report sheet should offer submit")
+    }
 }

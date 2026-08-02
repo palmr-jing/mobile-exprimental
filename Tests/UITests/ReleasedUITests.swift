@@ -344,4 +344,44 @@ final class ReleasedUITests: XCTestCase {
         XCTAssertTrue(error.waitForExistence(timeout: 10), "no message for an unsaveable format")
         XCTAssertTrue(error.label.contains("MP4"), "message should say what to ask for: \(error.label)")
     }
+
+    // FeatureFlags.watermarkSavedVideos is OFF (#1137): tapping "Save to Photos"
+    // must NOT run the watermark re-encode — i.e. the "Adding the Palmr watermark…"
+    // step must never appear — and must not crash. This is the regression guard
+    // for the flag: if someone re-enables it (or the gate regresses), the slow
+    // watermark tail comes back and this test catches it. Robust to a local OR a
+    // remote first angle: on network failure the save shows an error (still no
+    // watermark step, app still alive), which is a valid terminal state here.
+    func testSaveToPhotosSkipsWatermarkStepWhenFlagOff() {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["IMA Fit + Tiny Tigers"].waitForExistence(timeout: 20))
+
+        addUIInterruptionMonitor(withDescription: "Photos add permission") { alert in
+            for label in ["Allow Access to All Photos", "Allow", "OK"] where alert.buttons[label].exists {
+                alert.buttons[label].tap(); return true
+            }
+            return false
+        }
+
+        app.buttons["angle-play"].firstMatch.tap()
+        let download = app.buttons["angle-download"]
+        XCTAssertTrue(download.waitForExistence(timeout: 10), "viewer didn't open")
+        download.tap()
+        app.tap()  // fire the permission interruption monitor if it prompts
+
+        // Watch the save run: it must never surface the watermark step and must
+        // stay alive. Stop early once it clearly reaches a terminal state.
+        let watermarkStep = app.staticTexts["Adding the Palmr watermark…"]
+        let error = app.staticTexts["angle-download-error"]
+        let deadline = Date().addingTimeInterval(30)
+        while Date() < deadline {
+            XCTAssertEqual(app.state, .runningForeground, "Save to Photos crashed the app")
+            XCTAssertFalse(watermarkStep.exists,
+                           "the watermark step appeared even though FeatureFlags.watermarkSavedVideos is OFF")
+            if error.exists { break }                  // terminal: shown error
+            if app.staticTexts["Saved to Photos"].exists { break }  // terminal: success
+            usleep(400_000)
+        }
+        XCTAssertEqual(app.state, .runningForeground, "Save to Photos crashed the app")
+    }
 }

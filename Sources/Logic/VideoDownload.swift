@@ -93,10 +93,11 @@ enum VideoDownload {
     /// user's Photos library. Throws a `Failure` with a message that is safe to
     /// show verbatim.
     ///
-    /// The watermark step is not optional and has no silent fallback: saving the
-    /// original bytes when the burn-in fails would put an unbranded copy of a
-    /// class recording on someone's phone, which is exactly the bug this path
-    /// was changed to fix (#1075). Failing loudly keeps the guarantee honest.
+    /// The watermark burn-in is gated behind `FeatureFlags.watermarkSavedVideos`
+    /// (default OFF, #1137). When on, it re-encodes the whole file and fails
+    /// loudly rather than silently saving an unbranded copy (#1075). When off,
+    /// the downloaded bytes are saved as-is — no transcode, no slow tail — and
+    /// branding relies on the render pipeline stamping the source server-side.
     static func saveToPhotos(from url: URL, className: String, camera: String,
                              progress: @MainActor (Phase) -> Void = { _ in }) async throws {
         guard isPhotosCompatible(url) else {
@@ -107,23 +108,33 @@ enum VideoDownload {
         await progress(.downloading)
         let local = try await download(url, named: suggestedFilename(className: className, camera: camera, url: url))
 
-        await progress(.watermarking)
-        let branded: URL
-        do {
-            branded = try await VideoWatermark.burnIn(
-                into: local,
-                named: suggestedFilename(className: className, camera: camera, url: url))
-        } catch {
-            try? FileManager.default.removeItem(at: local.deletingLastPathComponent())
-            throw Failure.watermark((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+        let toSave: URL
+        if FeatureFlags.watermarkSavedVideos {
+            await progress(.watermarking)
+            do {
+                toSave = try await VideoWatermark.burnIn(
+                    into: local,
+                    named: suggestedFilename(className: className, camera: camera, url: url))
+            } catch {
+                try? FileManager.default.removeItem(at: local.deletingLastPathComponent())
+                throw Failure.watermark((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+            }
+        } else {
+            // Flag off (default, #1137): no re-encode — save the downloaded bytes
+            // as-is. The slow watermark tail is gone; branding is the pipeline's job.
+            toSave = local
         }
-        // Drop the unbranded original before handing the copy to Photos: a class
-        // recording is large and holding both doubles peak temp usage.
-        try? FileManager.default.removeItem(at: local.deletingLastPathComponent())
-        defer { try? FileManager.default.removeItem(at: branded.deletingLastPathComponent()) }
+        // Function-level cleanup: `toSave` is either `local` itself (unwatermarked)
+        // or a branded copy in its own temp dir. Removing both parent dirs is safe
+        // (they're equal when unwatermarked; a double remove is a harmless no-op),
+        // and it runs AFTER addToLibrary below — not at any inner-scope exit.
+        defer {
+            try? FileManager.default.removeItem(at: toSave.deletingLastPathComponent())
+            try? FileManager.default.removeItem(at: local.deletingLastPathComponent())
+        }
 
         await progress(.saving)
-        try await addToLibrary(branded)
+        try await addToLibrary(toSave)
     }
 
     /// Download to a uniquely-named temp file that keeps the media extension.

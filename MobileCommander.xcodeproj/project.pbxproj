@@ -87,6 +87,7 @@
 		C8552A886DD4A29D6AD5A8DD /* VideoFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0078F9F2E5FFB6E1305CBD7C /* VideoFixtures.swift */; };
 		C88DB4D05BDA547F6C4DD382 /* test-angle.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 69A35F2BBD951645AC7C8644 /* test-angle.mp4 */; };
 		CBC33E2B9264E411D535BFB0 /* ReleasedRecordingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FBF5882B4260E18B5768302 /* ReleasedRecordingsView.swift */; };
+		CD1BED37343A303DF7721469 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = A45BF2D9A61C8047FAFD700C /* FeatureFlags.swift */; };
 		CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE92C9AA042B981A92E1F41A /* LoginView.swift */; };
 		D0BE51B3B8534633781ECC45 /* ReelExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C8ABBE399379829A118AC2 /* ReelExport.swift */; };
 		D984E06D95219B4866A33FF6 /* ReleasedUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721E8B9F997811D0DB56B7FE /* ReleasedUITests.swift */; };
@@ -196,6 +197,7 @@
 		9FBF5882B4260E18B5768302 /* ReleasedRecordingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleasedRecordingsView.swift; sourceTree = "<group>"; };
 		9FD3CE5B31526DB84EA2B548 /* ChatComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatComposerView.swift; sourceTree = "<group>"; };
 		A27F1173FE1DD9EFD49A6E1C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A45BF2D9A61C8047FAFD700C /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
 		A45E3CF0A7E56DC2F0EA1883 /* PresenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceService.swift; sourceTree = "<group>"; };
 		A4F5C3C386D05351E9EF308A /* SignInUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInUITests.swift; sourceTree = "<group>"; };
 		A58536617D0385FF7734F176 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
@@ -293,6 +295,7 @@
 			children = (
 				BF5DA4D48024E07C8D6E1122 /* Access.swift */,
 				634C57B56575928FEA983555 /* ChatPagination.swift */,
+				A45BF2D9A61C8047FAFD700C /* FeatureFlags.swift */,
 				C86CDC9EFA55036F698DDE17 /* ListenerGate.swift */,
 				F5BCC73415E644F2F05393DF /* PhotoAttachmentLoader.swift */,
 				B19949C9D327B6062BBEEDF0 /* Presence.swift */,
@@ -666,6 +669,7 @@
 				648FF4F950395D8709CEBCF3 /* DashboardView.swift in Sources */,
 				95A43C9BC9C29C67DCEEFC92 /* DesignSystem.swift in Sources */,
 				478CB0FCB2E4A8A8F73EFB80 /* DeveloperTabView.swift in Sources */,
+				CD1BED37343A303DF7721469 /* FeatureFlags.swift in Sources */,
 				16D43CB1B0A61BA5273A0289 /* FirestoreService.swift in Sources */,
 				C7A1CE536AC131D14A01180A /* ListenerGate.swift in Sources */,
 				CFFA2D2A747B361AC38BFC3D /* LoginView.swift in Sources */,

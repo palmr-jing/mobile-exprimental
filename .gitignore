@@ -45,6 +45,10 @@ database-debug.log
 pubsub-debug.log
 storage-debug.log
 
+# E2E run artifacts (per-phase videos, manifests, parsed summaries, launchd logs)
+logs/
+shots/
+
 # stray simulator screenshots
 *.png
 

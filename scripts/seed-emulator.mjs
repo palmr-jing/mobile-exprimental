@@ -5,7 +5,11 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
-const PROJECT_ID = process.env.GCLOUD_PROJECT || 'demo-commander';
+// Defaults to the app's Firebase project (Resources/GoogleService-Info.plist) so
+// a standalone `node seed-emulator.mjs` (with FIRESTORE_EMULATOR_HOST set) writes
+// to the same emulator namespace the iOS app reads. The runner exports
+// GCLOUD_PROJECT to override.
+const PROJECT_ID = process.env.GCLOUD_PROJECT || 'fir-web-codelab-8ace9';
 initializeApp({ projectId: PROJECT_ID });
 const db = getFirestore();
 
@@ -31,16 +35,31 @@ async function seed() {
     lastSeen: new Date(Date.now() - 10 * 60 * 1000), // 10 min ago → offline
   });
 
-  // #general channel with one message.
+  // #general channel with a seeded thread. We use explicit, monotonically
+  // increasing timestamps (rather than serverTimestamp) so the message order is
+  // deterministic for the reply-to scenario test: Tim's human message first,
+  // then Emma's bot message. The scenario replies to each to verify @emma is
+  // auto-tagged for the bot reply but NOT for the human reply (#811/#835).
+  const t0 = new Date(Date.now() - 5 * 60 * 1000); // 5 min ago
+  const t1 = new Date(Date.now() - 4 * 60 * 1000); // 4 min ago
   await db.collection('commander_channels').doc('general').set({
     name: 'general', isPublic: true, members: [],
     createdBy: 'test@palmr.ai', createdAt: FieldValue.serverTimestamp(),
-    lastMessageAt: FieldValue.serverTimestamp(),
+    lastMessageAt: t1,
   });
-  await db.collection('commander_channels').doc('general').collection('messages').add({
+  const messages = db.collection('commander_channels').doc('general').collection('messages');
+  // Human message — replying to this must NOT auto-tag @emma.
+  await messages.add({
     type: 'text', text: 'Welcome to Commander chat!',
     authorUid: 'tim-uid', authorName: 'Tim', authorEmail: 'tim@palmr.ai',
-    isBot: false, createdAt: FieldValue.serverTimestamp(),
+    isBot: false, createdAt: t0,
+  });
+  // Emma (bot) message — replying to this MUST auto-tag @emma. Kept emoji-free so
+  // XCUITest can match the bubble by its exact accessibility label.
+  await messages.add({
+    type: 'text', text: 'Build 20260625 is green across the fleet',
+    authorUid: 'emma-bot', authorName: 'Emma', authorEmail: 'emma@palmr.ai',
+    isBot: true, createdAt: t1,
   });
 
   // Repo registry + a couple of tasks so Emma has projects to infer.

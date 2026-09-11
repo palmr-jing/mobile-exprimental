@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Reference copy of the LaunchAgent installed on palmr-m24 by
+  scripts/install-mobilecommander-e2e-launchd.sh. The install script is
+  authoritative (it fills in $HOME / repo paths for the actual host); this
+  rendered copy (HOME=/Users/jc, repo=/Users/jc/repos/mobile-exprimental) is
+  committed for review.
+
+  Installed at: ~/Library/LaunchAgents/com.palmr.mobilecommander-e2e.plist
+  Schedule: 09:00 / 15:00 / 21:00 LOCAL time — host must be America/New_York for ET.
+  Offset 30 min from palmr-coach-ios (08:30/14:30/20:30) to avoid Drive contention.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.palmr.mobilecommander-e2e</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/jc/repos/mobile-exprimental/scripts/run-ios-e2e-and-publish.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/jc/repos/mobile-exprimental</string>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key><integer>9</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>15</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key><integer>21</integer>
+      <key>Minute</key><integer>0</integer>
+    </dict>
+  </array>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/jc/repos/mobile-exprimental/logs/launchd-e2e.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/jc/repos/mobile-exprimental/logs/launchd-e2e.log</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/opt/openjdk/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>JAVA_HOME</key>
+    <string>/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home</string>
+    <key>HOME</key>
+    <string>/Users/jc</string>
+  </dict>
+</dict>
+</plist>

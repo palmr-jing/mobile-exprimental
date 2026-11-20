@@ -576,7 +576,7 @@ final class ChatService: ObservableObject {
         let channelName = visibleChannels.first(where: { $0.id == channelId })?.name ?? channelId
         let fromName = user?.displayName ?? user?.email ?? ""
         for member in members {
-            try? await db.collection("commander_notifications").addDocument(data: [
+            _ = try? await db.collection("commander_notifications").addDocument(data: [
                 "type": "mention",
                 "recipient_email": member.email,
                 "from_email": user?.email ?? "",
